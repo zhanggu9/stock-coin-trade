@@ -90,6 +90,31 @@
     </div>
   </section>
 
+  <!-- Stock portfolio -->
+  <section class="glass-card overflow-hidden">
+    <div class="px-5 py-4 flex flex-wrap items-center justify-between gap-3" style="border-bottom:1px solid var(--border);">
+      <div>
+        <h3 class="text-base font-black" style="color:var(--fg);">주식 포트폴리오</h3>
+        <p class="mt-1 text-xs" style="color:var(--muted);">보유 종목과 섹터별 평가 비중을 확인하세요.</p>
+      </div>
+      <span class="badge badge-muted">KOSPI · KOSDAQ</span>
+    </div>
+    <div class="grid grid-cols-1 gap-3 p-4 md:grid-cols-3">
+      <div class="stat-card"><div class="stat-label">보유 종목</div><div class="stat-value"><span id="stockPositionCount">-</span><span style="font-size:13px;font-weight:500;color:var(--muted);margin-left:4px;">종목</span></div></div>
+      <div class="stat-card"><div class="stat-label">주식 평가금액</div><div class="stat-value"><span id="stockPortfolioEval">-</span><span style="font-size:13px;font-weight:500;color:var(--muted);margin-left:4px;">KRW</span></div></div>
+      <div class="stat-card"><div class="stat-label">주식 평가손익</div><div class="stat-value"><span id="stockPortfolioPnl">-</span><span style="font-size:13px;font-weight:500;color:var(--muted);margin-left:4px;">KRW</span></div></div>
+    </div>
+    <div id="stockSectorSummary" class="px-4 pb-4"></div>
+    <div class="overflow-x-auto" style="border-top:1px solid var(--border);">
+      <table class="dark-table min-w-full">
+        <thead><tr>
+          <th class="text-left">종목</th><th class="text-left">섹터</th><th class="text-right">보유수량</th><th class="text-right">평균단가</th><th class="text-right">현재가</th><th class="text-right">평가금액</th><th class="text-right">평가손익</th>
+        </tr></thead>
+        <tbody id="holdStockTableBody"><tr><td colspan="7" class="px-4 py-6 text-center" style="color:var(--muted);">로딩 중...</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
 </div>
 </main>
 <footer id="site-footer">

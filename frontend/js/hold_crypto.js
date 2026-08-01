@@ -17,6 +17,7 @@
 
   // 보유 코인 테이블 렌더
   renderHoldTable(holdCryptoList);
+  await loadStockPortfolio();
 
   if (!holdCryptoList.length) {
     setText('total_member_asset', fmt(memberAsset));
@@ -32,6 +33,72 @@
   // 포트폴리오 차트
   renderPortfolioChart(holdCryptoList, marketArrayList, memberAsset);
 })();
+
+/* ── 주식 포트폴리오 / 섹터별 집계 ────────────────────────────── */
+async function loadStockPortfolio() {
+  const tbody = document.getElementById('holdStockTableBody');
+  try {
+    const res = await apiFetch('/api/stocks/positions');
+    if (!res.ok) throw new Error('stock positions unavailable');
+    const { positions = [] } = await res.json();
+
+    const totalEval = positions.reduce((sum, pos) => sum + Number(pos.evalAmount || 0), 0);
+    const totalPnl = positions.reduce((sum, pos) => sum + Number(pos.pnl || 0), 0);
+    setText('stockPositionCount', positions.length);
+    setText('stockPortfolioEval', fmt(totalEval));
+    setColorText('stockPortfolioPnl', totalPnl >= 0 ? '+' + fmt(totalPnl) : fmt(totalPnl), totalPnl);
+
+    renderStockSectorSummary(positions, totalEval);
+    if (!positions.length) {
+      tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center" style="color:var(--muted);">보유 주식이 없습니다.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = positions.map(pos => {
+      const pnl = Number(pos.pnl || 0);
+      const color = pnl >= 0 ? '#E11D48' : '#2563EB';
+      return `<tr>
+        <td><div class="font-bold" style="color:var(--fg);">${pos.name}</div><div class="text-xs" style="color:var(--accent);">${pos.symbol}</div></td>
+        <td><span class="badge badge-muted" style="font-size:10px;">${pos.sector || '기타'}</span></td>
+        <td class="text-right font-semibold" style="color:var(--fg);">${Number(pos.quantity).toLocaleString('ko-KR')}주</td>
+        <td class="text-right" style="color:var(--fg);">${fmt(pos.avgPrice)}원</td>
+        <td class="text-right" style="color:var(--fg);">${fmt(pos.currentPrice)}원</td>
+        <td class="text-right font-bold" style="color:var(--accent);">${fmt(pos.evalAmount)}원</td>
+        <td class="text-right font-bold" style="color:${color};">${pnl >= 0 ? '+' : ''}${fmt(pnl)}원</td>
+      </tr>`;
+    }).join('');
+  } catch {
+    if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center" style="color:var(--muted);">주식 포트폴리오를 불러올 수 없습니다.</td></tr>';
+  }
+}
+
+function renderStockSectorSummary(positions, totalEval) {
+  const container = document.getElementById('stockSectorSummary');
+  if (!container) return;
+  if (!positions.length) {
+    container.innerHTML = '<p class="text-xs" style="color:var(--muted);">섹터별 집계는 주식 보유 후 표시됩니다.</p>';
+    return;
+  }
+  const sectors = positions.reduce((result, pos) => {
+    const name = pos.sector || '기타';
+    const group = result[name] || { count: 0, evalAmount: 0 };
+    group.count += 1;
+    group.evalAmount += Number(pos.evalAmount || 0);
+    result[name] = group;
+    return result;
+  }, {});
+  const palette = ['#2563EB', '#7C3AED', '#059669', '#EA580C', '#DB2777', '#0891B2'];
+  const items = Object.entries(sectors).sort((a, b) => b[1].evalAmount - a[1].evalAmount);
+  container.innerHTML = `<div style="font-size:11px;font-weight:800;color:var(--muted);margin-bottom:8px;">섹터별 평가 비중</div><div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">${items.map(([sector, data], index) => {
+    const pct = totalEval ? data.evalAmount / totalEval * 100 : 0;
+    const color = palette[index % palette.length];
+    return `<div style="border:1px solid var(--border);border-radius:8px;padding:9px 10px;background:var(--surface-2);">
+      <div style="display:flex;justify-content:space-between;gap:8px;font-size:11px;font-weight:800;color:var(--fg);"><span>${sector}</span><span>${pct.toFixed(1)}%</span></div>
+      <div style="height:5px;border-radius:99px;background:var(--border);overflow:hidden;margin:7px 0 5px;"><div style="width:${pct}%;height:100%;background:${color};"></div></div>
+      <div style="font-size:10px;color:var(--muted);">${data.count}종목 · ${fmt(data.evalAmount)}원</div>
+    </div>`;
+  }).join('')}</div>`;
+}
 
 /* ── 보유 코인 테이블 렌더 ────────────────────────────────────── */
 function renderHoldTable(holdCryptoList) {
