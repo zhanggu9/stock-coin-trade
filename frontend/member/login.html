@@ -23,23 +23,23 @@
   <!-- Logo & tagline -->
   <div class="text-center mb-8">
     <span class="auth-logo mb-3">모의투자</span>
-    <p class="mt-3 text-sm" style="color:rgba(255,255,255,0.45);">코인 · 주식 모의투자 플랫폼</p>
+    <p class="mt-3 text-sm" style="color:var(--muted);">코인 · 주식 모의투자 플랫폼</p>
   </div>
 
   <!-- Auth card -->
   <div class="auth-card">
-    <h1 class="text-xl font-black text-center mb-1" style="color:#fff;">로그인</h1>
-    <p class="text-sm text-center mb-7" style="color:rgba(255,255,255,0.4);">이메일과 비밀번호를 입력해주세요.</p>
+    <h1 class="text-xl font-black text-center mb-1" style="color:var(--fg);">로그인</h1>
+    <p class="text-sm text-center mb-7" style="color:var(--muted);">이메일과 비밀번호를 입력해주세요.</p>
 
     <div id="globalError" style="display:none;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.25);border-radius:10px;padding:.75rem 1rem;font-size:14px;color:#F87171;margin-bottom:1rem;"></div>
 
     <form class="space-y-4" onsubmit="handleLogin(event)">
       <div>
-        <label style="display:block;font-size:12px;font-weight:700;color:rgba(255,255,255,0.4);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.07em;">Email</label>
+        <label style="display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.07em;">Email</label>
         <input type="email" id="email" class="dark-input" placeholder="이메일 주소" autocomplete="email" required>
       </div>
       <div>
-        <label style="display:block;font-size:12px;font-weight:700;color:rgba(255,255,255,0.4);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.07em;">Password</label>
+        <label style="display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.07em;">Password</label>
         <input type="password" id="password" class="dark-input" placeholder="비밀번호" autocomplete="current-password" required>
       </div>
       <div class="pt-1 space-y-3">
@@ -51,8 +51,8 @@
 
   <!-- Back link -->
   <div class="mt-6 text-center">
-    <a href="/index.html" style="font-size:13px;color:rgba(255,255,255,0.3);text-decoration:none;transition:color .15s;"
-       onmouseover="this.style.color='rgba(255,255,255,0.6)'" onmouseout="this.style.color='rgba(255,255,255,0.3)'">
+    <a href="/index.html" style="font-size:13px;color:var(--muted);text-decoration:none;transition:color .15s;"
+       onmouseover="this.style.color='var(--accent-dark)'" onmouseout="this.style.color='var(--muted)'">
       ← 메인으로 돌아가기
     </a>
   </div>
