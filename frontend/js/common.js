@@ -80,42 +80,32 @@ function renderHeader(user) {
       </div>
     </aside>
 
-    <!-- 슬림 헤더 — 로고 + 유저 섹션만 -->
+    <!-- 통합 GNB — 브랜드, 메뉴, 사용자 메뉴, 투자 랭킹 -->
     <header id="site-header">
       <div class="mx-auto flex w-full max-w-[1640px] items-center justify-between px-4 py-2">
-        <a href="/index.html" style="text-decoration:none;display:flex;align-items:center;">
-          <span class="brand-logo-text">모의투자</span>
-        </a>
-        ${userSection}
+        <div style="display:flex;align-items:center;gap:18px;min-width:0;">
+          <a href="/index.html" style="text-decoration:none;display:flex;align-items:center;">
+            <span class="brand-logo-text">모의투자</span>
+          </a>
+          <button onclick="openOffcanvas()" aria-label="메뉴 열기"
+            style="display:flex;align-items:center;gap:6px;background:transparent;border:none;cursor:pointer;padding:4px 6px;border-radius:6px;transition:background .12s;color:var(--fg-2);font-size:14px;font-weight:600;"
+        onmouseover="this.style.background='var(--accent-light)'" onmouseout="this.style.background='transparent'">
+            <i class="fa-solid fa-bars" aria-hidden="true"></i>
+            <span class="hidden md:inline">메뉴</span>
+          </button>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          ${userSection}
+          <button onclick="openAiPanel()" aria-label="투자 랭킹 열기"
+            style="display:flex;align-items:center;gap:6px;background:var(--accent-light);border:1.5px solid rgba(41,98,255,0.18);cursor:pointer;padding:4px 12px;border-radius:6px;transition:background .12s;color:var(--accent-dark);font-size:13px;font-weight:700;"
+            onmouseover="this.style.background='rgba(41,98,255,0.15)'" onmouseout="this.style.background='var(--accent-light)'">
+            <i class="fa-solid fa-trophy" aria-hidden="true"></i>
+            <span class="hidden sm:inline">투자 랭킹</span>
+            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+          </button>
+        </div>
       </div>
     </header>
-
-    <!-- 콘텐츠 영역 내 플로팅 컨트롤 바 (햄버거 ← 왼쪽, AI → 오른쪽) -->
-    <div id="content-ctrl-bar" style="position:sticky;top:44px;z-index:90;background:var(--surface);border-bottom:1px solid var(--border);box-shadow:0 1px 4px rgba(0,0,0,0.04);">
-      <div class="mx-auto flex w-full max-w-[1640px] items-center justify-between px-4 py-1">
-      <!-- 왼쪽 오프캔버스 트리거 (≡ 메뉴) -->
-      <button onclick="openOffcanvas()" aria-label="메뉴 열기"
-        style="display:flex;align-items:center;gap:6px;background:transparent;border:none;cursor:pointer;padding:4px 6px;border-radius:6px;transition:background .12s;color:var(--fg-2);font-size:14px;font-weight:600;"
-        onmouseover="this.style.background='var(--accent-light)'" onmouseout="this.style.background='transparent'">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-          <rect x="2" y="5"  width="16" height="2" rx="1" fill="currentColor"/>
-          <rect x="2" y="9"  width="16" height="2" rx="1" fill="currentColor"/>
-          <rect x="2" y="13" width="16" height="2" rx="1" fill="currentColor"/>
-        </svg>
-        <span class="hidden md:inline">메뉴</span>
-      </button>
-
-      <!-- 오른쪽 오프캔버스 트리거 (AI 분석 →) -->
-      <button onclick="openAiPanel()" aria-label="투자 랭킹 열기"
-        style="display:flex;align-items:center;gap:6px;background:var(--accent-light);border:1.5px solid rgba(41,98,255,0.18);cursor:pointer;padding:4px 12px;border-radius:6px;transition:background .12s;color:var(--accent-dark);font-size:13px;font-weight:700;"
-        onmouseover="this.style.background='rgba(41,98,255,0.15)'" onmouseout="this.style.background='var(--accent-light)'">
-        <i class="fa-solid fa-trophy" aria-hidden="true"></i> 투자 랭킹
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-      </div>
-    </div>
 
     <!-- 오른쪽 오프캔버스 오버레이 -->
     <div id="ai-overlay" onclick="closeAiPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:399;backdrop-filter:blur(3px);"></div>
