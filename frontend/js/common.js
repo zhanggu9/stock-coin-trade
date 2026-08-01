@@ -82,17 +82,17 @@ function renderHeader(user) {
 
     <!-- 통합 GNB — 브랜드, 메뉴, 사용자 메뉴, 투자 랭킹 -->
     <header id="site-header">
-      <div class="mx-auto flex w-full max-w-[1640px] items-center justify-between px-4 py-2">
-        <div style="display:flex;align-items:center;gap:18px;min-width:0;">
-          <a href="/index.html" style="text-decoration:none;display:flex;align-items:center;">
-            <span class="brand-logo-text">모의투자</span>
-          </a>
+      <div class="flex w-full items-center justify-between px-4 py-2">
+        <div style="display:flex;align-items:center;gap:12px;min-width:0;">
           <button onclick="openOffcanvas()" aria-label="메뉴 열기"
             style="display:flex;align-items:center;gap:6px;background:transparent;border:none;cursor:pointer;padding:4px 6px;border-radius:6px;transition:background .12s;color:var(--fg-2);font-size:14px;font-weight:600;"
         onmouseover="this.style.background='var(--accent-light)'" onmouseout="this.style.background='transparent'">
             <i class="fa-solid fa-bars" aria-hidden="true"></i>
             <span class="hidden md:inline">메뉴</span>
           </button>
+          <a href="/index.html" style="text-decoration:none;display:flex;align-items:center;">
+            <span class="brand-logo-text">모의투자</span>
+          </a>
         </div>
         <div style="display:flex;align-items:center;gap:12px;">
           ${userSection}
