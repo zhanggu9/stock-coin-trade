@@ -370,8 +370,20 @@ td, th { vertical-align: middle; }
 /* ── Footer ─────────────────────────────────────────────────────────────── */
 #site-footer {
     margin-top: 3rem;
-    border-top: 1px solid var(--border);
-    background: var(--surface);
+    border-top: 1px solid #27272A;
+    background: #000000;
+    color: #CBD5E1;
+}
+#site-footer .brand-logo-text {
+    background: none;
+    -webkit-text-fill-color: #FFFFFF;
+    color: #FFFFFF;
+}
+#site-footer p {
+    color: #94A3B8 !important;
+}
+#site-footer p a {
+    color: #60A5FA !important;
 }
 
 /* ── Auth page ──────────────────────────────────────────────────────────── */

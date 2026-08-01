@@ -1,10 +1,13 @@
 import bcrypt
+import requests
 from flask import Blueprint, jsonify, request, session
 
 from db import session_scope
-from models import Member
+from models import HoldCrypto, Member, StockPosition, UpbitMarket
+from stock_market import current_price
 
 member_bp = Blueprint("member", __name__, url_prefix="/api/member")
+INITIAL_ASSET = 10_000_000
 
 
 def _hash_password(password: str) -> str:
@@ -28,6 +31,51 @@ def me():
         if not member:
             return jsonify({"loggedIn": False})
         return jsonify({"loggedIn": True, "username": member.username, "asset": member.asset})
+
+
+@member_bp.get("/investor-rankings")
+def investor_rankings():
+    """현금·주식·코인 평가액을 합산한 모의투자 공개 수익 랭킹."""
+    with session_scope() as db:
+        members = db.query(Member).all()
+        totals = {member.member_id: float(member.asset) for member in members}
+
+        for position in db.query(StockPosition).all():
+            try:
+                value = position.quantity * current_price(position.symbol)
+            except Exception:
+                value = position.quantity * position.avg_price
+            totals[position.member_id] = totals.get(position.member_id, 0) + value
+
+        crypto_rows = db.query(HoldCrypto, UpbitMarket).join(
+            UpbitMarket, HoldCrypto.upbit_market_id == UpbitMarket.upbit_market_id
+        ).all()
+        codes = sorted({market.market_code for _, market in crypto_rows})
+        prices = {}
+        if codes:
+            try:
+                response = requests.get("https://api.upbit.com/v1/ticker", params={"markets": ",".join(codes)}, timeout=3)
+                response.raise_for_status()
+                prices = {row["market"]: float(row["trade_price"]) for row in response.json()}
+            except Exception:
+                pass
+        for holding, market in crypto_rows:
+            totals[holding.member_id] = totals.get(holding.member_id, 0) + holding.buy_crypto_count * prices.get(market.market_code, holding.buy_average)
+
+        rankings = []
+        for member in members:
+            total_asset = round(totals.get(member.member_id, 0))
+            profit = total_asset - INITIAL_ASSET
+            rankings.append({
+                "username": member.username or "익명 투자자",
+                "totalAsset": total_asset,
+                "profit": profit,
+                "profitRate": round(profit / INITIAL_ASSET * 100, 2),
+            })
+        rankings.sort(key=lambda row: row["profitRate"], reverse=True)
+        for rank, row in enumerate(rankings[:10], start=1):
+            row["rank"] = rank
+        return jsonify({"rankings": rankings[:10]})
 
 
 @member_bp.post("/login")
