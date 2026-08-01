@@ -91,7 +91,8 @@ function renderHeader(user) {
     </header>
 
     <!-- 콘텐츠 영역 내 플로팅 컨트롤 바 (햄버거 ← 왼쪽, AI → 오른쪽) -->
-    <div id="content-ctrl-bar" style="position:sticky;top:44px;z-index:90;display:flex;justify-content:space-between;align-items:center;padding:4px 12px;background:var(--surface);border-bottom:1px solid var(--border);box-shadow:0 1px 4px rgba(0,0,0,0.04);">
+    <div id="content-ctrl-bar" style="position:sticky;top:44px;z-index:90;background:var(--surface);border-bottom:1px solid var(--border);box-shadow:0 1px 4px rgba(0,0,0,0.04);">
+      <div class="mx-auto flex w-full max-w-[1640px] items-center justify-between px-4 py-1">
       <!-- 왼쪽 오프캔버스 트리거 (≡ 메뉴) -->
       <button onclick="openOffcanvas()" aria-label="메뉴 열기"
         style="display:flex;align-items:center;gap:6px;background:transparent;border:none;cursor:pointer;padding:4px 6px;border-radius:6px;transition:background .12s;color:var(--fg-2);font-size:14px;font-weight:600;"
@@ -113,6 +114,7 @@ function renderHeader(user) {
           <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </button>
+      </div>
     </div>
 
     <!-- 오른쪽 오프캔버스 오버레이 -->
