@@ -1,6 +1,4 @@
 networks:
-  shared-net:
-    external: true
   internal:
     driver: bridge
 
@@ -27,10 +25,10 @@ services:
     networks:
       - internal
     environment:
-      MARIADB_DATABASE: mockinv
-      MARIADB_USER: mockinv
-      MARIADB_PASSWORD: "12345678!!"
-      MARIADB_ROOT_PASSWORD: "12345678!!"
+      MARIADB_DATABASE: ${MARIADB_DATABASE:-mockinv}
+      MARIADB_USER: ${MARIADB_USER:-mockinv}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:-12345678!!}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-12345678!!}
     volumes:
       - mariadb-data:/var/lib/mysql
       - ./database/db.sql:/docker-entrypoint-initdb.d/db.sql:ro
@@ -48,19 +46,18 @@ services:
       dockerfile: docker/python-backend.Dockerfile
     container_name: crypto-mock-python
     networks:
-      - shared-net
       - internal
     expose:
       - "8200"
     environment:
       DB_HOST: mariadb
       DB_PORT: "3306"
-      DB_NAME: mockinv
-      DB_USER: mockinv
-      DB_PASSWORD: "12345678!!"
-      SECRET_KEY: "dev-secret-change-me"
-      CMC_API_KEY: "89a4ffe3-03a9-4184-87e0-49214b000b99"
-      ANTHROPIC_API_KEY: ""
+      DB_NAME: ${MARIADB_DATABASE:-mockinv}
+      DB_USER: ${MARIADB_USER:-mockinv}
+      DB_PASSWORD: ${MARIADB_PASSWORD:-12345678!!}
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-change-me}
+      CMC_API_KEY: ${CMC_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     depends_on:
       mariadb:
         condition: service_healthy

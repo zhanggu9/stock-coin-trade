@@ -14,7 +14,7 @@ from crypto import market_bp, trade_bp
 from members import member_bp
 from openapi import open_api_bp
 from scheduler import start_scheduler
-from stock_market import BASE_PRICES, STOCKS, get_chart_cached, get_index_cached, get_quote_cached
+from stock_market import BASE_PRICES, STOCKS, get_chart_cached, get_index_cached, get_market_cap_rankings, get_quote_cached
 from stocks import stock_bp
 
 app = Flask(__name__)
@@ -51,7 +51,7 @@ def health():
 # ── Stock list ───────────────────────────────────────────────────────────────
 @app.get("/api/stocks/list")
 def stock_list():
-    result = [{"symbol": k, "name": v["name"], "market": v["market"]} for k, v in STOCKS.items()]
+    result = [{"symbol": k, "name": v["name"], "market": v["market"], "sector": v.get("sector", "기타")} for k, v in STOCKS.items()]
     return jsonify({"stocks": result})
 
 
@@ -137,6 +137,11 @@ def batch_prices():
                 "volume":     0,
             }
     return jsonify({"prices": result})
+
+
+@app.get("/api/stocks/market-cap-rankings")
+def market_cap_rankings():
+    return jsonify({"rankings": get_market_cap_rankings(10)})
 
 
 # ── Qdrant / RAG endpoints ────────────────────────────────────────────────────

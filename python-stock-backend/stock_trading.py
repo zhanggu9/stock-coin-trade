@@ -25,9 +25,11 @@ def get_positions(db, member_id: int) -> list[dict]:
         eval_amount = pos.quantity * price
         pnl = eval_amount - (pos.quantity * pos.avg_price)
         name = STOCKS.get(pos.symbol, {}).get("name", pos.symbol)
+        sector = STOCKS.get(pos.symbol, {}).get("sector", "기타")
         result.append({
             "symbol":       pos.symbol,
             "name":         name,
+            "sector":       sector,
             "quantity":     pos.quantity,
             "avgPrice":     pos.avg_price,
             "currentPrice": price,

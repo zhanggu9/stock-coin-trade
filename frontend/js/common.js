@@ -1,5 +1,14 @@
 const API_BASE = window.APP_CONFIG?.apiBase ?? '';
 
+// 공통 오프캔버스 메뉴에서 사용하는 Font Awesome 아이콘
+if (!document.getElementById('fontawesome-css')) {
+  const iconStylesheet = document.createElement('link');
+  iconStylesheet.id = 'fontawesome-css';
+  iconStylesheet.rel = 'stylesheet';
+  iconStylesheet.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css';
+  document.head.appendChild(iconStylesheet);
+}
+
 /* ── API fetch wrapper ───────────────────────────────────────────────────── */
 async function apiFetch(path, options = {}) {
   return fetch(API_BASE + path, { credentials: 'include', ...options });
@@ -27,12 +36,12 @@ async function logout() {
 /* ── Header render ───────────────────────────────────────────────────────── */
 function renderHeader(user) {
   const navLinks = [
-    { href: '/index.html',       label: '홈',      icon: '🏠' },
-    { href: '/trade/order.html', label: '코인',    icon: '💹' },
-    { href: '/trade/stock.html', label: '주식',    icon: '📈' },
-    { href: '/trade/hold.html',  label: '보유자산', icon: '💼' },
-    { href: '/trade/avg-down.html', label: '물타기 계산기', icon: '🧮' },
-    { href: '/openapi.html',        label: 'Open API',   icon: '🔑' },
+    { href: '/index.html',       label: '대시보드',      icon: 'fa-solid fa-gauge-high' },
+    { href: '/trade/order.html', label: '코인',          icon: 'fa-solid fa-coins' },
+    { href: '/trade/stock.html', label: '주식',          icon: 'fa-solid fa-chart-line' },
+    { href: '/trade/hold.html',  label: '보유자산',       icon: 'fa-solid fa-wallet' },
+    { href: '/trade/avg-down.html', label: '물타기 계산기', icon: 'fa-solid fa-calculator' },
+    { href: '/openapi.html',        label: 'Open API',   icon: 'fa-solid fa-key' },
   ];
 
   const userSection = user?.loggedIn
@@ -46,7 +55,7 @@ function renderHeader(user) {
        </div>`;
 
   const ocNavItems = navLinks.map(n =>
-    `<a href="${n.href}" class="oc-nav-item"><span style="font-size:16px;">${n.icon}</span> ${n.label}</a>`).join('');
+    `<a href="${n.href}" class="oc-nav-item"><i class="${n.icon}" aria-hidden="true" style="width:16px;text-align:center;"></i> ${n.label}</a>`).join('');
 
   const html = `
     <!-- 왼쪽 오프캔버스 오버레이 -->
@@ -62,7 +71,7 @@ function renderHeader(user) {
         ${ocNavItems}
         <div class="oc-divider"></div>
         <a href="javascript:void(0)" class="oc-nav-item" onclick="closeOffcanvas();openAiPanel()">
-          <span style="font-size:16px;">✨</span> AI 시장 분석
+          <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true" style="width:16px;text-align:center;"></i> AI 시장 분석
         </a>
       </nav>
       <div class="oc-footer" style="font-size:11px;color:var(--muted);">
@@ -75,7 +84,7 @@ function renderHeader(user) {
     <header id="site-header">
       <div class="mx-auto flex w-full max-w-[1640px] items-center justify-between px-4 py-2">
         <a href="/index.html" style="text-decoration:none;display:flex;align-items:center;">
-          <span class="brand-logo-text">EDUMGT</span>
+          <span class="brand-logo-text">모의투자</span>
         </a>
         ${userSection}
       </div>
@@ -99,7 +108,7 @@ function renderHeader(user) {
       <button onclick="openAiPanel()" aria-label="AI 분석 열기"
         style="display:flex;align-items:center;gap:6px;background:var(--accent-light);border:1.5px solid rgba(41,98,255,0.18);cursor:pointer;padding:4px 12px;border-radius:6px;transition:background .12s;color:var(--accent-dark);font-size:13px;font-weight:700;"
         onmouseover="this.style.background='rgba(41,98,255,0.15)'" onmouseout="this.style.background='var(--accent-light)'">
-        ✨ AI 분석
+        <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> AI 분석
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>

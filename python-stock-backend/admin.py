@@ -1,6 +1,4 @@
 from flask import Blueprint, jsonify, session
-
-import k8s_overview
 from db import session_scope
 from models import Member
 
@@ -31,13 +29,3 @@ def admin_me():
     if not username:
         return _forbidden()
     return jsonify({"admin": True, "username": username})
-
-
-@admin_bp.get("/k8s/overview")
-def admin_k8s_overview():
-    if not _require_admin():
-        return _forbidden()
-    try:
-        return jsonify(k8s_overview.build_overview())
-    except Exception as e:
-        return jsonify({"error": str(e)}), 503

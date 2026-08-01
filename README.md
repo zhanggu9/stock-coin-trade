@@ -74,7 +74,7 @@ Nginx (Frontend · :3000)
 - 업비트 WebSocket 실시간 시세
 - 국내 4대 거래소 시세 비교 (`GET /api/crypto/{code}/domestic-prices`)
 - Docker Compose 3-컨테이너 구성 (Nginx + Python + MariaDB)
-- Kubernetes / Amazon EKS 배포 구성
+- 단일 EC2 VM의 Docker Compose 배포 구성
 
 ---
 
@@ -94,7 +94,7 @@ Nginx (Frontend · :3000)
 | **Frontend** | Vanilla JS, Tailwind CSS (CDN), Highcharts, ApexCharts, TradingView Widget |
 | **Backend** | Python 3.11, Flask, SQLAlchemy, PyMySQL, bcrypt, APScheduler, yfinance |
 | **DB** | MariaDB |
-| **Infra** | Docker, Docker Compose, Nginx, Kubernetes, Amazon EKS |
+| **Infra** | EC2 VM, Docker, Docker Compose, Nginx |
 | **Security** | BCrypt + 서명된 쿠키 세션(Flask session) |
 | **External API** | Upbit REST/WebSocket, Bithumb REST, Coinone REST, Korbit REST, CoinMarketCap REST |
 
@@ -130,7 +130,7 @@ stock-coin-trade/
 │   ├── app.py                   # 앱 진입점, 블루프린트 등록, 주식 시세/RAG/뉴스 라우트
 │   ├── members.py                # /api/member/* — 회원가입/로그인/세션
 │   ├── crypto.py                 # /api/crypto/*, /api/trade/* — 시세/매수/매도
-│   ├── admin.py                  # /api/admin/* — 관리자 전용 (k8s 현황 등)
+│   ├── admin.py                  # /api/admin/* — 관리자 전용
 │   ├── ai.py                     # /api/ai/analyze — Claude 스트리밍 분석
 │   ├── stock_market.py            # 주식 시세/차트/지수 조회 + 캐시 (종목 마스터 데이터 포함)
 │   ├── stock_trading.py           # 주식 매수/매도 실행 공용 로직 (웹 세션 + Open API 공유)
@@ -139,7 +139,6 @@ stock-coin-trade/
 │   ├── openapi.py                 # /openapi/v1/* — API Key(Bearer) 인증 외부 연동 API
 │   ├── scheduler.py              # CoinMarketCap/Upbit 주기 동기화
 │   ├── db.py / models.py         # SQLAlchemy 세션 / 테이블 매핑
-│   ├── k8s_overview.py           # EKS 클러스터 현황 조회 로직
 │   ├── qdrant_service.py         # Qdrant RAG 연동
 │   └── requirements.txt
 │
@@ -152,8 +151,8 @@ stock-coin-trade/
 │   └── nginx.conf
 │
 ├── docker-compose.yml
-├── k8s/                         # Kubernetes 매니페스트
-└── scripts/                     # AWS / CI/CD 스크립트
+├── scripts/ec2/deploy.sh        # 단일 EC2 VM Docker Compose 배포 스크립트
+└── .github/workflows/           # GitHub Actions EC2 배포 워크플로
 ```
 
 ---
@@ -314,119 +313,33 @@ window.APP_CONFIG = {
 
 ---
 
-## 9) Kubernetes 실행 (일반 k8s / dev)
+## 9) 단일 EC2 VM 배포
 
-### 9-1. base 배포
-
-```bash
-docker build -t python-k-serve-app:latest -f docker/python-backend.Dockerfile .
-kubectl apply -k k8s/base
-kubectl -n k-serve port-forward svc/k-serve-app 8200:80
-```
-
-### 9-2. dev overlay 배포
+EC2 한 대에서 Nginx 프론트엔드, Flask 백엔드, MariaDB 컨테이너를 Docker Compose로 함께 실행합니다.
 
 ```bash
-docker build -t python-k-serve-app:dev -f docker/python-backend.Dockerfile .
-kubectl apply -k k8s/overlays/dev
-kubectl -n k-serve-dev port-forward svc/k-serve-app 8200:80
+cp .env.example .env
+# .env의 비밀번호와 API 키를 실제 값으로 변경
+docker compose up -d --build
+docker compose ps
 ```
+
+VM 배포는 `edumgt/investment-analysis` 저장소의 **Deploy stock-coin-trade** 워크플로에서 수행합니다. 해당 워크플로에 이미 등록된 `SSH_KEY`, `SSH_HOST`, `SSH_USER` Secret을 사용해 이 저장소의 `main` 소스를 `/opt/stock-coin-trade`로 전송하고 Docker Compose를 재기동합니다.
+
+따라서 이 저장소에는 SSH 개인 키 Secret을 별도로 등록하지 않습니다. 변경을 GitHub의 `main` 브랜치에 push한 뒤, `investment-analysis` 저장소의 Actions에서 **Deploy stock-coin-trade → Run workflow**를 실행합니다.
 
 ---
 
-## 10) Amazon EKS 실행
-
-`k8s/eks`는 EKS + ALB Ingress + in-cluster MariaDB 구성입니다.
-
-### 10-1. 사전 준비
-
-- EKS 클러스터
-- AWS Load Balancer Controller 설치
-- ECR 리포지토리 생성
-- `aws`, `eksctl`, `kubectl`, `docker` CLI
-
-### 10-2. 이미지 빌드 / 푸시
-
-```bash
-aws ecr get-login-password --region ap-northeast-2 | \
-  docker login --username AWS --password-stdin 123456789012.dkr.ecr.ap-northeast-2.amazonaws.com
-
-docker build -t python-crypto-mock:latest -f docker/python-backend.Dockerfile .
-docker tag python-crypto-mock:latest 123456789012.dkr.ecr.ap-northeast-2.amazonaws.com/python-crypto-mock:latest
-docker push 123456789012.dkr.ecr.ap-northeast-2.amazonaws.com/python-crypto-mock:latest
-```
-
-### 10-3. 배포
-
-```bash
-kubectl apply -k k8s/eks
-kubectl -n k-serve get ingress k-serve-ingress
-```
-
-### 10-4. 배포 스크립트
-
-```bash
-export AWS_REGION=ap-northeast-2
-export CLUSTER_NAME=crypto-mock-stage
-export ECR_REPO=python-crypto-mock-stage
-
-./scripts/aws/01-env.sh
-./scripts/aws/02-create-infra.sh
-./scripts/aws/03-build-push-image.sh
-./scripts/aws/04-deploy.sh
-./scripts/aws/05-verify.sh
-```
-
----
-
-## 11) 환경 구분
-
-| 환경 | 런타임 | DB | 진입점 | 배포 기준 |
-|---|---|---|---|---|
-| `local` | Docker Compose | 로컬 MariaDB 컨테이너 | `localhost:3000` | `docker compose up -d --build` |
-| `dev` | 일반 Kubernetes | in-cluster MariaDB | port-forward | `k8s/overlays/dev` |
-| `stage` | Amazon EKS + ALB | MariaDB PVC | ALB DNS | `k8s/eks` + `scripts/aws/*` |
-| `prod` | Amazon EKS + ALB | 운영 DB | ALB / Route53 | `k8s/eks` + prod env |
-
----
-
-## 12) CI/CD shell 구성
-
-```bash
-./scripts/cicd/ci.sh local
-./scripts/cicd/ci.sh dev
-./scripts/cicd/ci.sh stage
-
-./scripts/cicd/deploy.sh local
-./scripts/cicd/deploy.sh dev
-./scripts/cicd/deploy.sh stage
-./scripts/cicd/deploy.sh prod
-```
-
-| 환경 | 동작 |
-|---|---|
-| `local` | Python 컴파일 체크 + docker compose 검증 후 로컬 기동 |
-| `dev` | Python 컴파일 체크 + k8s/overlays/dev 검증 후 일반 k8s 배포 |
-| `stage/prod` | Python 컴파일 체크 + ECR push + EKS 배포 |
-
----
-
-## 13) Mermaid 다이어그램
-
-### 13-1. 환경별 배포 흐름
+## 10) 배포 흐름
 
 ```mermaid
 flowchart LR
-    DEV[Developer]
-    LOCAL[local<br/>Docker Compose]
-    DEVK8S[dev<br/>k8s/overlays/dev]
-    STAGE[stage<br/>EKS + ALB]
-    PROD[prod<br/>EKS + ALB]
-
-    DEV --> LOCAL
-    LOCAL --> DEVK8S
-    DEVK8S --> STAGE
-    STAGE --> PROD
+    DEV[Developer] -->|push main| GH[GitHub Actions]
+    GH -->|SSH| EC2[Single EC2 VM]
+    EC2 --> DC[Docker Compose]
+    DC --> FE[Nginx Frontend]
+    DC --> BE[Flask Backend]
+    DC --> DB[MariaDB]
 ```
 
 ### 13-2. Docker 런타임 구조
@@ -490,9 +403,9 @@ sequenceDiagram
 
 ---
 
-## 14) AWS 아키텍처
+## 14) 운영 아키텍처
 
-![AWS EKS Architecture](docs/architecture-eks.svg)
+단일 EC2 VM에서 Docker Compose로 Nginx, Flask, MariaDB 컨테이너를 함께 실행합니다. Kubernetes, EKS, ECR은 사용하지 않습니다.
 
 ---
 
@@ -596,13 +509,8 @@ docker run --rm mariadb:11.4 \
 | **백엔드 (Python)** | `python-stock-backend/` |
 | **DB 스키마** | `database/db.sql` |
 | **Docker** | `docker-compose.yml`, `docker/` |
-| **Kubernetes(base)** | `k8s/base/` |
-| **Kubernetes(dev)** | `k8s/overlays/dev/` |
-| **EKS** | `k8s/eks/` |
-| **AWS 스크립트** | `scripts/aws/` |
-| **CI/CD 스크립트** | `scripts/cicd/` |
-| **AWS 콘솔 이미지** | `docs/aws-console/` |
-| **AWS 아키텍처 SVG** | `docs/architecture-eks.svg` |
+| **EC2 배포 스크립트** | `scripts/ec2/deploy.sh` |
+| **VM 배포 워크플로** | `edumgt/investment-analysis/.github/workflows/deploy-stock-trade.yml` |
 
 ---
 
@@ -665,37 +573,6 @@ docker run --rm mariadb:11.4 \
 ### ② 확장형(Extension) 벡터 DB
 * **PostgreSQL + pgvector:** 전통적인 RDBMS 환경 위에서 관계형 데이터와 벡터 데이터를 `SQL JOIN`으로 함께 쿼리할 수 있어 단일 DB 아키텍처 유지에 유리합니다.
 * **Elasticsearch / OpenSearch:** 뛰어난 키워드 검색 역량에 벡터 검색 기능을 추가하여, 하이브리드 검색 기반의 대규모 텍스트 검색엔진 구현 시 유수 기업들이 사용합니다.
-
----
-
-### KServe(구 KFServing)는 쿠버네티스(Kubernetes) 환경에서 머신러닝(ML) 및 딥러닝 모델을 쉽고 효율적으로 배포하고 운영할 수 있도록 도와주는 오픈소스 AI 서빙 플랫폼입니다.
-
-### 쉽게 말해, 데이터 사이언티스트가 학습시킨 AI 모델(예: PyTorch, TensorFlow, LLM 등)을 외부 애플리케이션이 호출해서 쓸 수 있는 안정적이고 확장 가능한 API 엔드포인트(웹 서비스)로 만들어주는 도구입니다.
-
-### KServe의 핵심 특징과 구조를 알기 쉽게 정리해 드립니다.
-
-1. KServe의 핵심 장점
-비용 절감을 위한 자동 확장 (Scale-to-Zero): AI 모델, 특히 GPU를 사용하는 모델은 인프라 비용이 매우 비쌉니다. KServe는 트래픽이 없을 때 모델 서버의 개수를 0개로 자동으로 줄여줍니다(Scale-to-Zero). 그러다 사용자의 요청이 들어오면 다시 서버를 띄우는 방식으로 비용을 획기적으로 아낍니다.
-
-표준화된 추론 프로토콜: 모델마다 API 형식을 다르게 짤 필요 없이, 업계 표준인 Open Inference Protocol (V2)이나 OpenAI 호환 API 형식을 그대로 사용할 수 있습니다.
-
-고성능 런타임 내장: 최신 거대 언어 모델(LLM)을 빠르게 서빙하기 위한 vLLM이나, 전통적인 딥러닝을 위한 NVIDIA Triton, 그리고 Scikit-Learn, XGBoost 같은 정형 데이터 모델을 위한 전용 엔진들을 기본적으로 제공합니다. 별도의 Docker 이미지를 직접 만들지 않아도 됩니다.
-
-2. KServe의 3단계 아키텍처
-KServe에 모델을 배포(InferenceService)하면, 하나의 요청이 처리되기 위해 크게 3가지 컴포넌트(단계)를 거칠 수 있습니다.
-
-1. Transformer (전처리/후처리 - 선택): 사용자가 보낸 생 데이터(예: 텍스트, 이미지 파일)를 모델이 이해할 수 있는 숫자 배열(텐서, 토큰)로 바꾸거나, 모델의 결과물을 사용자가 보기 편한 형태로 가공합니다.
-
-2. Predictor (예측 엔드포인트 - 필수): 실제 AI 모델이 로드되어 있는 핵심 엔진입니다. 전달받은 데이터를 바탕으로 복잡한 수학 연산을 수행해 예측값을 계산합니다.
-
-3. Explainer (설명 기능 - 선택): AI가 왜 이런 예측 결과를 내놓았는지 그 이유(피처 중요도 등)를 설명해 주는 컴포넌트입니다.
-
-3. 실제 배포는 어떻게 하나요?
-복잡한 네트워크 설정이나 서버 환경 구축 필요 없이, 쿠버네티스 설정 파일(YAML) 하나로 엔터프라이즈급 API 서버를 띄울 수 있습니다.
-
-예를 들어, S3 저장소에 저장된 Scikit-learn 모델을 배포하는 코드는 다음과 같이 매우 간단합니다.
-
----
 
 # 국내 증권사별 Open API 제공 현황 및 특징
 

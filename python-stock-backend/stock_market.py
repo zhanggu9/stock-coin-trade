@@ -5,21 +5,21 @@ import yfinance as yf
 
 STOCKS = {
     # KOSPI
-    "005930": {"name": "삼성전자",          "market": "KOSPI",  "ticker": "005930.KS"},
-    "000660": {"name": "SK하이닉스",         "market": "KOSPI",  "ticker": "000660.KS"},
-    "005380": {"name": "현대차",             "market": "KOSPI",  "ticker": "005380.KS"},
-    "035420": {"name": "NAVER",             "market": "KOSPI",  "ticker": "035420.KS"},
-    "035720": {"name": "카카오",             "market": "KOSPI",  "ticker": "035720.KS"},
-    "068270": {"name": "셀트리온",           "market": "KOSPI",  "ticker": "068270.KS"},
-    "207940": {"name": "삼성바이오로직스",    "market": "KOSPI",  "ticker": "207940.KS"},
-    "373220": {"name": "LG에너지솔루션",      "market": "KOSPI",  "ticker": "373220.KS"},
-    "005490": {"name": "POSCO홀딩스",        "market": "KOSPI",  "ticker": "005490.KS"},
+    "005930": {"name": "삼성전자",          "market": "KOSPI",  "ticker": "005930.KS", "sector": "반도체·IT"},
+    "000660": {"name": "SK하이닉스",         "market": "KOSPI",  "ticker": "000660.KS", "sector": "반도체·IT"},
+    "005380": {"name": "현대차",             "market": "KOSPI",  "ticker": "005380.KS", "sector": "자동차"},
+    "035420": {"name": "NAVER",             "market": "KOSPI",  "ticker": "035420.KS", "sector": "인터넷·플랫폼"},
+    "035720": {"name": "카카오",             "market": "KOSPI",  "ticker": "035720.KS", "sector": "인터넷·플랫폼"},
+    "068270": {"name": "셀트리온",           "market": "KOSPI",  "ticker": "068270.KS", "sector": "바이오·헬스케어"},
+    "207940": {"name": "삼성바이오로직스",    "market": "KOSPI",  "ticker": "207940.KS", "sector": "바이오·헬스케어"},
+    "373220": {"name": "LG에너지솔루션",      "market": "KOSPI",  "ticker": "373220.KS", "sector": "2차전지"},
+    "005490": {"name": "POSCO홀딩스",        "market": "KOSPI",  "ticker": "005490.KS", "sector": "철강·소재"},
     # KOSDAQ
-    "247540": {"name": "에코프로비엠",        "market": "KOSDAQ", "ticker": "247540.KQ"},
-    "196170": {"name": "알테오젠",           "market": "KOSDAQ", "ticker": "196170.KQ"},
-    "091990": {"name": "셀트리온헬스케어",    "market": "KOSDAQ", "ticker": "091990.KQ"},
-    "086520": {"name": "에코프로",           "market": "KOSDAQ", "ticker": "086520.KQ"},
-    "263750": {"name": "펄어비스",           "market": "KOSDAQ", "ticker": "263750.KQ"},
+    "247540": {"name": "에코프로비엠",        "market": "KOSDAQ", "ticker": "247540.KQ", "sector": "2차전지"},
+    "196170": {"name": "알테오젠",           "market": "KOSDAQ", "ticker": "196170.KQ", "sector": "바이오·헬스케어"},
+    "091990": {"name": "셀트리온헬스케어",    "market": "KOSDAQ", "ticker": "091990.KQ", "sector": "바이오·헬스케어"},
+    "086520": {"name": "에코프로",           "market": "KOSDAQ", "ticker": "086520.KQ", "sector": "2차전지"},
+    "263750": {"name": "펄어비스",           "market": "KOSDAQ", "ticker": "263750.KQ", "sector": "게임"},
 }
 
 # Base prices used as fallback when yfinance is unavailable
@@ -29,6 +29,16 @@ BASE_PRICES = {
     "207940": 780000, "373220": 320000, "005490": 410000,
     "247540": 92000,  "196170": 230000, "091990": 41000,
     "086520": 72000,  "263750": 28000,
+}
+
+# 발행주식수(보통주 기준). 실시간 시세와 곱해 시가총액 순위를 계산한다.
+# yfinance를 사용할 수 없는 환경에서도 동일한 순위 화면을 제공하기 위한 기준값이다.
+SHARES_OUTSTANDING = {
+    "005930": 5_919_638_922, "000660": 728_002_365, "005380": 211_531_506,
+    "035420":   64_800_000, "035720": 443_866_000, "068270": 217_000_000,
+    "207940":   71_174_000, "373220": 234_000_000, "005490":  84_571_230,
+    "247540":   97_000_000, "196170":  53_000_000, "091990":  67_000_000,
+    "086520":  136_000_000, "263750":  64_000_000,
 }
 
 _quote_cache = {}
@@ -186,3 +196,25 @@ def current_price(symbol: str) -> int:
         return get_quote_cached(symbol)["price"]
     except Exception:
         return _simulated_price(symbol)
+
+
+def get_market_cap_rankings(limit: int = 10) -> list:
+    """등록된 국내 주식을 시가총액(현재가 × 발행주식수) 순으로 반환한다."""
+    rankings = []
+    for symbol, info in STOCKS.items():
+        quote = get_quote_cached(symbol)
+        market_cap = quote["price"] * SHARES_OUTSTANDING.get(symbol, 0)
+        rankings.append({
+            "rank":       0,
+            "symbol":     symbol,
+            "name":       info["name"],
+            "market":     info["market"],
+            "price":      quote["price"],
+            "changeRate": quote.get("changeRate", 0),
+            "marketCap":  market_cap,
+        })
+
+    rankings.sort(key=lambda stock: stock["marketCap"], reverse=True)
+    for rank, stock in enumerate(rankings[:limit], start=1):
+        stock["rank"] = rank
+    return rankings[:limit]

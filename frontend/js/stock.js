@@ -59,14 +59,33 @@ function updatePortfolioMini(positions, cash) {
   if (total <= 0) { el.innerHTML = ''; return; }
 
   const cashPct = Math.round(cash / total * 100);
-  const bars = positions.map(p => {
+  const colors = ['#2563EB', '#7C3AED', '#059669', '#EA580C', '#DB2777', '#0891B2', '#65A30D'];
+  const stockBars = positions.map((p, i) => {
     const pct = Math.round((p.evalAmount || 0) / total * 100);
-    const color = p.pnl >= 0 ? '#E11D48' : '#2563EB';
-    return `<div title="${p.name} ${pct}%" style="flex:${pct};background:${color};min-width:3px;"></div>`;
+    return `<div title="${p.name} ${pct}%" style="flex:${pct};background:${colors[i % colors.length]};min-width:3px;"></div>`;
   });
-  bars.push(`<div title="현금 ${cashPct}%" style="flex:${cashPct};background:rgba(124,92,252,0.5);min-width:3px;"></div>`);
-  el.innerHTML = `<div style="display:flex;height:8px;border-radius:4px;overflow:hidden;gap:1px;margin-top:6px;">${bars.join('')}</div>
-    <div style="font-size:10px;color:var(--muted);margin-top:3px;">현금 ${cashPct}% · 주식 ${100 - cashPct}%</div>`;
+  stockBars.push(`<div title="현금 ${cashPct}%" style="flex:${cashPct};background:#CBD5E1;min-width:3px;"></div>`);
+
+  const sectors = positions.reduce((acc, p) => {
+    const sector = p.sector || '기타';
+    acc[sector] = (acc[sector] || 0) + (p.evalAmount || 0);
+    return acc;
+  }, {});
+  const sectorItems = Object.entries(sectors).sort((a, b) => b[1] - a[1]);
+  const sectorBars = sectorItems.map(([sector, amount], i) => {
+    const pct = Math.round(amount / total * 100);
+    return `<div title="${sector} ${pct}%" style="flex:${pct};background:${colors[i % colors.length]};min-width:3px;"></div>`;
+  });
+  if (cashPct) sectorBars.push(`<div title="현금 ${cashPct}%" style="flex:${cashPct};background:#CBD5E1;min-width:3px;"></div>`);
+  const sectorLabels = sectorItems.map(([sector, amount], i) =>
+    `<span style="display:inline-flex;align-items:center;gap:3px;"><i style="width:6px;height:6px;border-radius:50%;background:${colors[i % colors.length]};display:inline-block;"></i>${sector} ${Math.round(amount / total * 100)}%</span>`
+  ).join(' · ');
+
+  el.innerHTML = `<div style="font-size:10px;font-weight:700;color:var(--muted);margin-top:4px;">종목별 비중</div>
+    <div style="display:flex;height:7px;border-radius:4px;overflow:hidden;gap:1px;margin-top:3px;">${stockBars.join('')}</div>
+    <div style="font-size:10px;font-weight:700;color:var(--muted);margin-top:7px;">섹터별 비중</div>
+    <div style="display:flex;height:7px;border-radius:4px;overflow:hidden;gap:1px;margin-top:3px;">${sectorBars.join('')}</div>
+    <div style="font-size:9px;line-height:1.5;color:var(--muted);margin-top:4px;">${sectorLabels || '보유 주식 없음'}${sectorLabels ? ` · 현금 ${cashPct}%` : ''}</div>`;
 }
 
 /* ── 포맷터 ──────────────────────────────────────────────────────────────── */
@@ -130,7 +149,7 @@ function renderStockMarketList() {
     if (currentMarketFilter === 'KOSPI'  && s.market !== 'KOSPI')  return false;
     if (currentMarketFilter === 'KOSDAQ' && s.market !== 'KOSDAQ') return false;
     if (currentMarketFilter === 'WATCH'  && !watchlist.has(s.symbol)) return false;
-    if (search && !s.name.toLowerCase().includes(search) && !s.symbol.includes(search)) return false;
+    if (search && !s.name.toLowerCase().includes(search) && !s.symbol.includes(search) && !(s.sector || '').toLowerCase().includes(search)) return false;
     return true;
   });
 
@@ -150,7 +169,7 @@ function renderStockMarketList() {
               style="cursor:pointer;border-bottom:1px solid var(--border);">
       <td style="padding:6px 10px;">
         <div style="font-weight:700;color:var(--fg);font-size:12px;">${s.name}</div>
-        <div style="font-size:10px;color:var(--muted);">${s.market}</div>
+        <div style="font-size:10px;color:var(--muted);">${s.market} · ${s.sector || '기타'}</div>
       </td>
       <td style="padding:6px 10px;text-align:right;font-weight:700;color:var(--fg);font-size:12px;">${price}</td>
       <td style="padding:6px 10px;text-align:right;font-size:11px;font-weight:700;color:${color};">${rateStr}</td>
@@ -192,7 +211,7 @@ function getFilteredStocks() {
     if (currentMarketFilter === 'KOSPI'  && s.market !== 'KOSPI')  return false;
     if (currentMarketFilter === 'KOSDAQ' && s.market !== 'KOSDAQ') return false;
     if (currentMarketFilter === 'WATCH'  && !watchlist.has(s.symbol)) return false;
-    if (search && !s.name.toLowerCase().includes(search) && !s.symbol.includes(search)) return false;
+    if (search && !s.name.toLowerCase().includes(search) && !s.symbol.includes(search) && !(s.sector || '').toLowerCase().includes(search)) return false;
     return true;
   });
 }
@@ -220,7 +239,7 @@ function rebuildSelectOptions() {
     filtered.filter(s => s.market === market).forEach(s => {
       const opt = document.createElement('option');
       opt.value = s.symbol;
-      opt.textContent = `${s.name} (${s.symbol})`;
+      opt.textContent = `${s.name} · ${s.sector || '기타'} (${s.symbol})`;
       if (s.symbol === prevVal) opt.selected = true;
       grp.appendChild(opt);
     });
@@ -318,7 +337,7 @@ async function loadPositions() {
   if (!tbody) return;
 
   if (!lastPositions.length) {
-    tbody.innerHTML = `<tr><td colspan="5" style="padding:10px;text-align:center;color:var(--muted);">포지션 없음</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="padding:10px;text-align:center;color:var(--muted);">포지션 없음</td></tr>`;
     updatePortfolioMini([], lastCash);
     return;
   }
@@ -327,6 +346,7 @@ async function loadPositions() {
     const color = colorByVal(pnl);
     return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
       <td style="padding:6px 10px;font-weight:700;color:var(--fg);font-size:12px;">${pos.name}<br><span style="font-size:10px;color:var(--accent-dark);">${pos.symbol}</span></td>
+      <td style="padding:6px 10px;font-size:10px;color:var(--muted);white-space:nowrap;">${pos.sector || '기타'}</td>
       <td style="padding:6px 10px;text-align:right;font-size:12px;color:var(--fg);">${pos.quantity}</td>
       <td style="padding:6px 10px;text-align:right;font-size:12px;color:rgba(255,255,255,0.7);">${fmtKrw(pos.avgPrice)}</td>
       <td style="padding:6px 10px;text-align:right;font-size:12px;color:var(--accent-dark);">${fmtKrw(pos.evalAmount)}</td>
