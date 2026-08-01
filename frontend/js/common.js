@@ -64,7 +64,7 @@ function renderHeader(user) {
     <!-- 왼쪽 오프캔버스 — 네비게이션 메뉴 -->
     <aside id="oc-panel">
       <div class="oc-header">
-        <span class="brand-logo-text" style="font-size:17px;letter-spacing:1.5px;">EDUMGT</span>
+        <span class="brand-logo-text" style="font-size:17px;letter-spacing:1.5px;">모의투자</span>
         <button class="oc-close-btn" onclick="closeOffcanvas()">✕</button>
       </div>
       <nav class="oc-nav">
@@ -124,7 +124,7 @@ function renderHeader(user) {
       <!-- 패널 헤더 -->
       <div style="display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.1rem;border-bottom:1px solid var(--border);flex-shrink:0;">
         <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:17px;">✨</span>
+          <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true" style="font-size:16px;color:#6366F1;"></i>
           <span style="font-size:15px;font-weight:800;color:var(--fg);">AI 시장 분석</span>
           <span style="font-size:10px;font-weight:700;background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;padding:2px 7px;border-radius:99px;letter-spacing:.04em;">Qdrant RAG</span>
         </div>
@@ -133,9 +133,9 @@ function renderHeader(user) {
 
       <!-- 탭 바 -->
       <div style="display:flex;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--surface);">
-        <button id="ai-tab-btn-analyze"  onclick="switchAiTab('analyze')"  class="ai-tab-btn ai-tab-active"  style="flex:1;padding:.6rem .4rem;font-size:12px;font-weight:700;border:none;cursor:pointer;border-bottom:2px solid #6366F1;color:#6366F1;background:transparent;transition:all .15s;">🤖 AI 분석</button>
-        <button id="ai-tab-btn-search"   onclick="switchAiTab('search')"   class="ai-tab-btn"                style="flex:1;padding:.6rem .4rem;font-size:12px;font-weight:700;border:none;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted);background:transparent;transition:all .15s;">🔍 지식 검색</button>
-        <button id="ai-tab-btn-dataset"  onclick="switchAiTab('dataset')"  class="ai-tab-btn"                style="flex:1;padding:.6rem .4rem;font-size:12px;font-weight:700;border:none;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted);background:transparent;transition:all .15s;">📚 데이터셋</button>
+        <button id="ai-tab-btn-analyze"  onclick="switchAiTab('analyze')"  class="ai-tab-btn ai-tab-active"  style="flex:1;padding:.6rem .4rem;font-size:12px;font-weight:700;border:none;cursor:pointer;border-bottom:2px solid #6366F1;color:#6366F1;background:transparent;transition:all .15s;"><i class="fa-solid fa-robot" aria-hidden="true"></i> AI 분석</button>
+        <button id="ai-tab-btn-search"   onclick="switchAiTab('search')"   class="ai-tab-btn"                style="flex:1;padding:.6rem .4rem;font-size:12px;font-weight:700;border:none;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted);background:transparent;transition:all .15s;"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> 지식 검색</button>
+        <button id="ai-tab-btn-dataset"  onclick="switchAiTab('dataset')"  class="ai-tab-btn"                style="flex:1;padding:.6rem .4rem;font-size:12px;font-weight:700;border:none;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted);background:transparent;transition:all .15s;"><i class="fa-solid fa-book-open" aria-hidden="true"></i> 데이터셋</button>
       </div>
 
       <!-- ══ 탭 1: AI 분석 ══ -->
@@ -160,14 +160,14 @@ function renderHeader(user) {
             </div>
             <button onclick="runAiAnalysis()" id="aiRunBtn"
               style="width:100%;background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;border:none;border-radius:7px;padding:.5rem 1rem;font-size:13.5px;font-weight:700;cursor:pointer;box-shadow:0 2px 10px rgba(99,102,241,0.28);transition:opacity .15s;">
-              ✨ 분석 시작
+              <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> 분석 시작
             </button>
           </div>
 
           <!-- Qdrant 검색된 근거 (접기/펼치기) -->
           <div id="ai-rag-block" style="display:none;border-bottom:1px solid var(--border);flex-shrink:0;">
             <button onclick="toggleRagBlock()" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:.5rem 1.1rem;background:linear-gradient(90deg,#EEF2FF,#F5F3FF);border:none;cursor:pointer;font-size:11.5px;font-weight:700;color:#4F46E5;">
-              <span>📚 Qdrant 검색된 근거 <span id="rag-hit-count" style="background:#6366F1;color:#fff;border-radius:99px;padding:1px 6px;font-size:10px;">0</span></span>
+              <span><i class="fa-solid fa-book-open" aria-hidden="true"></i> Qdrant 검색된 근거 <span id="rag-hit-count" style="background:#6366F1;color:#fff;border-radius:99px;padding:1px 6px;font-size:10px;">0</span></span>
               <span id="rag-chevron" style="font-size:10px;transition:transform .2s;">▼</span>
             </button>
             <div id="rag-context-list" style="display:none;max-height:160px;overflow-y:auto;padding:.45rem 1.1rem .6rem;background:#F8F7FF;"></div>
