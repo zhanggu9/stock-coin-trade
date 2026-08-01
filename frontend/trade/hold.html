@@ -66,30 +66,6 @@
     </div>
   </section>
 
-  <!-- Holdings table -->
-  <section class="glass-card overflow-hidden">
-    <div class="px-5 py-4" style="border-bottom:1px solid var(--border);">
-      <h3 class="text-base font-black" style="color:var(--fg);">보유 코인</h3>
-    </div>
-    <div class="overflow-x-auto">
-      <table class="dark-table min-w-full">
-        <thead>
-          <tr>
-            <th class="text-left">보유자산</th>
-            <th class="text-right">보유수량</th>
-            <th class="text-right">매수평균가</th>
-            <th class="text-right">매수금액</th>
-            <th class="text-right">평가금액</th>
-            <th class="text-right">평가손익 (%)</th>
-          </tr>
-        </thead>
-        <tbody id="holdCryptoTableBody">
-          <tr><td colspan="6" class="px-4 py-6 text-center" style="color:var(--muted);">로딩 중...</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
   <!-- Stock portfolio -->
   <section class="glass-card overflow-hidden">
     <div class="px-5 py-4 flex flex-wrap items-center justify-between gap-3" style="border-bottom:1px solid var(--border);">
@@ -115,6 +91,30 @@
     </div>
   </section>
 
+  <!-- Crypto holdings table -->
+  <section class="glass-card overflow-hidden">
+    <div class="px-5 py-4" style="border-bottom:1px solid var(--border);">
+      <h3 class="text-base font-black" style="color:var(--fg);">보유 코인</h3>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="dark-table min-w-full">
+        <thead>
+          <tr>
+            <th class="text-left">보유자산</th>
+            <th class="text-right">보유수량</th>
+            <th class="text-right">매수평균가</th>
+            <th class="text-right">매수금액</th>
+            <th class="text-right">평가금액</th>
+            <th class="text-right">평가손익 (%)</th>
+          </tr>
+        </thead>
+        <tbody id="holdCryptoTableBody">
+          <tr><td colspan="6" class="px-4 py-6 text-center" style="color:var(--muted);">로딩 중...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
 </div>
 </main>
 <footer id="site-footer">
@@ -125,6 +125,6 @@
 </footer>
 <script src="/js/config.js"></script>
 <script src="/js/common.js?v=20260802"></script>
-<script src="/js/hold_crypto.js"></script>
+<script src="/js/hold_crypto.js?v=20260802-3"></script>
 </body>
 </html>

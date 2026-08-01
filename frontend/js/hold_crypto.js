@@ -24,6 +24,8 @@
     setText('total_evaluation_krw', '0');
     setText('total_krw_of_return', '0');
     setText('total_evaluation_rate_of_return', '0');
+    // 보유 코인이 없어도 KRW 자산 비중 차트는 표시한다.
+    await renderPortfolioChart([], [], memberAsset);
     return;
   }
 
@@ -203,9 +205,12 @@ function initWebSocket(marketArrayList, memberAsset, totalBuyKrw) {
 /* ── 포트폴리오 차트 (Highcharts) ──────────────────────────────── */
 async function renderPortfolioChart(holdCryptoList, marketArrayList, memberAsset) {
   try {
-    const marketListStr = marketArrayList.join(',');
-    const upbitRes = await fetch('/upbit-api/ticker?markets=' + encodeURIComponent(marketListStr));
-    const upbitData = await upbitRes.json();
+    let upbitData = [];
+    if (marketArrayList.length) {
+      const marketListStr = marketArrayList.join(',');
+      const upbitRes = await fetch('/upbit-api/ticker?markets=' + encodeURIComponent(marketListStr));
+      if (upbitRes.ok) upbitData = await upbitRes.json();
+    }
 
     const priceMap = {};
     upbitData.forEach(d => { priceMap[d.market.split('-')[1]] = d.trade_price; });
@@ -230,7 +235,7 @@ async function renderPortfolioChart(holdCryptoList, marketArrayList, memberAsset
     Highcharts.chart('hold_asset_chart', {
       chart: { plotBackgroundColor:'transparent', backgroundColor:'transparent', type:'pie',
                style:{ fontFamily:"'Pretendard', sans-serif" } },
-      title: { text:'보유 비중', align:'center', style:{ color:'rgba(255,255,255,0.7)', fontSize:'14px', fontWeight:'800' } },
+      title: { text:'보유 비중', align:'center', style:{ color:'#334155', fontSize:'14px', fontWeight:'800' } },
       tooltip: { backgroundColor:'#1A1A2E', borderColor:'rgba(124,92,252,0.3)', style:{ color:'#fff' }, pointFormat:'{series.name}: <b>{point.percentage:.1f}%</b>' },
       plotOptions: { pie: { cursor:'pointer', colors:accentPalette, borderWidth:2, borderColor:'rgba(255,255,255,0.06)', borderRadius:4,
         dataLabels:{ enabled:true, format:'<b style="color:rgba(255,255,255,0.85)">{point.name}</b><br><span style="color:#A78BFA">{point.percentage:.1f}%</span>',
