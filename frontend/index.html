@@ -153,7 +153,7 @@
 
     // WebSocket
     const top10Codes = markets.map(m => m.market);
-    const ws = new WebSocket('wss://api.upbit.com/websocket/v1');
+    const ws = new WebSocket(upbitWebSocketUrl());
     ws.onopen = () => ws.send(JSON.stringify([
       { ticket: 'edumgt-index' },
       { type: 'ticker', codes: top10Codes },

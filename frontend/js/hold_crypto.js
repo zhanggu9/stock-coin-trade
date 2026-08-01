@@ -83,7 +83,7 @@ function renderHoldTable(holdCryptoList) {
 /* ── 업비트 웹소켓 (실시간 평가금액) ──────────────────────────── */
 function initWebSocket(marketArrayList, memberAsset, totalBuyKrw) {
   const evalMap = {};
-  const socket = new WebSocket('wss://api.upbit.com/websocket/v1');
+  const socket = new WebSocket(upbitWebSocketUrl());
 
   socket.onopen = () => {
     socket.send(JSON.stringify([
@@ -137,7 +137,7 @@ function initWebSocket(marketArrayList, memberAsset, totalBuyKrw) {
 async function renderPortfolioChart(holdCryptoList, marketArrayList, memberAsset) {
   try {
     const marketListStr = marketArrayList.join(',');
-    const upbitRes = await fetch('https://api.upbit.com/v1/ticker?markets=' + marketListStr);
+    const upbitRes = await fetch('/upbit-api/ticker?markets=' + encodeURIComponent(marketListStr));
     const upbitData = await upbitRes.json();
 
     const priceMap = {};

@@ -5,6 +5,11 @@ async function apiFetch(path, options = {}) {
   return fetch(API_BASE + path, { credentials: 'include', ...options });
 }
 
+function upbitWebSocketUrl() {
+  const scheme = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${scheme}//${location.host}/upbit-websocket`;
+}
+
 /* ── Auth ────────────────────────────────────────────────────────────────── */
 async function getCurrentUser() {
   try {

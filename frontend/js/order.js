@@ -58,10 +58,10 @@ async function loadCoinChart(marketCode, period) {
   const symbol = marketCode.split('-')[1];
 
   const upbitUrls = {
-    'days':       `https://api.upbit.com/v1/candles/days?market=${marketCode}&count=200`,
-    'weeks':      `https://api.upbit.com/v1/candles/weeks?market=${marketCode}&count=100`,
-    'minutes/1':  `https://api.upbit.com/v1/candles/minutes/1?market=${marketCode}&count=200`,
-    'minutes/60': `https://api.upbit.com/v1/candles/minutes/60?market=${marketCode}&count=200`,
+    'days':       `/upbit-api/candles/days?market=${marketCode}&count=200`,
+    'weeks':      `/upbit-api/candles/weeks?market=${marketCode}&count=100`,
+    'minutes/1':  `/upbit-api/candles/minutes/1?market=${marketCode}&count=200`,
+    'minutes/60': `/upbit-api/candles/minutes/60?market=${marketCode}&count=200`,
   };
   const url = upbitUrls[period] ?? upbitUrls['days'];
 
@@ -141,7 +141,7 @@ async function selectCoin(marketCode) {
 
 /* ── 업비트 웹소켓 ───────────────────────────────────────────────────────── */
 function initWebSocket(marketCodes) {
-  const socket = new WebSocket('wss://api.upbit.com/websocket/v1');
+  const socket = new WebSocket(upbitWebSocketUrl());
   socket.onopen = () => {
     socket.send(JSON.stringify([
       { ticket: 'edumgt-order' },
