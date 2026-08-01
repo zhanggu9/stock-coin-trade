@@ -80,6 +80,16 @@
       <div class="stat-card"><div class="stat-label">주식 평가금액</div><div class="stat-value"><span id="stockPortfolioEval">-</span><span style="font-size:13px;font-weight:500;color:var(--muted);margin-left:4px;">KRW</span></div></div>
       <div class="stat-card"><div class="stat-label">주식 평가손익</div><div class="stat-value"><span id="stockPortfolioPnl">-</span><span style="font-size:13px;font-weight:500;color:var(--muted);margin-left:4px;">KRW</span></div></div>
     </div>
+    <div class="grid grid-cols-1 gap-4 px-4 pb-4 lg:grid-cols-2">
+      <div class="rounded-lg p-3" style="border:1px solid var(--border);background:var(--surface-2);">
+        <div class="mb-1 flex items-center justify-between"><h4 class="text-sm font-extrabold" style="color:var(--fg);">종목별 평가 비중</h4><span class="text-xs" style="color:var(--muted);">평가금액 기준</span></div>
+        <div id="stockAllocationChart" class="min-h-[270px]"></div>
+      </div>
+      <div class="rounded-lg p-3" style="border:1px solid var(--border);background:var(--surface-2);">
+        <div class="mb-1 flex items-center justify-between"><h4 class="text-sm font-extrabold" style="color:var(--fg);">섹터별 평가금액</h4><span class="text-xs" style="color:var(--muted);">보유 종목 합산</span></div>
+        <div id="stockSectorChart" class="min-h-[270px]"></div>
+      </div>
+    </div>
     <div id="stockSectorSummary" class="px-4 pb-4"></div>
     <div class="overflow-x-auto" style="border-top:1px solid var(--border);">
       <table class="dark-table min-w-full">
@@ -125,6 +135,6 @@
 </footer>
 <script src="/js/config.js"></script>
 <script src="/js/common.js?v=20260802"></script>
-<script src="/js/hold_crypto.js?v=20260802-3"></script>
+<script src="/js/hold_crypto.js?v=20260802-4"></script>
 </body>
 </html>

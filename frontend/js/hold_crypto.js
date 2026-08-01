@@ -51,6 +51,7 @@ async function loadStockPortfolio() {
     setColorText('stockPortfolioPnl', totalPnl >= 0 ? '+' + fmt(totalPnl) : fmt(totalPnl), totalPnl);
 
     renderStockSectorSummary(positions, totalEval);
+    renderStockPortfolioCharts(positions, totalEval);
     if (!positions.length) {
       tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center" style="color:var(--muted);">보유 주식이 없습니다.</td></tr>';
       return;
@@ -100,6 +101,76 @@ function renderStockSectorSummary(positions, totalEval) {
       <div style="font-size:10px;color:var(--muted);">${data.count}종목 · ${fmt(data.evalAmount)}원</div>
     </div>`;
   }).join('')}</div>`;
+}
+
+/* ── 주식 포트폴리오 차트 ─────────────────────────────────────── */
+function renderStockPortfolioCharts(positions, totalEval) {
+  const allocationEl = document.getElementById('stockAllocationChart');
+  const sectorEl = document.getElementById('stockSectorChart');
+  if (!allocationEl || !sectorEl || typeof Highcharts === 'undefined') return;
+
+  if (!positions.length || totalEval <= 0) {
+    const empty = '<div class="flex h-[270px] items-center justify-center text-sm" style="color:var(--muted);">보유 주식이 있으면 차트가 표시됩니다.</div>';
+    allocationEl.innerHTML = empty;
+    sectorEl.innerHTML = empty;
+    return;
+  }
+
+  const palette = ['#2563EB', '#7C3AED', '#059669', '#EA580C', '#DB2777', '#0891B2', '#65A30D', '#D97706'];
+  const sortedPositions = [...positions].sort((a, b) => Number(b.evalAmount || 0) - Number(a.evalAmount || 0));
+  const topPositions = sortedPositions.slice(0, 6);
+  const otherEval = sortedPositions.slice(6).reduce((sum, pos) => sum + Number(pos.evalAmount || 0), 0);
+  const allocationData = topPositions.map((pos, index) => ({
+    name: pos.name,
+    y: Number(pos.evalAmount || 0),
+    color: palette[index % palette.length],
+  }));
+  if (otherEval > 0) allocationData.push({ name: '기타 종목', y: otherEval, color: '#94A3B8' });
+
+  const sectors = positions.reduce((result, pos) => {
+    const name = pos.sector || '기타';
+    result[name] = (result[name] || 0) + Number(pos.evalAmount || 0);
+    return result;
+  }, {});
+  const sectorData = Object.entries(sectors).sort((a, b) => b[1] - a[1]);
+  const sharedTooltip = {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#CBD5E1',
+    style: { color: '#1E293B' },
+    valueSuffix: '원',
+  };
+
+  Highcharts.chart('stockAllocationChart', {
+    chart: { type: 'pie', backgroundColor: 'transparent', height: 270, style: { fontFamily: "'Pretendard', sans-serif" } },
+    title: { text: null },
+    tooltip: { ...sharedTooltip, pointFormat: '<b>{point.y:,.0f}원</b><br/>전체의 {point.percentage:.1f}%' },
+    plotOptions: { pie: {
+      innerSize: '58%', borderWidth: 2, borderColor: '#FFFFFF',
+      dataLabels: { enabled: true, format: '<b>{point.name}</b><br/>{point.percentage:.1f}%', distance: 14,
+        style: { color: '#334155', fontSize: '11px', fontWeight: '700', textOutline: 'none' },
+        filter: { property: 'percentage', operator: '>', value: 4 } },
+    } },
+    credits: { enabled: false },
+    series: [{ name: '평가금액', data: allocationData }],
+  });
+
+  Highcharts.chart('stockSectorChart', {
+    chart: { type: 'bar', backgroundColor: 'transparent', height: 270, style: { fontFamily: "'Pretendard', sans-serif" }, marginLeft: 105 },
+    title: { text: null },
+    xAxis: { categories: sectorData.map(([name]) => name), lineColor: '#CBD5E1', tickLength: 0,
+      labels: { style: { color: '#475569', fontSize: '11px', fontWeight: '700' } } },
+    yAxis: { min: 0, title: { text: null }, gridLineColor: '#E2E8F0',
+      labels: { style: { color: '#64748B', fontSize: '10px' }, formatter() { return Highcharts.numberFormat(this.value, 0, '.', ','); } } },
+    tooltip: { ...sharedTooltip, pointFormat: '<b>{point.y:,.0f}원</b><br/>전체의 {point.percentage:.1f}%' },
+    legend: { enabled: false },
+    plotOptions: { series: { borderRadius: 4, pointPadding: 0.12, groupPadding: 0.08,
+      dataLabels: { enabled: true, format: '{point.percentage:.1f}%', align: 'right', inside: false,
+        style: { color: '#475569', fontSize: '10px', fontWeight: '700', textOutline: 'none' } } } },
+    credits: { enabled: false },
+    series: [{ name: '평가금액', colorByPoint: true, data: sectorData.map(([name, value], index) => ({
+      name, y: value, percentage: value / totalEval * 100, color: palette[index % palette.length],
+    })) }],
+  });
 }
 
 /* ── 보유 코인 테이블 렌더 ────────────────────────────────────── */
