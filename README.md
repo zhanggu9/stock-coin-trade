@@ -91,12 +91,15 @@ Nginx (Frontend · :3000)
 
 | 분류 | 기술 |
 |---|---|
-| **Frontend** | Vanilla JS, Tailwind CSS (CDN), Highcharts, ApexCharts, TradingView Widget |
-| **Backend** | Python 3.11, Flask, SQLAlchemy, PyMySQL, bcrypt, APScheduler, yfinance |
-| **DB** | MariaDB |
-| **Infra** | EC2 VM, Docker, Docker Compose, Nginx |
-| **Security** | BCrypt + 서명된 쿠키 세션(Flask session) |
-| **External API** | Upbit REST/WebSocket, Bithumb REST, Coinone REST, Korbit REST, CoinMarketCap REST |
+| **Frontend** | HTML5, Vanilla JavaScript, Tailwind CSS CDN, 자체 CSS 디자인 시스템 |
+| **UI / 시각화** | Font Awesome 6, Lightweight Charts 4, Highcharts 11, Pretendard 웹폰트 |
+| **Backend** | Python 3.11, Flask 3, Flask-CORS, SQLAlchemy 2, PyMySQL, Requests |
+| **인증 / 보안** | bcrypt 비밀번호 해싱, Flask 서명 쿠키 세션, Open API Bearer API Key |
+| **데이터 / 스케줄링** | MariaDB 11.4, APScheduler, yfinance, Qdrant Client + FastEmbed |
+| **AI / 검색** | Anthropic Claude 스트리밍 API(선택 구성), Qdrant 벡터 검색(RAG) |
+| **시장 데이터** | Upbit REST/WebSocket, Bithumb REST, Coinone REST, Korbit REST, CoinMarketCap REST, KRX 공시 |
+| **운영 인프라** | 단일 AWS EC2 VM, Docker, Docker Compose, Nginx 리버스 프록시, Let's Encrypt/Certbot TLS |
+| **배포 자동화** | GitHub Actions(`investment-analysis` 저장소의 `Deploy stock-coin-trade` 워크플로), SSH 기반 소스 전송 및 Compose 재기동 |
 
 ---
 
