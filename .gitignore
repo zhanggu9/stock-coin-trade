@@ -55,3 +55,6 @@ venv/
 *.key
 *.zip
 /data
+
+# Local deployment runbook (contains environment-specific operational details)
+deploy.md
