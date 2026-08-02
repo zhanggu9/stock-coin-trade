@@ -74,6 +74,8 @@ def list_stocks():
 def quote(symbol):
     try:
         return jsonify(get_quote_cached(symbol.upper()))
+    except RuntimeError as e:
+        return jsonify({"error": "MARKET_DATA_UNAVAILABLE", "message": str(e)}), 503
     except ValueError as e:
         return jsonify({"error": "NOT_FOUND", "message": str(e)}), 404
 

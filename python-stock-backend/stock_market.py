@@ -1,8 +1,10 @@
 import random
+import ast
 import html
 import re
 import threading
 import time
+from datetime import datetime, timedelta
 
 import requests
 import yfinance as yf
@@ -56,6 +58,8 @@ CHART_TTL = 300
 INDEX_TTL = 60
 KRX_LIST_TTL = 86_400
 KRX_LIST_URL = "https://kind.krx.co.kr/corpgeneral/corpList.do?method=download"
+NAVER_STOCK_API = "https://m.stock.naver.com/api/stock"
+NAVER_CHART_API = "https://api.finance.naver.com/siseJson.naver"
 
 
 def _clean_html(value: str) -> str:
@@ -142,6 +146,82 @@ def get_stock_info(symbol: str) -> dict | None:
     return next((stock for stock in get_krx_stocks() if stock["symbol"] == symbol), None)
 
 
+def _to_number(value, default=0):
+    try:
+        return int(float(str(value).replace(",", "")))
+    except (TypeError, ValueError):
+        return default
+
+
+def _fetch_naver_quote(symbol: str, info: dict) -> dict:
+    """Yahoo Finance가 차단된 환경을 위한 국내 시세 대체 경로."""
+    if not re.fullmatch(r"\d{6}", symbol):
+        raise ValueError("숫자 6자리 종목코드만 국내 시세 조회를 지원합니다.")
+    response = requests.get(
+        f"{NAVER_STOCK_API}/{symbol}/basic",
+        headers={"User-Agent": "Mozilla/5.0", "Referer": "https://m.stock.naver.com/"},
+        timeout=8,
+    )
+    response.raise_for_status()
+    row = response.json()
+    price = _to_number(row.get("closePrice"))
+    if price <= 0:
+        raise ValueError("국내 시세 응답에 현재가가 없습니다.")
+    change = _to_number(row.get("compareToPreviousClosePrice"))
+    rate = float(str(row.get("fluctuationsRatio", 0)).replace(",", "") or 0)
+    if rate < 0 and change > 0:
+        change = -change
+    prev_close = price - change
+    return {
+        "symbol": symbol,
+        "name": info["name"],
+        "market": info["market"],
+        "price": price,
+        "prevClose": prev_close if prev_close > 0 else price,
+        "change": change,
+        "changeRate": round(rate, 2),
+        "volume": _to_number(row.get("accumulatedTradingVolume")),
+    }
+
+
+def _fetch_naver_chart(symbol: str, period: str) -> list[dict]:
+    if not re.fullmatch(r"\d{6}", symbol):
+        raise ValueError("숫자 6자리 종목코드만 국내 차트 조회를 지원합니다.")
+    days = {"1d": 7, "1w": 14, "1m": 45, "3m": 120, "1y": 380}.get(period, 45)
+    end = datetime.now()
+    start = end - timedelta(days=days)
+    response = requests.get(
+        NAVER_CHART_API,
+        params={
+            "symbol": symbol,
+            "requestType": 1,
+            "startTime": start.strftime("%Y%m%d"),
+            "endTime": end.strftime("%Y%m%d"),
+            "timeframe": "day",
+        },
+        headers={"User-Agent": "Mozilla/5.0", "Referer": "https://finance.naver.com/"},
+        timeout=10,
+    )
+    response.raise_for_status()
+    rows = ast.literal_eval(response.text.strip())
+    result = []
+    for row in rows[1:]:
+        if len(row) < 6:
+            continue
+        timestamp = datetime.strptime(str(row[0]), "%Y%m%d")
+        result.append({
+            "x": int(timestamp.timestamp() * 1000),
+            "o": _to_number(row[1]),
+            "h": _to_number(row[2]),
+            "l": _to_number(row[3]),
+            "c": _to_number(row[4]),
+            "v": _to_number(row[5]),
+        })
+    if not result:
+        raise ValueError("국내 차트 응답에 데이터가 없습니다.")
+    return result
+
+
 def _simulated_price(symbol: str) -> int:
     base = BASE_PRICES.get(symbol, 50000)
     wave = int((time.time() // 10) % 20) - 10
@@ -181,24 +261,27 @@ def get_quote_cached(symbol: str) -> dict:
             "changeRate": change_rate,
             "volume":     volume,
         }
-    except Exception as exc:
-        # 기존 수업용 종목만 오프라인 시뮬레이션 시세를 제공한다. KRX에서 검색한
-        # 종목은 실제 시세를 가져오지 못하면 가짜 가격으로 주문되지 않게 막는다.
-        if symbol not in STOCKS:
-            raise RuntimeError("실시간 KRX 시세를 가져오지 못했습니다. 잠시 후 다시 시도해주세요.") from exc
-        sim = _simulated_price(symbol)
-        base = BASE_PRICES.get(symbol, sim)
-        data = {
-            "symbol":     symbol,
-            "name":       info["name"],
-            "market":     info["market"],
-            "price":      sim,
-            "prevClose":  base,
-            "change":     sim - base,
-            "changeRate": round(((sim - base) / base * 100) if base else 0, 2),
-            "volume":     0,
-            "simulated":  True,
-        }
+    except Exception as yahoo_error:
+        try:
+            data = _fetch_naver_quote(symbol, info)
+        except Exception as naver_error:
+            # 기존 수업용 종목만 최후의 오프라인 시뮬레이션 시세를 제공한다.
+            # KRX에서 검색한 종목은 가짜 가격으로 주문되지 않게 막는다.
+            if symbol not in STOCKS:
+                raise RuntimeError("실시간 KRX 시세를 가져오지 못했습니다. 잠시 후 다시 시도해주세요.") from naver_error
+            sim = _simulated_price(symbol)
+            base = BASE_PRICES.get(symbol, sim)
+            data = {
+                "symbol":     symbol,
+                "name":       info["name"],
+                "market":     info["market"],
+                "price":      sim,
+                "prevClose":  base,
+                "change":     sim - base,
+                "changeRate": round(((sim - base) / base * 100) if base else 0, 2),
+                "volume":     0,
+                "simulated":  True,
+            }
 
     _quote_cache[symbol] = {"data": data, "ts": now}
     return data
@@ -237,27 +320,30 @@ def get_chart_cached(symbol: str, period: str) -> list:
                 "c": round(float(row["Close"]), 2),
                 "v": int(row["Volume"]),
             })
-    except Exception as exc:
-        if symbol not in STOCKS:
-            raise RuntimeError("실시간 KRX 차트 데이터를 가져오지 못했습니다. 잠시 후 다시 시도해주세요.") from exc
-        # Generate simulated OHLCV when yfinance is unavailable
-        base  = BASE_PRICES.get(symbol, 50000)
-        steps = {"1d": 78, "1w": 40, "1m": 30, "3m": 90, "1y": 52}.get(period, 30)
-        step_ms = {"1d": 300_000, "1w": 3_600_000, "1m": 86_400_000,
-                   "3m": 86_400_000, "1y": 604_800_000}.get(period, 86_400_000)
-        ts_ms = int(now * 1000) - steps * step_ms
-        price = float(base)
-        rng = random.Random(symbol)
-        for _ in range(steps):
-            o = price
-            h = o * (1 + rng.uniform(0, 0.015))
-            l = o * (1 - rng.uniform(0, 0.015))
-            c = rng.uniform(l, h)
-            v = rng.randint(500_000, 5_000_000)
-            ohlcv.append({"x": ts_ms, "o": round(o), "h": round(h),
-                          "l": round(l), "c": round(c), "v": v})
-            price = c
-            ts_ms += step_ms
+    except Exception as yahoo_error:
+        try:
+            ohlcv = _fetch_naver_chart(symbol, period)
+        except Exception as naver_error:
+            if symbol not in STOCKS:
+                raise RuntimeError("실시간 KRX 차트 데이터를 가져오지 못했습니다. 잠시 후 다시 시도해주세요.") from naver_error
+            # Generate simulated OHLCV when both external providers are unavailable.
+            base  = BASE_PRICES.get(symbol, 50000)
+            steps = {"1d": 78, "1w": 40, "1m": 30, "3m": 90, "1y": 52}.get(period, 30)
+            step_ms = {"1d": 300_000, "1w": 3_600_000, "1m": 86_400_000,
+                       "3m": 86_400_000, "1y": 604_800_000}.get(period, 86_400_000)
+            ts_ms = int(now * 1000) - steps * step_ms
+            price = float(base)
+            rng = random.Random(symbol)
+            for _ in range(steps):
+                o = price
+                h = o * (1 + rng.uniform(0, 0.015))
+                l = o * (1 - rng.uniform(0, 0.015))
+                c = rng.uniform(l, h)
+                v = rng.randint(500_000, 5_000_000)
+                ohlcv.append({"x": ts_ms, "o": round(o), "h": round(h),
+                              "l": round(l), "c": round(c), "v": v})
+                price = c
+                ts_ms += step_ms
 
     _chart_cache[key] = {"data": ohlcv, "ts": now}
     return ohlcv
