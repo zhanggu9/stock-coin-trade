@@ -543,6 +543,26 @@ stockPickerInput?.addEventListener('keydown', async event => {
   }
 });
 
+async function submitStockPickerSearch() {
+  if (!stockPickerInput) return;
+  const matches = getStockPickerMatches(stockPickerInput.value);
+  if (!stockPickerInput.value.trim()) {
+    stockPickerActiveIndex = -1;
+    renderStockPickerResults('');
+    stockPickerInput.focus();
+    return;
+  }
+  if (matches.length === 1) {
+    await selectStock(matches[0].symbol);
+    return;
+  }
+  stockPickerActiveIndex = matches.length ? 0 : -1;
+  renderStockPickerResults(stockPickerInput.value);
+  stockPickerInput.focus();
+}
+
+document.getElementById('stockPickerSearch')?.addEventListener('click', submitStockPickerSearch);
+
 stockPickerResults?.addEventListener('click', async event => {
   const option = event.target.closest('[data-symbol]');
   if (option) await selectStock(option.dataset.symbol);
