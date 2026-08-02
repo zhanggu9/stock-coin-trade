@@ -234,7 +234,20 @@ async function selectStockFromList(sym) {
 async function loadStockList() {
   const data = await requestJson('/api/stocks/list?limit=30');
   allStocks = data.stocks ?? [];
+  const requestedSymbol = new URLSearchParams(window.location.search).get('symbol')?.trim().toUpperCase();
+  if (requestedSymbol) {
+    try {
+      const search = await requestJson(`/api/stocks/search?q=${encodeURIComponent(requestedSymbol)}&limit=20`);
+      const requestedStock = (search.stocks ?? []).find(stock => stock.symbol === requestedSymbol);
+      if (requestedStock) addStockToPicker(requestedStock);
+    } catch {}
+  }
   rebuildSelectOptions();
+  if (requestedSymbol && allStocks.some(stock => stock.symbol === requestedSymbol)) {
+    const select = document.getElementById('stockSymbol');
+    if (select) select.value = requestedSymbol;
+    updateStockPickerSelected(requestedSymbol);
+  }
 }
 
 function escapeHtml(value) {

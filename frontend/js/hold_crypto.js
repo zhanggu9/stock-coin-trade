@@ -60,8 +60,12 @@ async function loadStockPortfolio() {
     tbody.innerHTML = positions.map(pos => {
       const pnl = Number(pos.pnl || 0);
       const color = pnl >= 0 ? '#E11D48' : '#2563EB';
+      const tradeUrl = `/trade/stock.html?symbol=${encodeURIComponent(pos.symbol)}`;
       return `<tr>
-        <td><div class="font-bold" style="color:var(--fg);">${pos.name}</div><div class="text-xs" style="color:var(--accent);">${pos.symbol}</div></td>
+        <td><a href="${tradeUrl}" title="${pos.name} 매수·매도" style="display:inline-block;text-decoration:none;">
+          <div class="font-bold" style="color:var(--fg);">${pos.name} <span style="font-size:10px;color:var(--accent);">매매하기 ↗</span></div>
+          <div class="text-xs" style="color:var(--accent);">${pos.symbol}</div>
+        </a></td>
         <td><span class="badge badge-muted" style="font-size:10px;">${pos.sector || '기타'}</span></td>
         <td class="text-right font-semibold" style="color:var(--fg);">${Number(pos.quantity).toLocaleString('ko-KR')}주</td>
         <td class="text-right" style="color:var(--fg);">${fmt(pos.avgPrice)}원</td>
