@@ -289,6 +289,27 @@ function closeAiPanel() {
   if (overlay) { overlay.style.display   = 'none'; }
 }
 
+const RANKING_UI_CACHE_TTL = 30_000;
+let investmentRankingCache = { fetchedAt: 0, rankings: null };
+
+function renderInvestmentRankings(content, rankings) {
+  if (!rankings.length) {
+    content.innerHTML = '<div style="padding:2rem 1.1rem;color:var(--muted);font-size:13px;text-align:center;">아직 수익 랭킹 데이터가 없습니다.</div>';
+    return;
+  }
+  const medals = ['#F59E0B', '#94A3B8', '#B45309'];
+  content.innerHTML = `<div style="padding:1rem 1.1rem .65rem;font-size:12px;color:var(--muted);line-height:1.55;">초기 모의자산 1,000만원 대비 총 평가자산 기준입니다.</div>
+    <div style="padding:0 .8rem 1rem;">${rankings.map(row => {
+      const color = row.profit >= 0 ? '#E11D48' : '#2563EB';
+      const rankColor = medals[row.rank - 1] || '#64748B';
+      return `<div style="display:grid;grid-template-columns:32px 1fr auto;gap:10px;align-items:center;padding:.8rem .5rem;border-bottom:1px solid var(--border);">
+        <span style="font-size:14px;font-weight:900;color:${rankColor};text-align:center;">${row.rank}</span>
+        <div><div style="font-size:13px;font-weight:800;color:var(--fg);">${row.username}</div><div style="font-size:10px;color:var(--muted);margin-top:2px;">총 자산 ${Number(row.totalAsset).toLocaleString('ko-KR')}원</div></div>
+        <div style="text-align:right;"><div style="font-size:13px;font-weight:900;color:${color};">${row.profitRate >= 0 ? '+' : ''}${Number(row.profitRate).toFixed(2)}%</div><div style="font-size:10px;color:${color};margin-top:2px;">${row.profit >= 0 ? '+' : ''}${Number(row.profit).toLocaleString('ko-KR')}원</div></div>
+      </div>`;
+    }).join('')}</div>`;
+}
+
 async function loadInvestmentRankings() {
   const tabBar = document.getElementById('ai-tab-btn-analyze')?.parentElement;
   if (tabBar) tabBar.style.display = 'none';
@@ -297,26 +318,17 @@ async function loadInvestmentRankings() {
 
   content.style.display = 'block';
   content.style.overflowY = 'auto';
+  if (investmentRankingCache.rankings && Date.now() - investmentRankingCache.fetchedAt < RANKING_UI_CACHE_TTL) {
+    renderInvestmentRankings(content, investmentRankingCache.rankings);
+    return;
+  }
   content.innerHTML = '<div style="padding:1.1rem;color:var(--muted);font-size:13px;text-align:center;">랭킹을 불러오는 중입니다...</div>';
   try {
     const response = await apiFetch('/api/member/investor-rankings');
     const data = response.ok ? await response.json() : { rankings: [] };
     const rankings = data.rankings ?? [];
-    if (!rankings.length) {
-      content.innerHTML = '<div style="padding:2rem 1.1rem;color:var(--muted);font-size:13px;text-align:center;">아직 수익 랭킹 데이터가 없습니다.</div>';
-      return;
-    }
-    const medals = ['#F59E0B', '#94A3B8', '#B45309'];
-    content.innerHTML = `<div style="padding:1rem 1.1rem .65rem;font-size:12px;color:var(--muted);line-height:1.55;">초기 모의자산 1,000만원 대비 총 평가자산 기준입니다.</div>
-      <div style="padding:0 .8rem 1rem;">${rankings.map(row => {
-        const color = row.profit >= 0 ? '#E11D48' : '#2563EB';
-        const rankColor = medals[row.rank - 1] || '#64748B';
-        return `<div style="display:grid;grid-template-columns:32px 1fr auto;gap:10px;align-items:center;padding:.8rem .5rem;border-bottom:1px solid var(--border);">
-          <span style="font-size:14px;font-weight:900;color:${rankColor};text-align:center;">${row.rank}</span>
-          <div><div style="font-size:13px;font-weight:800;color:var(--fg);">${row.username}</div><div style="font-size:10px;color:var(--muted);margin-top:2px;">총 자산 ${Number(row.totalAsset).toLocaleString('ko-KR')}원</div></div>
-          <div style="text-align:right;"><div style="font-size:13px;font-weight:900;color:${color};">${row.profitRate >= 0 ? '+' : ''}${Number(row.profitRate).toFixed(2)}%</div><div style="font-size:10px;color:${color};margin-top:2px;">${row.profit >= 0 ? '+' : ''}${Number(row.profit).toLocaleString('ko-KR')}원</div></div>
-        </div>`;
-      }).join('')}</div>`;
+    investmentRankingCache = { fetchedAt: Date.now(), rankings };
+    renderInvestmentRankings(content, rankings);
   } catch {
     content.innerHTML = '<div style="padding:2rem 1.1rem;color:#E11D48;font-size:13px;text-align:center;">랭킹을 불러오지 못했습니다.</div>';
   }

@@ -387,6 +387,15 @@ def current_price(symbol: str) -> int:
         raise
 
 
+def cached_price(symbol: str) -> int | None:
+    """네트워크 요청 없이 마지막으로 확인한 시세만 반환한다."""
+    cached = _quote_cache.get((symbol or "").upper())
+    if not cached:
+        return None
+    price = cached.get("data", {}).get("price")
+    return int(price) if price else None
+
+
 def get_market_cap_rankings(limit: int = 10) -> list:
     """등록된 국내 주식을 시가총액(현재가 × 발행주식수) 순으로 반환한다."""
     rankings = []

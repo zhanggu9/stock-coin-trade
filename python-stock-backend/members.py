@@ -1,13 +1,19 @@
 import bcrypt
 import requests
+import threading
+import time
 from flask import Blueprint, jsonify, request, session
 
 from db import session_scope
 from models import HoldCrypto, Member, StockPosition, UpbitMarket
-from stock_market import current_price
+from stock_market import cached_price
 
 member_bp = Blueprint("member", __name__, url_prefix="/api/member")
 INITIAL_ASSET = 10_000_000
+RANKING_CACHE_TTL = 30
+_ranking_cache = {"ts": 0.0, "data": None}
+_ranking_cache_lock = threading.Lock()
+_crypto_price_cache = {"ts": 0.0, "prices": {}}
 
 
 def _hash_password(password: str) -> str:
@@ -36,15 +42,19 @@ def me():
 @member_bp.get("/investor-rankings")
 def investor_rankings():
     """현금·주식·코인 평가액을 합산한 모의투자 공개 수익 랭킹."""
+    now = time.time()
+    with _ranking_cache_lock:
+        if _ranking_cache["data"] and now - _ranking_cache["ts"] < RANKING_CACHE_TTL:
+            return jsonify(_ranking_cache["data"])
+
     with session_scope() as db:
         members = db.query(Member).all()
         totals = {member.member_id: float(member.asset) for member in members}
 
         for position in db.query(StockPosition).all():
-            try:
-                value = position.quantity * current_price(position.symbol)
-            except Exception:
-                value = position.quantity * position.avg_price
+            # 랭킹 패널은 즉시 보여야 하므로 외부 시세 호출을 기다리지 않는다.
+            # 이미 조회한 최신 시세가 없으면 매입단가로 평가한다.
+            value = position.quantity * (cached_price(position.symbol) or position.avg_price)
             totals[position.member_id] = totals.get(position.member_id, 0) + value
 
         crypto_rows = db.query(HoldCrypto, UpbitMarket).join(
@@ -52,11 +62,14 @@ def investor_rankings():
         ).all()
         codes = sorted({market.market_code for _, market in crypto_rows})
         prices = {}
-        if codes:
+        if codes and now - _crypto_price_cache["ts"] < RANKING_CACHE_TTL:
+            prices = _crypto_price_cache["prices"]
+        elif codes:
             try:
-                response = requests.get("https://api.upbit.com/v1/ticker", params={"markets": ",".join(codes)}, timeout=3)
+                response = requests.get("https://api.upbit.com/v1/ticker", params={"markets": ",".join(codes)}, timeout=1)
                 response.raise_for_status()
                 prices = {row["market"]: float(row["trade_price"]) for row in response.json()}
+                _crypto_price_cache.update({"ts": now, "prices": prices})
             except Exception:
                 pass
         for holding, market in crypto_rows:
@@ -75,7 +88,10 @@ def investor_rankings():
         rankings.sort(key=lambda row: row["profitRate"], reverse=True)
         for rank, row in enumerate(rankings[:10], start=1):
             row["rank"] = rank
-        return jsonify({"rankings": rankings[:10]})
+        result = {"rankings": rankings[:10], "cachedForSeconds": RANKING_CACHE_TTL}
+        with _ranking_cache_lock:
+            _ranking_cache.update({"ts": now, "data": result})
+        return jsonify(result)
 
 
 @member_bp.post("/login")
