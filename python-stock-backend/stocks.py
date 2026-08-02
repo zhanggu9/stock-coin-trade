@@ -58,9 +58,13 @@ def _place_order(side: str):
 
 @stock_bp.get("/orders/history")
 def order_history():
+    try:
+        limit = max(1, min(int(request.args.get("limit", 200)), 1000))
+    except (TypeError, ValueError):
+        limit = 200
     member_id = session["member_id"]
     with session_scope() as db:
-        return jsonify({"history": stock_trading.get_order_history(db, member_id, limit=200)})
+        return jsonify({"history": stock_trading.get_order_history(db, member_id, limit=limit)})
 
 
 @stock_bp.post("/account/reset")

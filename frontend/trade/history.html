@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>내 거래이력 — EDUMGT</title>
+  <link rel="icon" href="/img/favicon.png">
+  <style>
+    @font-face { font-family:'Pretendard'; font-weight:400; font-display:swap; src:url('/fonts/Pretendard-Regular.woff2') format('woff2'); }
+    @font-face { font-family:'Pretendard'; font-weight:600; font-display:swap; src:url('/fonts/Pretendard-SemiBold.woff2') format('woff2'); }
+    @font-face { font-family:'Pretendard'; font-weight:700; font-display:swap; src:url('/fonts/Pretendard-Bold.woff2') format('woff2'); }
+    @font-face { font-family:'Pretendard'; font-weight:800; font-display:swap; src:url('/fonts/Pretendard-ExtraBold.woff2') format('woff2'); }
+    #site-footer { position:fixed; bottom:0; left:0; right:0; z-index:50; margin-top:0; }
+    body { padding-bottom:44px; }
+    .history-grid { --ag-font-family:Pretendard, sans-serif; --ag-font-size:13px; --ag-background-color:#fff; --ag-foreground-color:#172033; --ag-header-background-color:#F7F9FC; --ag-header-foreground-color:#64748B; --ag-border-color:#E2E8F0; --ag-row-border-color:#E8EDF4; --ag-odd-row-background-color:#FBFCFE; --ag-selected-row-background-color:#EFF6FF; --ag-accent-color:#2563EB; }
+    .history-grid .ag-header-cell-label { font-weight:800; }
+    .history-grid .ag-cell { display:flex; align-items:center; }
+  </style>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{fontFamily:{sans:['Pretendard','-apple-system','BlinkMacSystemFont','Segoe UI','Apple SD Gothic Neo','Malgun Gothic','sans-serif']}}}}</script>
+  <link rel="stylesheet" href="/css/style.css?v=20260802-2">
+  <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@36.0.2/dist/ag-grid-community.min.js"></script>
+</head>
+<body class="min-h-screen">
+<div id="header-mount"></div>
+<main class="mx-auto w-full max-w-[1640px] px-4 py-6">
+  <section class="glass-card overflow-hidden">
+    <div class="flex flex-wrap items-center justify-between gap-4 px-6 py-5" style="border-bottom:1px solid var(--border);">
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-xl font-black" style="color:var(--fg);">내 주식 거래이력</h1>
+          <span class="badge badge-muted">AG Grid Community</span>
+        </div>
+        <p class="mt-1 text-xs" style="color:var(--muted);">매수·매도 체결 내역을 조회하고 정렬·필터링·CSV 저장을 할 수 있습니다.</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="historyRefreshBtn" type="button" class="btn-ghost" style="padding:.48rem .85rem;font-size:12px;">↻ 새로고침</button>
+        <button id="historyCsvBtn" type="button" class="btn-buy" style="padding:.48rem .85rem;font-size:12px;">CSV 저장</button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-3 p-4 sm:grid-cols-3">
+      <div class="stat-card"><div class="stat-label">전체 체결</div><div class="stat-value"><span id="historyTotalCount">-</span><span style="font-size:13px;font-weight:500;color:var(--muted);margin-left:4px;">건</span></div></div>
+      <div class="stat-card"><div class="stat-label">누적 매수금액</div><div class="stat-value" id="historyBuyAmount">-</div></div>
+      <div class="stat-card"><div class="stat-label">누적 매도금액</div><div class="stat-value" id="historySellAmount">-</div></div>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3 px-4 pb-4">
+      <input id="historyQuickFilter" type="search" placeholder="종목명 · 종목코드 · 매수/매도 검색" class="dark-input" style="max-width:360px;padding:.5rem .75rem;font-size:13px;">
+      <span id="historyStatus" class="text-xs" style="color:var(--muted);"></span>
+    </div>
+    <div class="px-4 pb-5">
+      <div id="historyGrid" class="history-grid" style="height:620px;width:100%;"></div>
+    </div>
+  </section>
+</main>
+<footer id="site-footer"><div class="mx-auto flex w-full max-w-[1640px] items-center justify-between px-4 py-4"><span class="brand-logo-text" style="font-size:13px;letter-spacing:1.5px;">EDUMGT</span><p style="font-size:12px;color:var(--muted);">(주)에듀엠지티</p></div></footer>
+<script src="/js/config.js"></script>
+<script src="/js/common.js?v=20260802-3"></script>
+<script src="/js/trade-history.js?v=20260802-1"></script>
+</body>
+</html>

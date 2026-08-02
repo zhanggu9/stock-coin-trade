@@ -65,6 +65,7 @@ def get_order_history(db, member_id: int, limit: int = 50) -> list[dict]:
             "quantity": o.quantity,
             "price":    o.price,
             "amount":   o.amount,
+            "source":   o.source,
         }
         for o in rows
     ]
