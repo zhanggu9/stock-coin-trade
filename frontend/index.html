@@ -89,34 +89,6 @@
 
   </section>
 
-  <!-- 주식 시가총액 Top 10 -->
-  <section class="glass-card overflow-hidden">
-    <div class="px-6 py-4 flex flex-wrap items-center justify-between gap-3" style="border-bottom:1px solid var(--border);">
-      <div class="flex items-center gap-3">
-        <h2 class="text-base font-bold" style="color:var(--fg);">주식 시가총액 Top 10</h2>
-        <span class="badge badge-muted">KOSPI · KOSDAQ</span>
-      </div>
-      <p class="text-xs" style="color:var(--muted);">1분마다 업데이트</p>
-    </div>
-    <div class="overflow-x-auto">
-      <table class="dark-table">
-        <thead>
-          <tr>
-            <th class="text-left">#</th>
-            <th class="text-left">종목</th>
-            <th class="text-right">현재가</th>
-            <th class="text-right">시가총액</th>
-            <th class="text-right">등락률</th>
-            <th class="text-right">시장</th>
-          </tr>
-        </thead>
-        <tbody id="rankingsBody">
-          <tr><td colspan="6" class="px-4 py-6 text-center" style="color:var(--muted);">로딩 중...</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
 </main>
 <footer id="site-footer">
   <div class="mx-auto w-full max-w-[1640px] px-4 py-3 flex items-center justify-between">
@@ -213,36 +185,6 @@
   await loadStockTop10();
   setInterval(loadStockTop10, 30_000);
 
-  /* ── 주식 시가총액 Top 10 ─────────────────────────────────────── */
-  async function loadMarketCapRankings() {
-    const tbody = document.getElementById('rankingsBody');
-    try {
-      const res = await apiFetch('/api/stocks/market-cap-rankings');
-      const data = res.ok ? await res.json() : { rankings: [] };
-      const list = data.rankings ?? [];
-      if (!list.length) throw new Error('empty rankings');
-
-      tbody.innerHTML = list.map(stock => {
-        const rate = Number(stock.changeRate ?? 0);
-        const color = rate > 0 ? '#E11D48' : rate < 0 ? '#2563EB' : 'var(--muted)';
-        const rateText = `${rate >= 0 ? '+' : ''}${rate.toFixed(2)}%`;
-        const marketColor = stock.market === 'KOSPI' ? 'var(--accent-dark)' : '#059669';
-        return `<tr style="cursor:pointer;" onclick="location.href='/trade/stock.html'">
-          <td class="font-semibold" style="color:var(--muted);">${stock.rank}</td>
-          <td class="font-bold" style="color:var(--fg);">${stock.name} <span style="font-size:11px;color:var(--muted);">(${stock.symbol})</span></td>
-          <td class="text-right font-semibold" style="color:var(--fg);">${Number(stock.price).toLocaleString('ko-KR')}원</td>
-          <td class="text-right font-bold" style="color:var(--fg);">${Math.round(Number(stock.marketCap) / 100_000_000).toLocaleString('ko-KR')}억</td>
-          <td class="text-right font-semibold" style="color:${color};">${rateText}</td>
-          <td class="text-right font-semibold" style="font-size:11px;color:${marketColor};">${stock.market}</td>
-        </tr>`;
-      }).join('');
-    } catch {
-      tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center" style="color:var(--muted);">데이터를 불러올 수 없습니다.</td></tr>';
-    }
-  }
-
-  await loadMarketCapRankings();
-  setInterval(loadMarketCapRankings, 60_000);
 })();
 </script>
 </body>
