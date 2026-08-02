@@ -65,12 +65,12 @@
       </table>
     </div>
 
-    <!-- KOSPI 상위 10 (5초 폴링) -->
+    <!-- KOSPI 상위 10 (30초 캐시 갱신) -->
     <div class="glass-card overflow-hidden">
       <div class="px-5 py-3 flex items-center gap-3" style="border-bottom:1px solid var(--border);">
         <h2 class="text-base font-black" style="color:var(--fg);">주식 Top 10</h2>
         <span class="badge badge-muted">KOSPI · KOSDAQ</span>
-        <span class="live-dot ml-auto" title="5초 갱신"></span>
+        <span class="live-dot ml-auto" title="30초 갱신"></span>
       </div>
       <table style="width:100%;border-collapse:collapse;font-size:13px;">
         <thead>
@@ -181,7 +181,7 @@
     };
   }
 
-  /* ── 주식 Top 10 (5초 폴링) ─────────────────────────────────── */
+  /* ── 주식 Top 10 (30초 캐시 갱신) ───────────────────────────── */
   async function loadStockTop10() {
     try {
       const res  = await apiFetch('/api/stocks/prices');
@@ -211,7 +211,7 @@
   }
 
   await loadStockTop10();
-  setInterval(loadStockTop10, 5000);
+  setInterval(loadStockTop10, 30_000);
 
   /* ── 주식 시가총액 Top 10 ─────────────────────────────────────── */
   async function loadMarketCapRankings() {

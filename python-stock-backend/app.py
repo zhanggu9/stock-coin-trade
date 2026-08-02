@@ -16,7 +16,7 @@ from members import member_bp
 from openapi import open_api_bp
 from scheduler import start_scheduler
 from stock_market import (
-    BASE_PRICES, STOCKS, get_chart_cached, get_index_cached, get_market_cap_rankings,
+    BASE_PRICES, STOCKS, get_chart_cached, get_dashboard_stock_quotes, get_index_cached, get_market_cap_rankings,
     get_quote_cached, get_stock_info, list_krx_stocks, search_krx_stocks,
 )
 from stocks import stock_bp
@@ -120,18 +120,11 @@ def chart():
 @app.get("/api/stocks/movers")
 def movers():
     quotes = []
-    for symbol in STOCKS:
-        try:
-            q = get_quote_cached(symbol)
-            quotes.append({
-                "symbol":     q["symbol"],
-                "name":       q["name"],
-                "price":      q["price"],
-                "changeRate": q.get("changeRate", 0),
-                "market":     q["market"],
-            })
-        except Exception:
-            pass
+    for q in get_dashboard_stock_quotes().values():
+        quotes.append({
+            "symbol": q["symbol"], "name": q["name"], "price": q["price"],
+            "changeRate": q.get("changeRate", 0), "market": q["market"],
+        })
     sorted_q = sorted(quotes, key=lambda x: x.get("changeRate", 0), reverse=True)
     gainers  = sorted_q[:3]
     losers   = sorted_q[-3:][::-1]
@@ -143,7 +136,9 @@ def movers():
 def batch_prices():
     result = {}
     requested = [symbol.strip().upper() for symbol in request.args.get("symbols", "").split(",") if symbol.strip()]
-    symbols = requested[:50] if requested else [stock["symbol"] for stock in list_krx_stocks(30)]
+    if not requested:
+        return jsonify({"prices": get_dashboard_stock_quotes(), "cachedForSeconds": 30})
+    symbols = requested[:50]
     for symbol in symbols:
         info = get_stock_info(symbol)
         if not info:

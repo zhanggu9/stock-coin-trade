@@ -52,6 +52,8 @@ _chart_cache = {}
 _index_cache = {}
 _krx_stock_cache = {"ts": 0.0, "data": []}
 _krx_stock_lock = threading.Lock()
+_dashboard_quote_cache = {"ts": 0.0, "data": {}}
+_dashboard_quote_lock = threading.Lock()
 
 QUOTE_TTL = 60
 CHART_TTL = 300
@@ -60,6 +62,8 @@ KRX_LIST_TTL = 86_400
 KRX_LIST_URL = "https://kind.krx.co.kr/corpgeneral/corpList.do?method=download"
 NAVER_STOCK_API = "https://m.stock.naver.com/api/stock"
 NAVER_CHART_API = "https://api.finance.naver.com/siseJson.naver"
+NAVER_REALTIME_API = "https://polling.finance.naver.com/api/realtime"
+DASHBOARD_QUOTE_TTL = 30
 
 
 def _clean_html(value: str) -> str:
@@ -182,6 +186,65 @@ def _fetch_naver_quote(symbol: str, info: dict) -> dict:
         "changeRate": round(rate, 2),
         "volume": _to_number(row.get("accumulatedTradingVolume")),
     }
+
+
+def get_dashboard_stock_quotes() -> dict[str, dict]:
+    """대시보드용 대표 종목 시세를 단일 국내 다종목 요청으로 가져온다."""
+    now = time.time()
+    cached = _dashboard_quote_cache["data"]
+    if cached and now - _dashboard_quote_cache["ts"] < DASHBOARD_QUOTE_TTL:
+        return cached
+    with _dashboard_quote_lock:
+        cached = _dashboard_quote_cache["data"]
+        if cached and now - _dashboard_quote_cache["ts"] < DASHBOARD_QUOTE_TTL:
+            return cached
+        try:
+            symbols = list(STOCKS)
+            response = requests.get(
+                NAVER_REALTIME_API,
+                params={"query": f"SERVICE_ITEM:{','.join(symbols)}"},
+                headers={"User-Agent": "Mozilla/5.0", "Referer": "https://finance.naver.com/"},
+                timeout=4,
+            )
+            response.raise_for_status()
+            areas = response.json().get("result", {}).get("areas", [])
+            rows = [row for area in areas for row in area.get("datas", [])]
+            quotes = {}
+            for row in rows:
+                symbol = str(row.get("cd", "")).upper()
+                info = STOCKS.get(symbol)
+                if not info:
+                    continue
+                price = _to_number(row.get("nv"))
+                if price <= 0:
+                    continue
+                quotes[symbol] = {
+                    "symbol": symbol,
+                    "name": info["name"],
+                    "market": info["market"],
+                    "price": price,
+                    "prevClose": _to_number(row.get("pcv"), price),
+                    "change": _to_number(row.get("cv")),
+                    "changeRate": round(float(row.get("cr") or 0), 2),
+                    "volume": _to_number(row.get("aq")),
+                    "tradeAmount": _to_number(row.get("aa")),
+                }
+            if not quotes:
+                raise ValueError("다종목 시세 응답이 비어 있습니다.")
+        except Exception:
+            # 네트워크가 일시 실패해도 대시보드는 마지막 결과 또는 기준 가격으로 즉시 표시한다.
+            quotes = cached or {
+                symbol: {
+                    "symbol": symbol, "name": info["name"], "market": info["market"],
+                    "price": BASE_PRICES[symbol], "prevClose": BASE_PRICES[symbol],
+                    "change": 0, "changeRate": 0, "volume": 0, "tradeAmount": 0,
+                }
+                for symbol, info in STOCKS.items()
+            }
+        for symbol, quote in quotes.items():
+            _quote_cache[symbol] = {"data": quote, "ts": now}
+        _dashboard_quote_cache.update({"ts": now, "data": quotes})
+        return quotes
 
 
 def _fetch_naver_chart(symbol: str, period: str) -> list[dict]:
@@ -399,8 +462,11 @@ def cached_price(symbol: str) -> int | None:
 def get_market_cap_rankings(limit: int = 10) -> list:
     """등록된 국내 주식을 시가총액(현재가 × 발행주식수) 순으로 반환한다."""
     rankings = []
+    quotes = get_dashboard_stock_quotes()
     for symbol, info in STOCKS.items():
-        quote = get_quote_cached(symbol)
+        quote = quotes.get(symbol)
+        if not quote:
+            continue
         market_cap = quote["price"] * SHARES_OUTSTANDING.get(symbol, 0)
         rankings.append({
             "rank":       0,
