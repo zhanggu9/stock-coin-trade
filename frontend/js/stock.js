@@ -9,6 +9,7 @@ let watchlist           = new Set(JSON.parse(localStorage.getItem('stockWatchlis
 let stockPickerActiveIndex = -1;
 let stockPickerMatches = [];
 let stockPickerRequestId = 0;
+let currentStockPrice = 0;
 
 /* ── LW Charts ───────────────────────────────────────────────────────────── */
 let lwChart  = null;
@@ -99,6 +100,36 @@ function fmtVol(v) {
   return Number(v).toLocaleString('ko-KR') + '주';
 }
 function colorByVal(v) { return v > 0 ? '#E11D48' : v < 0 ? '#2563EB' : '#787B86'; }
+
+function selectedPosition() {
+  const symbol = document.getElementById('stockSymbol')?.value;
+  return lastPositions.find(position => position.symbol === symbol);
+}
+
+function updateOrderSummary() {
+  const summary = document.getElementById('orderSummary');
+  const qty = Number(document.getElementById('orderQty')?.value) || 0;
+  if (!summary) return;
+  const position = selectedPosition();
+  const holdingQty = position?.quantity ?? 0;
+  const orderAmount = currentStockPrice > 0 && qty > 0 ? currentStockPrice * qty : 0;
+  summary.innerHTML = `보유 현금 <strong style="color:var(--fg);">${fmtKrw(lastCash)}</strong> · 보유 주식 <strong style="color:var(--fg);">${holdingQty.toLocaleString('ko-KR')}주</strong><br>예상 주문금액 <strong style="color:var(--accent-dark);">${orderAmount ? fmtKrw(orderAmount) : '-'}</strong>`;
+}
+
+function setOrderQuantityByPercent(side, percent) {
+  if (!currentStockPrice) { showMsg('현재 시세를 불러온 뒤 선택해주세요.', true); return; }
+  const position = selectedPosition();
+  const quantity = side === 'buy'
+    ? Math.floor(lastCash * (percent / 100) / currentStockPrice)
+    : Math.floor((position?.quantity ?? 0) * (percent / 100));
+  if (quantity < 1) {
+    showMsg(side === 'buy' ? '보유 현금으로 매수 가능한 수량이 없습니다.' : '매도 가능한 보유 수량이 없습니다.', true);
+    return;
+  }
+  const input = document.getElementById('orderQty');
+  if (input) input.value = quantity;
+  updateOrderSummary();
+}
 
 /* ── API fetch helper ────────────────────────────────────────────────────── */
 async function requestJson(url, options = {}) {
@@ -365,6 +396,7 @@ async function loadQuote(symbol) {
     const data = await requestJson(`/api/stocks/quote?symbol=${encodeURIComponent(symbol)}`);
     const rate  = Number(data.changeRate ?? 0);
     const color = colorByVal(rate);
+    currentStockPrice = Number(data.price ?? 0);
 
     setText('chartStockName',  data.name ?? '-');
     setEl('quotePrice',        fmtKrw(data.price ?? 0), color);
@@ -378,6 +410,7 @@ async function loadQuote(symbol) {
     renderOrderBook(data.price);
     updateBreakEven(lastPositions, symbol);
     updateWatchBtn(symbol);
+    updateOrderSummary();
 
     // 라이브 가격 업데이트
     liveStockPrices[symbol] = { ...liveStockPrices[symbol], price: data.price, changeRate: rate };
@@ -408,6 +441,7 @@ async function loadAccount() {
   const pnl = Number(data.totalPnlRate);
   setEl('accountPnlRate', (pnl >= 0 ? '+' : '') + pnl.toFixed(2) + '%', colorByVal(pnl));
   updatePortfolioMini(lastPositions, data.cash);
+  updateOrderSummary();
 }
 
 async function loadPositions() {
@@ -419,6 +453,7 @@ async function loadPositions() {
   if (!lastPositions.length) {
     tbody.innerHTML = `<tr><td colspan="6" style="padding:10px;text-align:center;color:var(--muted);">포지션 없음</td></tr>`;
     updatePortfolioMini([], lastCash);
+    updateOrderSummary();
     return;
   }
   tbody.innerHTML = lastPositions.map(pos => {
@@ -435,6 +470,7 @@ async function loadPositions() {
   }).join('');
   updatePortfolioMini(lastPositions, lastCash);
   updateBreakEven(lastPositions, document.getElementById('stockSymbol')?.value);
+  updateOrderSummary();
 }
 
 async function loadHistory() {
@@ -517,6 +553,10 @@ async function submitOrder(type) {
 
 document.getElementById('buyBtn')?.addEventListener('click',  () => submitOrder('buy'));
 document.getElementById('sellBtn')?.addEventListener('click', () => submitOrder('sell'));
+document.getElementById('orderQty')?.addEventListener('input', updateOrderSummary);
+document.querySelectorAll('.order-percent-btn').forEach(button => {
+  button.addEventListener('click', () => setOrderQuantityByPercent(button.dataset.orderSide, Number(button.dataset.percent)));
+});
 
 /* ── 초기화 버튼 ─────────────────────────────────────────────────────────── */
 document.getElementById('resetBtn')?.addEventListener('click', async () => {

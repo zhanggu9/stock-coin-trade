@@ -58,6 +58,8 @@
     .stock-picker-clear:hover { color:var(--fg); background:var(--surface); }
     .stock-picker-search { flex:none; min-width:52px; height:26px; border:0; border-radius:7px; color:#fff; background:var(--accent); font-size:12px; font-weight:800; cursor:pointer; }
     .stock-picker-search:hover { background:var(--accent-dark); }
+    .order-percent-btn { min-height:25px; border:1px solid var(--border); border-radius:5px; color:var(--fg); background:var(--surface); font-size:10px; font-weight:750; cursor:pointer; }
+    .order-percent-btn:hover { border-color:var(--accent); color:var(--accent-dark); background:rgba(37,99,235,.08); }
     .stock-picker-results { position:absolute; z-index:40; top:calc(100% + 6px); left:0; right:0; display:none; max-height:320px; overflow-y:auto; padding:6px; background:var(--surface); border:1px solid var(--border); border-radius:10px; box-shadow:0 16px 32px rgba(15,23,42,.18); }
     .stock-picker-results.open { display:block; }
     .stock-picker-result { width:100%; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; align-items:center; padding:9px 10px; border:0; border-radius:7px; color:var(--fg); background:transparent; text-align:left; cursor:pointer; }
@@ -192,6 +194,26 @@
         <div class="glass-card" style="padding:12px;">
           <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">주문</div>
           <input id="orderQty" type="number" min="1" step="1" placeholder="수량 (주)" class="dark-input" style="font-size:13px;padding:.4rem .7rem;margin-bottom:6px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+            <div>
+              <div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:4px;">매수 · 보유 현금 비율</div>
+              <div id="buyPercentBtns" style="display:grid;grid-template-columns:repeat(4,1fr);gap:3px;">
+                <button type="button" data-order-side="buy" data-percent="10" class="order-percent-btn">10%</button>
+                <button type="button" data-order-side="buy" data-percent="25" class="order-percent-btn">25%</button>
+                <button type="button" data-order-side="buy" data-percent="50" class="order-percent-btn">50%</button>
+                <button type="button" data-order-side="buy" data-percent="100" class="order-percent-btn">전액</button>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:4px;">매도 · 보유 주식 비율</div>
+              <div id="sellPercentBtns" style="display:grid;grid-template-columns:repeat(3,1fr);gap:3px;">
+                <button type="button" data-order-side="sell" data-percent="25" class="order-percent-btn">25%</button>
+                <button type="button" data-order-side="sell" data-percent="50" class="order-percent-btn">50%</button>
+                <button type="button" data-order-side="sell" data-percent="100" class="order-percent-btn">전량</button>
+              </div>
+            </div>
+          </div>
+          <div id="orderSummary" style="padding:7px 8px;margin-bottom:7px;border-radius:7px;background:var(--surface-2);font-size:10px;line-height:1.55;color:var(--muted);">시세를 불러오는 중입니다.</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
             <button id="buyBtn" type="button" class="btn-buy" style="font-size:13px;padding:.45rem;">매수</button>
             <button id="sellBtn" type="button" class="btn-sell" style="font-size:13px;padding:.45rem;">매도</button>
