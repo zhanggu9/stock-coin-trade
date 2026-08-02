@@ -1,6 +1,10 @@
 import random
+import html
+import re
+import threading
 import time
 
+import requests
 import yfinance as yf
 
 STOCKS = {
@@ -44,10 +48,98 @@ SHARES_OUTSTANDING = {
 _quote_cache = {}
 _chart_cache = {}
 _index_cache = {}
+_krx_stock_cache = {"ts": 0.0, "data": []}
+_krx_stock_lock = threading.Lock()
 
 QUOTE_TTL = 60
 CHART_TTL = 300
 INDEX_TTL = 60
+KRX_LIST_TTL = 86_400
+KRX_LIST_URL = "https://kind.krx.co.kr/corpgeneral/corpList.do?method=download"
+
+
+def _clean_html(value: str) -> str:
+    return " ".join(html.unescape(re.sub(r"<[^>]+>", "", value)).split())
+
+
+def _parse_krx_list(raw: bytes) -> list[dict]:
+    """KIND가 제공하는 상장법인 목록 HTML/XLS 응답을 종목 메타데이터로 변환한다."""
+    page = raw.decode("euc-kr", errors="replace")
+    rows = re.findall(r"<tr[^>]*>(.*?)</tr>", page, flags=re.IGNORECASE | re.DOTALL)
+    result = []
+    market_map = {"유가": "KOSPI", "유가증권": "KOSPI", "코스닥": "KOSDAQ", "코넥스": "KONEX"}
+    for row in rows[1:]:
+        cells = [_clean_html(cell) for cell in re.findall(r"<t[dh][^>]*>(.*?)</t[dh]>", row, flags=re.IGNORECASE | re.DOTALL)]
+        if len(cells) < 4 or cells[1] not in market_map or not cells[2]:
+            continue
+        market = market_map[cells[1]]
+        symbol = cells[2].upper()
+        result.append({
+            "symbol": symbol,
+            "name": cells[0],
+            "market": market,
+            "sector": cells[3] or "기타",
+            "ticker": f"{symbol}.{ 'KS' if market == 'KOSPI' else 'KQ' }",
+        })
+    return result
+
+
+def get_krx_stocks() -> list[dict]:
+    """KRX KIND 공식 상장법인 목록을 가져오고 하루 동안 메모리에 보관한다."""
+    now = time.time()
+    cached = _krx_stock_cache["data"]
+    if cached and now - _krx_stock_cache["ts"] < KRX_LIST_TTL:
+        return cached
+    with _krx_stock_lock:
+        cached = _krx_stock_cache["data"]
+        if cached and now - _krx_stock_cache["ts"] < KRX_LIST_TTL:
+            return cached
+        try:
+            response = requests.get(KRX_LIST_URL, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
+            response.raise_for_status()
+            stocks = _parse_krx_list(response.content)
+            if not stocks:
+                raise ValueError("KRX 상장법인 목록이 비어 있습니다.")
+            stocks.sort(key=lambda stock: ({"KOSPI": 0, "KOSDAQ": 1, "KONEX": 2}.get(stock["market"], 9), stock["symbol"]))
+            _krx_stock_cache.update({"ts": now, "data": stocks})
+            return stocks
+        except Exception:
+            # 이미 받은 목록이 있으면 네트워크 일시 실패에도 검색 기능을 계속 제공한다.
+            if cached:
+                return cached
+            raise
+
+
+def list_krx_stocks(limit: int = 30, market: str = "") -> list[dict]:
+    stocks = get_krx_stocks()
+    market = market.upper()
+    if market in {"KOSPI", "KOSDAQ", "KONEX"}:
+        stocks = [stock for stock in stocks if stock["market"] == market]
+    return stocks[:max(1, min(limit, 100))]
+
+
+def search_krx_stocks(query: str, limit: int = 20) -> list[dict]:
+    keyword = (query or "").strip().lower()
+    stocks = get_krx_stocks()
+    if not keyword:
+        return stocks[:max(1, min(limit, 50))]
+
+    starts_with = []
+    contains = []
+    for stock in stocks:
+        values = (stock["name"], stock["symbol"], stock["sector"], stock["market"])
+        if not any(keyword in value.lower() for value in values):
+            continue
+        (starts_with if stock["name"].lower().startswith(keyword) or stock["symbol"].lower().startswith(keyword) else contains).append(stock)
+    return (starts_with + contains)[:max(1, min(limit, 50))]
+
+
+def get_stock_info(symbol: str) -> dict | None:
+    symbol = (symbol or "").upper()
+    # 기존 실습 종목은 오프라인 시뮬레이션을 위해 보존한다.
+    if symbol in STOCKS:
+        return {"symbol": symbol, **STOCKS[symbol]}
+    return next((stock for stock in get_krx_stocks() if stock["symbol"] == symbol), None)
 
 
 def _simulated_price(symbol: str) -> int:
@@ -57,12 +149,13 @@ def _simulated_price(symbol: str) -> int:
 
 
 def get_quote_cached(symbol: str) -> dict:
+    symbol = (symbol or "").upper()
     now = time.time()
     cached = _quote_cache.get(symbol)
     if cached and now - cached["ts"] < QUOTE_TTL:
         return cached["data"]
 
-    info = STOCKS.get(symbol)
+    info = get_stock_info(symbol)
     if not info:
         raise ValueError(f"Unknown symbol: {symbol}")
 
@@ -88,7 +181,11 @@ def get_quote_cached(symbol: str) -> dict:
             "changeRate": change_rate,
             "volume":     volume,
         }
-    except Exception:
+    except Exception as exc:
+        # 기존 수업용 종목만 오프라인 시뮬레이션 시세를 제공한다. KRX에서 검색한
+        # 종목은 실제 시세를 가져오지 못하면 가짜 가격으로 주문되지 않게 막는다.
+        if symbol not in STOCKS:
+            raise RuntimeError("실시간 KRX 시세를 가져오지 못했습니다. 잠시 후 다시 시도해주세요.") from exc
         sim = _simulated_price(symbol)
         base = BASE_PRICES.get(symbol, sim)
         data = {
@@ -108,13 +205,14 @@ def get_quote_cached(symbol: str) -> dict:
 
 
 def get_chart_cached(symbol: str, period: str) -> list:
+    symbol = (symbol or "").upper()
     now = time.time()
     key = (symbol, period)
     cached = _chart_cache.get(key)
     if cached and now - cached["ts"] < CHART_TTL:
         return cached["data"]
 
-    info = STOCKS.get(symbol)
+    info = get_stock_info(symbol)
     if not info:
         raise ValueError(f"Unknown symbol: {symbol}")
 
@@ -139,7 +237,9 @@ def get_chart_cached(symbol: str, period: str) -> list:
                 "c": round(float(row["Close"]), 2),
                 "v": int(row["Volume"]),
             })
-    except Exception:
+    except Exception as exc:
+        if symbol not in STOCKS:
+            raise RuntimeError("실시간 KRX 차트 데이터를 가져오지 못했습니다. 잠시 후 다시 시도해주세요.") from exc
         # Generate simulated OHLCV when yfinance is unavailable
         base  = BASE_PRICES.get(symbol, 50000)
         steps = {"1d": 78, "1w": 40, "1m": 30, "3m": 90, "1y": 52}.get(period, 30)
@@ -192,10 +292,13 @@ def get_index_cached(index_sym: str) -> dict:
 
 
 def current_price(symbol: str) -> int:
+    symbol = (symbol or "").upper()
     try:
         return get_quote_cached(symbol)["price"]
     except Exception:
-        return _simulated_price(symbol)
+        if symbol in STOCKS:
+            return _simulated_price(symbol)
+        raise
 
 
 def get_market_cap_rankings(limit: int = 10) -> list:

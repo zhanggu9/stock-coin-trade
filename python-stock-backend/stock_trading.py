@@ -1,7 +1,7 @@
 import time
 
 from models import StockOrder, StockPosition
-from stock_market import STOCKS, current_price
+from stock_market import STOCKS, current_price, get_stock_info
 
 INITIAL_CASH = 10_000_000  # matches the seed deposit granted at registration (members.py)
 
@@ -24,8 +24,9 @@ def get_positions(db, member_id: int) -> list[dict]:
         price = current_price(pos.symbol)
         eval_amount = pos.quantity * price
         pnl = eval_amount - (pos.quantity * pos.avg_price)
-        name = STOCKS.get(pos.symbol, {}).get("name", pos.symbol)
-        sector = STOCKS.get(pos.symbol, {}).get("sector", "기타")
+        info = get_stock_info(pos.symbol) or {}
+        name = info.get("name", pos.symbol)
+        sector = info.get("sector", "기타")
         result.append({
             "symbol":       pos.symbol,
             "name":         name,
@@ -76,12 +77,16 @@ def execute_order(db, member, symbol: str, side: str, quantity: int, source: str
     side = (side or "").upper()
     if side not in (BUY, SELL):
         raise ValueError("side는 BUY 또는 SELL이어야 합니다.")
-    if symbol not in STOCKS:
-        raise ValueError(f"지원하지 않는 종목입니다: {symbol}")
+    info = get_stock_info(symbol)
+    if not info:
+        raise ValueError(f"지원하지 않는 KRX 종목입니다: {symbol}")
     if not isinstance(quantity, int) or quantity <= 0:
         raise ValueError("quantity는 1 이상의 정수여야 합니다.")
 
-    price = current_price(symbol)
+    try:
+        price = current_price(symbol)
+    except Exception as exc:
+        raise ValueError("실시간 시세를 확인할 수 없어 주문할 수 없습니다. 잠시 후 다시 시도해주세요.") from exc
     amount = price * quantity
     position = _get_position(db, member.member_id, symbol)
 
@@ -113,7 +118,7 @@ def execute_order(db, member, symbol: str, side: str, quantity: int, source: str
     db.add(StockOrder(
         member_id=member.member_id,
         symbol=symbol,
-        name=STOCKS[symbol]["name"],
+        name=info["name"],
         order_type=side,
         quantity=quantity,
         price=price,

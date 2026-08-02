@@ -15,7 +15,10 @@ from demo_seed import seed_demo_investors
 from members import member_bp
 from openapi import open_api_bp
 from scheduler import start_scheduler
-from stock_market import BASE_PRICES, STOCKS, get_chart_cached, get_index_cached, get_market_cap_rankings, get_quote_cached
+from stock_market import (
+    BASE_PRICES, STOCKS, get_chart_cached, get_index_cached, get_market_cap_rankings,
+    get_quote_cached, get_stock_info, list_krx_stocks, search_krx_stocks,
+)
 from stocks import stock_bp
 
 app = Flask(__name__)
@@ -53,8 +56,22 @@ def health():
 # ── Stock list ───────────────────────────────────────────────────────────────
 @app.get("/api/stocks/list")
 def stock_list():
-    result = [{"symbol": k, "name": v["name"], "market": v["market"], "sector": v.get("sector", "기타")} for k, v in STOCKS.items()]
-    return jsonify({"stocks": result})
+    try:
+        limit = max(1, min(int(request.args.get("limit", 30)), 100))
+        market = request.args.get("market", "")
+        return jsonify({"stocks": list_krx_stocks(limit, market), "source": "KRX"})
+    except Exception as exc:
+        return jsonify({"message": f"KRX 종목 목록을 가져오지 못했습니다: {exc}"}), 503
+
+
+@app.get("/api/stocks/search")
+def stock_search():
+    query = request.args.get("q", "")
+    try:
+        limit = max(1, min(int(request.args.get("limit", 20)), 50))
+        return jsonify({"stocks": search_krx_stocks(query, limit), "source": "KRX"})
+    except Exception as exc:
+        return jsonify({"message": f"KRX 종목 검색을 사용할 수 없습니다: {exc}"}), 503
 
 
 # ── Market indices ───────────────────────────────────────────────────────────
@@ -71,8 +88,12 @@ def quote():
     symbol = request.args.get("symbol", "").upper()
     if not symbol:
         return jsonify({"message": "symbol is required"}), 400
+    if not get_stock_info(symbol):
+        return jsonify({"message": f"지원하지 않는 KRX 종목입니다: {symbol}"}), 404
     try:
         return jsonify(get_quote_cached(symbol))
+    except RuntimeError as e:
+        return jsonify({"message": str(e)}), 503
     except ValueError as e:
         return jsonify({"message": str(e)}), 404
 
@@ -84,9 +105,13 @@ def chart():
     period = request.args.get("period", "1m")
     if not symbol:
         return jsonify({"message": "symbol is required"}), 400
+    if not get_stock_info(symbol):
+        return jsonify({"message": f"지원하지 않는 KRX 종목입니다: {symbol}"}), 404
     try:
         ohlcv = get_chart_cached(symbol, period)
         return jsonify({"symbol": symbol, "period": period, "data": ohlcv})
+    except RuntimeError as e:
+        return jsonify({"message": str(e)}), 503
     except ValueError as e:
         return jsonify({"message": str(e)}), 404
 
@@ -117,7 +142,12 @@ def movers():
 @app.get("/api/stocks/prices")
 def batch_prices():
     result = {}
-    for symbol in STOCKS:
+    requested = [symbol.strip().upper() for symbol in request.args.get("symbols", "").split(",") if symbol.strip()]
+    symbols = requested[:50] if requested else [stock["symbol"] for stock in list_krx_stocks(30)]
+    for symbol in symbols:
+        info = get_stock_info(symbol)
+        if not info:
+            continue
         try:
             q = get_quote_cached(symbol)
             result[symbol] = {
@@ -129,7 +159,6 @@ def batch_prices():
                 "volume":     q.get("volume", 0),
             }
         except Exception:
-            info = STOCKS[symbol]
             result[symbol] = {
                 "name":       info["name"],
                 "market":     info["market"],

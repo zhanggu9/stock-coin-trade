@@ -9,7 +9,7 @@ from flask import Blueprint, g, jsonify, request
 import stock_trading
 from db import session_scope
 from models import ApiKey, Member
-from stock_market import STOCKS, get_quote_cached
+from stock_market import get_quote_cached, list_krx_stocks
 
 open_api_bp = Blueprint("openapi", __name__, url_prefix="/openapi/v1")
 
@@ -62,8 +62,11 @@ def require_api_key(f):
 @open_api_bp.get("/stocks")
 @require_api_key
 def list_stocks():
-    result = [{"symbol": k, "name": v["name"], "market": v["market"]} for k, v in STOCKS.items()]
-    return jsonify({"stocks": result})
+    try:
+        limit = max(1, min(int(request.args.get("limit", 30)), 100))
+        return jsonify({"stocks": list_krx_stocks(limit)})
+    except Exception as exc:
+        return jsonify({"error": "MARKET_DATA_UNAVAILABLE", "message": str(exc)}), 503
 
 
 @open_api_bp.get("/quote/<symbol>")

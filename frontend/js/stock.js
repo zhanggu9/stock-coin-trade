@@ -7,6 +7,8 @@ let lastCash            = 10_000_000;
 let liveStockPrices     = {};
 let watchlist           = new Set(JSON.parse(localStorage.getItem('stockWatchlist') || '[]'));
 let stockPickerActiveIndex = -1;
+let stockPickerMatches = [];
+let stockPickerRequestId = 0;
 
 /* ── LW Charts ───────────────────────────────────────────────────────────── */
 let lwChart  = null;
@@ -135,7 +137,8 @@ document.getElementById('watchlistBtn')?.addEventListener('click', () => {
 /* ── 마켓 리스트 (실시간 5초 polling) ───────────────────────────────────── */
 async function loadBatchPrices() {
   try {
-    const data = await requestJson('/api/stocks/prices');
+    const symbols = allStocks.slice(0, 50).map(stock => stock.symbol).join(',');
+    const data = await requestJson(`/api/stocks/prices?symbols=${encodeURIComponent(symbols)}`);
     liveStockPrices = data.prices ?? {};
     renderStockMarketList();
   } catch {}
@@ -198,7 +201,7 @@ async function selectStockFromList(sym) {
 
 /* ── 종목 검색·선택 ─────────────────────────────────────────────────────── */
 async function loadStockList() {
-  const data = await requestJson('/api/stocks/list');
+  const data = await requestJson('/api/stocks/list?limit=30');
   allStocks = data.stocks ?? [];
   rebuildSelectOptions();
 }
@@ -207,11 +210,16 @@ function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
 }
 
-function getStockPickerMatches(query = '') {
-  const keyword = String(query).trim().toLowerCase();
+function addStockToPicker(stock) {
+  if (!stock?.symbol || allStocks.some(item => item.symbol === stock.symbol)) return;
+  allStocks.push(stock);
+}
+
+async function fetchStockPickerMatches(query = '') {
+  const keyword = String(query).trim();
   if (!keyword) return allStocks.slice(0, 12);
-  return allStocks.filter(stock => [stock.name, stock.symbol, stock.sector, stock.market]
-    .some(value => String(value ?? '').toLowerCase().includes(keyword))).slice(0, 12);
+  const data = await requestJson(`/api/stocks/search?q=${encodeURIComponent(keyword)}&limit=20`);
+  return data.stocks ?? [];
 }
 
 function updateStockPickerSelected(symbol) {
@@ -234,11 +242,11 @@ function closeStockPicker() {
   stockPickerActiveIndex = -1;
 }
 
-function renderStockPickerResults(query = document.getElementById('stockPickerInput')?.value ?? '') {
+function renderStockPickerResults() {
   const results = document.getElementById('stockSearchResults');
   const input = document.getElementById('stockPickerInput');
   if (!results || !input) return;
-  const matches = getStockPickerMatches(query);
+  const matches = stockPickerMatches;
   if (stockPickerActiveIndex >= matches.length) stockPickerActiveIndex = matches.length - 1;
 
   results.innerHTML = matches.length
@@ -251,9 +259,39 @@ function renderStockPickerResults(query = document.getElementById('stockPickerIn
   input.setAttribute('aria-expanded', 'true');
 }
 
+async function searchStockPicker(query = document.getElementById('stockPickerInput')?.value ?? '') {
+  const requestId = ++stockPickerRequestId;
+  try {
+    const matches = await fetchStockPickerMatches(query);
+    if (requestId !== stockPickerRequestId) return [];
+    matches.forEach(addStockToPicker);
+    stockPickerMatches = matches;
+    if (stockPickerActiveIndex >= matches.length) stockPickerActiveIndex = matches.length - 1;
+    renderStockPickerResults();
+    return matches;
+  } catch (error) {
+    if (requestId !== stockPickerRequestId) return [];
+    stockPickerMatches = [];
+    const results = document.getElementById('stockSearchResults');
+    if (results) {
+      results.innerHTML = `<div class="stock-picker-empty">${escapeHtml(error.message || 'KRX 종목 검색을 사용할 수 없습니다.')}</div>`;
+      results.classList.add('open');
+    }
+    return [];
+  }
+}
+
 async function selectStock(symbol) {
   const select = document.getElementById('stockSymbol');
-  if (!select || !allStocks.some(stock => stock.symbol === symbol)) return;
+  if (!select) return;
+  const stock = allStocks.find(item => item.symbol === symbol);
+  if (!stock) return;
+  if (!Array.from(select.options).some(option => option.value === symbol)) {
+    const option = document.createElement('option');
+    option.value = symbol;
+    option.textContent = `${stock.name} · ${stock.sector || '기타'} (${symbol})`;
+    select.appendChild(option);
+  }
   select.value = symbol;
   updateStockPickerSelected(symbol);
   closeStockPicker();
@@ -513,17 +551,17 @@ const stockPickerResults = document.getElementById('stockSearchResults');
 
 stockPickerInput?.addEventListener('focus', () => {
   stockPickerActiveIndex = -1;
-  renderStockPickerResults(stockPickerInput.value);
+  searchStockPicker(stockPickerInput.value);
   stockPickerInput.select();
 });
 
 stockPickerInput?.addEventListener('input', () => {
   stockPickerActiveIndex = -1;
-  renderStockPickerResults(stockPickerInput.value);
+  searchStockPicker(stockPickerInput.value);
 });
 
 stockPickerInput?.addEventListener('keydown', async event => {
-  const matches = getStockPickerMatches(stockPickerInput.value);
+  const matches = stockPickerMatches;
   if (event.key === 'Escape') {
     event.preventDefault();
     closeStockPicker();
@@ -534,10 +572,10 @@ stockPickerInput?.addEventListener('keydown', async event => {
   event.preventDefault();
   if (event.key === 'ArrowDown') {
     stockPickerActiveIndex = (stockPickerActiveIndex + 1) % matches.length;
-    renderStockPickerResults(stockPickerInput.value);
+    renderStockPickerResults();
   } else if (event.key === 'ArrowUp') {
     stockPickerActiveIndex = (stockPickerActiveIndex - 1 + matches.length) % matches.length;
-    renderStockPickerResults(stockPickerInput.value);
+    renderStockPickerResults();
   } else {
     await selectStock(matches[Math.max(stockPickerActiveIndex, 0)].symbol);
   }
@@ -545,10 +583,10 @@ stockPickerInput?.addEventListener('keydown', async event => {
 
 async function submitStockPickerSearch() {
   if (!stockPickerInput) return;
-  const matches = getStockPickerMatches(stockPickerInput.value);
+  const matches = await searchStockPicker(stockPickerInput.value);
   if (!stockPickerInput.value.trim()) {
     stockPickerActiveIndex = -1;
-    renderStockPickerResults('');
+    renderStockPickerResults();
     stockPickerInput.focus();
     return;
   }
@@ -557,7 +595,7 @@ async function submitStockPickerSearch() {
     return;
   }
   stockPickerActiveIndex = matches.length ? 0 : -1;
-  renderStockPickerResults(stockPickerInput.value);
+  renderStockPickerResults();
   stockPickerInput.focus();
 }
 
@@ -568,12 +606,12 @@ stockPickerResults?.addEventListener('click', async event => {
   if (option) await selectStock(option.dataset.symbol);
 });
 
-document.getElementById('stockPickerClear')?.addEventListener('click', () => {
+document.getElementById('stockPickerClear')?.addEventListener('click', async () => {
   if (!stockPickerInput) return;
   stockPickerInput.value = '';
   stockPickerInput.focus();
   stockPickerActiveIndex = -1;
-  renderStockPickerResults('');
+  await searchStockPicker('');
 });
 
 document.addEventListener('click', event => {
