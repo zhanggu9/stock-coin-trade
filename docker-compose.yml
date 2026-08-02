@@ -58,6 +58,8 @@ services:
       SECRET_KEY: ${SECRET_KEY:-dev-secret-change-me}
       CMC_API_KEY: ${CMC_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # 기존 회원·보유자산을 변경하지 않고 없는 샘플 투자자만 추가한다.
+      DEMO_SEED_ENABLED: ${DEMO_SEED_ENABLED:-true}
     depends_on:
       mariadb:
         condition: service_healthy

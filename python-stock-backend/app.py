@@ -11,6 +11,7 @@ from admin import admin_bp
 from ai import ai_bp
 from api_keys import api_key_bp
 from crypto import market_bp, trade_bp
+from demo_seed import seed_demo_investors
 from members import member_bp
 from openapi import open_api_bp
 from scheduler import start_scheduler
@@ -39,6 +40,7 @@ app.register_blueprint(stock_bp)
 app.register_blueprint(api_key_bp)
 app.register_blueprint(open_api_bp)
 
+seed_demo_investors()
 start_scheduler()
 
 

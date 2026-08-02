@@ -6,6 +6,7 @@ let lastPositions       = [];
 let lastCash            = 10_000_000;
 let liveStockPrices     = {};
 let watchlist           = new Set(JSON.parse(localStorage.getItem('stockWatchlist') || '[]'));
+let stockPickerActiveIndex = -1;
 
 /* ── LW Charts ───────────────────────────────────────────────────────────── */
 let lwChart  = null;
@@ -192,51 +193,94 @@ function toggleStockWatch(sym) {
 async function selectStockFromList(sym) {
   currentMarketFilter = 'ALL';
   document.querySelectorAll('.market-tab').forEach(t => t.classList.toggle('active', t.dataset.market === 'ALL'));
-  const el = document.getElementById('stockSymbol');
-  if (el) { el.value = sym; }
-  updateWatchBtn(sym);
-  await Promise.all([loadQuote(sym), loadChart(sym, currentPeriod)]);
+  await selectStock(sym);
 }
 
-/* ── 종목 선택 드롭다운 (hidden) ─────────────────────────────────────────── */
+/* ── 종목 검색·선택 ─────────────────────────────────────────────────────── */
 async function loadStockList() {
   const data = await requestJson('/api/stocks/list');
   allStocks = data.stocks ?? [];
   rebuildSelectOptions();
 }
 
-function getFilteredStocks() {
-  const search = (document.getElementById('stockSearch')?.value ?? '').toLowerCase();
-  return allStocks.filter(s => {
-    if (currentMarketFilter === 'KOSPI'  && s.market !== 'KOSPI')  return false;
-    if (currentMarketFilter === 'KOSDAQ' && s.market !== 'KOSDAQ') return false;
-    if (currentMarketFilter === 'WATCH'  && !watchlist.has(s.symbol)) return false;
-    if (search && !s.name.toLowerCase().includes(search) && !s.symbol.includes(search) && !(s.sector || '').toLowerCase().includes(search)) return false;
-    return true;
-  });
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
+}
+
+function getStockPickerMatches(query = '') {
+  const keyword = String(query).trim().toLowerCase();
+  if (!keyword) return allStocks.slice(0, 12);
+  return allStocks.filter(stock => [stock.name, stock.symbol, stock.sector, stock.market]
+    .some(value => String(value ?? '').toLowerCase().includes(keyword))).slice(0, 12);
+}
+
+function updateStockPickerSelected(symbol) {
+  const stock = allStocks.find(item => item.symbol === symbol);
+  const input = document.getElementById('stockPickerInput');
+  const label = document.getElementById('stockPickerSelected');
+  if (!stock) return;
+  if (input) input.value = stock.name;
+  if (label) label.textContent = `${stock.symbol} · ${stock.market} · ${stock.sector || '기타'}`;
+}
+
+function closeStockPicker() {
+  const results = document.getElementById('stockSearchResults');
+  const input = document.getElementById('stockPickerInput');
+  if (results) results.classList.remove('open');
+  if (input) {
+    input.setAttribute('aria-expanded', 'false');
+    updateStockPickerSelected(document.getElementById('stockSymbol')?.value);
+  }
+  stockPickerActiveIndex = -1;
+}
+
+function renderStockPickerResults(query = document.getElementById('stockPickerInput')?.value ?? '') {
+  const results = document.getElementById('stockSearchResults');
+  const input = document.getElementById('stockPickerInput');
+  if (!results || !input) return;
+  const matches = getStockPickerMatches(query);
+  if (stockPickerActiveIndex >= matches.length) stockPickerActiveIndex = matches.length - 1;
+
+  results.innerHTML = matches.length
+    ? matches.map((stock, index) => `<button type="button" class="stock-picker-result${index === stockPickerActiveIndex ? ' active' : ''}" role="option" aria-selected="${stock.symbol === document.getElementById('stockSymbol')?.value}" data-symbol="${escapeHtml(stock.symbol)}">
+        <span><strong class="stock-picker-result-name">${escapeHtml(stock.name)}</strong><small class="stock-picker-result-meta">${escapeHtml(stock.market)} · ${escapeHtml(stock.sector || '기타')}</small></span>
+        <code class="stock-picker-result-code">${escapeHtml(stock.symbol)}</code>
+      </button>`).join('')
+    : '<div class="stock-picker-empty">일치하는 종목이 없습니다.</div>';
+  results.classList.add('open');
+  input.setAttribute('aria-expanded', 'true');
+}
+
+async function selectStock(symbol) {
+  const select = document.getElementById('stockSymbol');
+  if (!select || !allStocks.some(stock => stock.symbol === symbol)) return;
+  select.value = symbol;
+  updateStockPickerSelected(symbol);
+  closeStockPicker();
+  updateWatchBtn(symbol);
+  await Promise.all([loadQuote(symbol), loadChart(symbol, currentPeriod)]);
 }
 
 function rebuildSelectOptions() {
   renderStockMarketList();
   const sel = document.getElementById('stockSymbol');
   if (!sel) return;
-  const filtered = getFilteredStocks();
   const prevVal  = sel.value;
   sel.innerHTML  = '';
 
-  if (!filtered.length) {
+  if (!allStocks.length) {
     const opt = document.createElement('option');
     opt.disabled = true;
-    opt.textContent = currentMarketFilter === 'WATCH' ? '관심종목 없음' : '검색 결과 없음';
+    opt.textContent = '종목 정보 없음';
     sel.appendChild(opt);
     return;
   }
 
-  const markets = [...new Set(filtered.map(s => s.market))];
+  const markets = [...new Set(allStocks.map(s => s.market))];
   markets.forEach(market => {
     const grp = document.createElement('optgroup');
     grp.label = market;
-    filtered.filter(s => s.market === market).forEach(s => {
+    allStocks.filter(s => s.market === market).forEach(s => {
       const opt = document.createElement('option');
       opt.value = s.symbol;
       opt.textContent = `${s.name} · ${s.sector || '기타'} (${s.symbol})`;
@@ -246,10 +290,8 @@ function rebuildSelectOptions() {
     sel.appendChild(grp);
   });
 
-  if (!filtered.some(s => s.symbol === prevVal) && filtered.length > 0) {
-    sel.value = filtered[0].symbol;
-    Promise.all([loadQuote(sel.value), loadChart(sel.value, currentPeriod)]).catch(() => {});
-  }
+  sel.value = allStocks.some(s => s.symbol === prevVal) ? prevVal : allStocks[0].symbol;
+  updateStockPickerSelected(sel.value);
 }
 
 /* ── 마켓 탭 ─────────────────────────────────────────────────────────────── */
@@ -460,7 +502,62 @@ document.getElementById('periodBtns')?.addEventListener('click', async e => {
 /* ── 종목 변경 ───────────────────────────────────────────────────────────── */
 document.getElementById('stockSymbol')?.addEventListener('change', async () => {
   const sym = document.getElementById('stockSymbol')?.value;
-  if (sym) await Promise.all([loadQuote(sym), loadChart(sym, currentPeriod)]);
+  if (!sym) return;
+  updateStockPickerSelected(sym);
+  await Promise.all([loadQuote(sym), loadChart(sym, currentPeriod)]);
+});
+
+/* ── 검색형 종목 선택기 ─────────────────────────────────────────────────── */
+const stockPickerInput = document.getElementById('stockPickerInput');
+const stockPickerResults = document.getElementById('stockSearchResults');
+
+stockPickerInput?.addEventListener('focus', () => {
+  stockPickerActiveIndex = -1;
+  renderStockPickerResults(stockPickerInput.value);
+  stockPickerInput.select();
+});
+
+stockPickerInput?.addEventListener('input', () => {
+  stockPickerActiveIndex = -1;
+  renderStockPickerResults(stockPickerInput.value);
+});
+
+stockPickerInput?.addEventListener('keydown', async event => {
+  const matches = getStockPickerMatches(stockPickerInput.value);
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    closeStockPicker();
+    stockPickerInput.blur();
+    return;
+  }
+  if (!matches.length || !['ArrowDown', 'ArrowUp', 'Enter'].includes(event.key)) return;
+  event.preventDefault();
+  if (event.key === 'ArrowDown') {
+    stockPickerActiveIndex = (stockPickerActiveIndex + 1) % matches.length;
+    renderStockPickerResults(stockPickerInput.value);
+  } else if (event.key === 'ArrowUp') {
+    stockPickerActiveIndex = (stockPickerActiveIndex - 1 + matches.length) % matches.length;
+    renderStockPickerResults(stockPickerInput.value);
+  } else {
+    await selectStock(matches[Math.max(stockPickerActiveIndex, 0)].symbol);
+  }
+});
+
+stockPickerResults?.addEventListener('click', async event => {
+  const option = event.target.closest('[data-symbol]');
+  if (option) await selectStock(option.dataset.symbol);
+});
+
+document.getElementById('stockPickerClear')?.addEventListener('click', () => {
+  if (!stockPickerInput) return;
+  stockPickerInput.value = '';
+  stockPickerInput.focus();
+  stockPickerActiveIndex = -1;
+  renderStockPickerResults('');
+});
+
+document.addEventListener('click', event => {
+  if (!event.target.closest('#stockPicker')) closeStockPicker();
 });
 
 /* ── 유틸 ────────────────────────────────────────────────────────────────── */
