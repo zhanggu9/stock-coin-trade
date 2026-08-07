@@ -301,39 +301,24 @@ function renderStockMarketList() {
   const tbody = document.getElementById('stockMarketListBody');
   if (!tbody) return;
 
-  const search = (document.getElementById('stockSearch')?.value ?? '').toLowerCase();
-  const stocks = allStocks.filter(s => {
-    if (currentMarketFilter === 'KOSPI'  && s.market !== 'KOSPI')  return false;
-    if (currentMarketFilter === 'KOSDAQ' && s.market !== 'KOSDAQ') return false;
-    if (currentMarketFilter === 'WATCH'  && !watchlist.has(s.symbol)) return false;
-    if (search && !s.name.toLowerCase().includes(search) && !s.symbol.includes(search) && !(s.sector || '').toLowerCase().includes(search)) return false;
-    return true;
-  });
-
-  if (!stocks.length) {
-    tbody.innerHTML = `<tr><td colspan="4" style="padding:12px;text-align:center;color:var(--muted);">종목 없음</td></tr>`;
+  if (!lastPositions.length) {
+    tbody.innerHTML = `<tr><td colspan="4" style="padding:16px 12px;text-align:center;color:var(--muted);">보유 중인 종목이 없습니다.</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = stocks.map(s => {
-    const p = liveStockPrices[s.symbol];
-    const price = p ? Number(p.price).toLocaleString('ko-KR') : '-';
-    const rate  = p ? Number(p.changeRate) : 0;
-    const color = colorByVal(rate);
-    const rateStr = p ? (rate >= 0 ? '+' : '') + rate.toFixed(2) + '%' : '-';
-    const hasWatch = watchlist.has(s.symbol);
-    return `<tr onclick="selectStockFromList('${s.symbol}')"
+  tbody.innerHTML = lastPositions.map(position => {
+    const price = Number(position.currentPrice ?? liveStockPrices[position.symbol]?.price ?? 0);
+    const pnl = Number(position.pnl ?? 0);
+    const color = colorByVal(pnl);
+    return `<tr onclick="selectStockFromList('${position.symbol}')"
               style="cursor:pointer;border-bottom:1px solid var(--border);">
       <td style="padding:6px 10px;">
-        <div style="font-weight:700;color:var(--fg);font-size:12px;">${s.name}</div>
-        <div style="font-size:10px;color:var(--muted);">${s.market} · ${s.sector || '기타'}</div>
+        <div style="font-weight:700;color:var(--fg);font-size:12px;">${position.name}</div>
+        <div style="font-size:10px;color:var(--muted);">${position.symbol} · ${position.sector || '기타'}</div>
       </td>
-      <td style="padding:6px 10px;text-align:right;font-weight:700;color:var(--fg);font-size:12px;">${price}</td>
-      <td style="padding:6px 10px;text-align:right;font-size:11px;font-weight:700;color:${color};">${rateStr}</td>
-      <td style="padding:6px 5px;text-align:center;" onclick="event.stopPropagation()">
-        <button onclick="toggleStockWatch('${s.symbol}')"
-          style="background:none;border:none;cursor:pointer;font-size:12px;color:${hasWatch ? '#FFCC00' : 'var(--muted)'};">${hasWatch ? '⭐' : '☆'}</button>
-      </td>
+      <td style="padding:6px 10px;text-align:right;font-weight:700;color:var(--fg);font-size:12px;">${price ? fmtKrw(price) : '-'}</td>
+      <td style="padding:6px 10px;text-align:right;font-size:11px;color:var(--fg);">${Number(position.quantity).toLocaleString('ko-KR')}주</td>
+      <td style="padding:6px 5px;text-align:right;font-size:11px;font-weight:800;color:${color};">${pnl >= 0 ? '+' : ''}${fmtKrw(pnl)}</td>
     </tr>`;
   }).join('');
 }
@@ -347,8 +332,6 @@ function toggleStockWatch(sym) {
 }
 
 async function selectStockFromList(sym) {
-  currentMarketFilter = 'ALL';
-  document.querySelectorAll('.market-tab').forEach(t => t.classList.toggle('active', t.dataset.market === 'ALL'));
   await selectStock(sym);
 }
 
@@ -596,6 +579,7 @@ async function loadPositions() {
 
   if (!lastPositions.length) {
     tbody.innerHTML = `<tr><td colspan="6" style="padding:10px;text-align:center;color:var(--muted);">포지션 없음</td></tr>`;
+    renderStockMarketList();
     updatePortfolioMini([], lastCash);
     updateOrderSummary();
     return;
@@ -612,6 +596,7 @@ async function loadPositions() {
       <td style="padding:6px 10px;text-align:right;font-size:13px;font-weight:800;color:${color};">${pnl >= 0 ? '+' : ''}${fmtKrw(pnl)}</td>
     </tr>`;
   }).join('');
+  renderStockMarketList();
   updatePortfolioMini(lastPositions, lastCash);
   updateBreakEven(lastPositions, document.getElementById('stockSymbol')?.value);
   updateOrderSummary();
