@@ -70,6 +70,7 @@
     .ma-toggle:hover { border-color:color-mix(in srgb, var(--ma-color) 38%, transparent); background:color-mix(in srgb, var(--ma-color) 9%, transparent); }
     .ma-toggle:not(.active) { color:var(--muted); opacity:.62; text-decoration:line-through; }
     .ma-toggle:not(.active)::before { background:currentColor; }
+    .stock-chart-card { flex:0 0 auto; min-height:0; }
     #stockChart { height:clamp(340px, 42vh, 520px) !important; min-height:340px; }
     .detail-launcher { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; margin-top:8px; padding:7px; border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); box-shadow:var(--shadow-sm); }
     .detail-launcher-btn { min-height:50px; padding:7px; border:1px solid var(--border); border-radius:8px; color:var(--accent-dark); background:linear-gradient(180deg,#fff,#F5F8FD); font-family:inherit; font-size:12px; font-weight:850; cursor:pointer; transition:transform .15s,box-shadow .15s,border-color .15s; }
@@ -161,7 +162,7 @@
       </div>
 
       <!-- LW Charts 캔들 차트 -->
-      <div class="glass-card" style="padding:0;overflow:hidden;">
+      <div class="glass-card stock-chart-card" style="padding:0;overflow:hidden;">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:6px;">
           <div style="display:flex;align-items:center;gap:8px;">
             <div class="stock-picker" id="stockPicker">
