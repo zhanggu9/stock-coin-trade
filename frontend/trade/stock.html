@@ -84,6 +84,10 @@
     .detail-launcher-btn[data-tab="history"]::after { content:'체결 기록'; }
     .detail-launcher-btn[data-tab="orderbook"]::after { content:'실시간 가격'; }
     .detail-launcher-btn:hover { border-color:var(--accent); box-shadow:0 5px 14px rgba(41,98,255,.18); transform:translateY(-1px); }
+    .usage-guide { flex:1 0 140px; display:flex; flex-direction:column; justify-content:center; min-height:140px; padding:18px 22px; border:1px solid var(--border); border-top:0; border-radius:0 0 var(--radius) var(--radius); background:linear-gradient(135deg,#F8FBFF 0%,#EEF4FF 100%); }
+    .usage-guide-title { display:flex; align-items:center; gap:7px; margin:0; color:var(--accent-dark); font-size:12px; font-weight:900; }
+    .usage-guide-title::before { content:'i'; display:inline-flex; align-items:center; justify-content:center; width:17px; height:17px; border-radius:50%; color:#fff; background:var(--accent); font-size:11px; font-family:serif; font-weight:900; }
+    .usage-guide-message { max-width:760px; margin:7px 0 0 24px; color:var(--fg-2); font-size:13px; line-height:1.65; }
     .details-modal-backdrop { position:fixed; inset:0; z-index:110; display:none; align-items:center; justify-content:center; padding:20px; background:rgba(15,23,42,.5); backdrop-filter:blur(3px); }
     .details-modal-backdrop.open { display:flex; }
     .details-modal { width:min(1080px, 100%); max-height:calc(100dvh - 40px); overflow:hidden; border:1px solid var(--border); border-radius:14px; background:var(--surface); box-shadow:0 24px 64px rgba(15,23,42,.3); }
@@ -171,10 +175,10 @@
       </div>
 
       <!-- LW Charts 캔들 차트 -->
-      <div class="glass-card stock-chart-card" style="padding:0;overflow:hidden;">
+      <div class="glass-card stock-chart-card" style="padding:0;overflow:hidden;" data-guide="캔들을 드래그해 기간을 이동하고, 마우스 휠로 확대·축소할 수 있습니다.">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:6px;">
           <div style="display:flex;align-items:center;gap:8px;">
-            <div class="stock-picker" id="stockPicker">
+            <div class="stock-picker" id="stockPicker" data-guide="종목명·종목코드·업종으로 종목을 검색해 차트를 바꿉니다.">
               <div class="stock-picker-input-wrap">
                 <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
                 <input id="stockPickerInput" class="stock-picker-input" type="search" autocomplete="off"
@@ -189,18 +193,18 @@
             <button id="watchlistBtn" type="button" title="관심종목" style="font-size:18px;background:none;border:none;cursor:pointer;color:var(--muted);padding:0 2px;line-height:1;">☆</button>
           </div>
           <div id="periodBtns" style="display:flex;gap:4px;">
-            <button data-period="1d"  class="period-btn">1일</button>
-            <button data-period="1w"  class="period-btn">1주</button>
-            <button data-period="1m"  class="period-btn active">1개월</button>
-            <button data-period="3m"  class="period-btn">3개월</button>
-            <button data-period="1y"  class="period-btn">1년</button>
+            <button data-period="1d"  class="period-btn" data-guide="차트 조회 기간을 1일로 바꿉니다.">1일</button>
+            <button data-period="1w"  class="period-btn" data-guide="차트 조회 기간을 1주로 바꿉니다.">1주</button>
+            <button data-period="1m"  class="period-btn active" data-guide="차트 조회 기간을 1개월로 바꿉니다.">1개월</button>
+            <button data-period="3m"  class="period-btn" data-guide="차트 조회 기간을 3개월로 바꿉니다.">3개월</button>
+            <button data-period="1y"  class="period-btn" data-guide="차트 조회 기간을 1년으로 바꿉니다.">1년</button>
           </div>
         </div>
         <div class="ma-legend" aria-label="이동평균선 표시 선택">
-          <button type="button" class="ma-toggle active" data-ma-period="5" aria-pressed="true" style="--ma-color:#F59E0B;" onclick="toggleMovingAverage(5)">MA 5</button>
-          <button type="button" class="ma-toggle active" data-ma-period="20" aria-pressed="true" style="--ma-color:#8B5CF6;" onclick="toggleMovingAverage(20)">MA 20</button>
-          <button type="button" class="ma-toggle active" data-ma-period="60" aria-pressed="true" style="--ma-color:#0891B2;" onclick="toggleMovingAverage(60)">MA 60</button>
-          <button type="button" class="ma-toggle active" data-ma-period="120" aria-pressed="true" style="--ma-color:#EC4899;" onclick="toggleMovingAverage(120)">MA 120</button>
+          <button type="button" class="ma-toggle active" data-ma-period="5" aria-pressed="true" style="--ma-color:#F59E0B;" onclick="toggleMovingAverage(5)" data-guide="5기간 이동평균선을 표시하거나 숨깁니다.">MA 5</button>
+          <button type="button" class="ma-toggle active" data-ma-period="20" aria-pressed="true" style="--ma-color:#8B5CF6;" onclick="toggleMovingAverage(20)" data-guide="20기간 이동평균선을 표시하거나 숨깁니다.">MA 20</button>
+          <button type="button" class="ma-toggle active" data-ma-period="60" aria-pressed="true" style="--ma-color:#0891B2;" onclick="toggleMovingAverage(60)" data-guide="60기간 이동평균선을 표시하거나 숨깁니다.">MA 60</button>
+          <button type="button" class="ma-toggle active" data-ma-period="120" aria-pressed="true" style="--ma-color:#EC4899;" onclick="toggleMovingAverage(120)" data-guide="120기간 이동평균선을 표시하거나 숨깁니다.">MA 120</button>
         </div>
         <div id="stockChart" style="height:300px;"></div>
       </div>
@@ -208,7 +212,7 @@
       <!-- 현재 시세 + 계좌 + 주문: 화면 초기화 후 각각 모달/우측 패널로 이동 -->
       <div id="stockSummaryPanels" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px;">
         <!-- 현재 시세 -->
-        <div id="quotePanel" class="glass-card" style="padding:12px;">
+        <div id="quotePanel" class="glass-card" style="padding:12px;" data-guide="선택한 종목의 전일 대비, 거래량, 시장과 손익분기가를 확인합니다.">
           <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">현재 시세</div>
           <div style="space-y:4px;">
             <div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;">
@@ -231,7 +235,7 @@
         </div>
 
         <!-- 계좌 현황 -->
-        <div id="accountPanel" class="glass-card" style="padding:12px;">
+        <div id="accountPanel" class="glass-card" style="padding:12px;" data-guide="보유 현금, 총자산, 수익률과 보유 비중을 확인합니다.">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
             <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">계좌 현황</div>
             <button id="resetBtn" type="button" style="font-size:10px;padding:2px 8px;border-radius:999px;background:rgba(248,113,113,0.1);color:#F87171;border:1px solid rgba(248,113,113,0.2);cursor:pointer;font-weight:600;">초기화</button>
@@ -254,7 +258,7 @@
         </div>
 
         <!-- 주문 -->
-        <div id="orderPanel" class="glass-card order-panel" style="padding:12px;">
+        <div id="orderPanel" class="glass-card order-panel" style="padding:12px;" data-guide="수량 또는 비율을 선택해 현재 종목을 매수·매도합니다.">
           <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">주문</div>
           <input id="orderQty" type="number" min="1" step="1" placeholder="수량 (주)" class="dark-input" style="font-size:13px;padding:.4rem .7rem;margin-bottom:6px;">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
@@ -288,11 +292,15 @@
 
       <!-- 보유 포지션 + 거래 내역 (모달 탭) -->
       <div class="detail-launcher" aria-label="주식 상세 메뉴">
-        <button type="button" class="detail-launcher-btn" data-tab="overview" onclick="openDetailsModal('overview')">현재 시세·계좌</button>
-        <button type="button" class="detail-launcher-btn" data-tab="positions" onclick="openDetailsModal('positions')">보유 포지션</button>
-        <button type="button" class="detail-launcher-btn" data-tab="history" onclick="openDetailsModal('history')">거래 내역</button>
-        <button type="button" class="detail-launcher-btn" data-tab="orderbook" onclick="openDetailsModal('orderbook')">호가창</button>
+        <button type="button" class="detail-launcher-btn" data-tab="overview" onclick="openDetailsModal('overview')" data-guide="현재 시세와 계좌 현황을 모달로 엽니다.">현재 시세·계좌</button>
+        <button type="button" class="detail-launcher-btn" data-tab="positions" onclick="openDetailsModal('positions')" data-guide="현재 보유 중인 주식 포지션을 모달로 엽니다.">보유 포지션</button>
+        <button type="button" class="detail-launcher-btn" data-tab="history" onclick="openDetailsModal('history')" data-guide="최근 매수·매도 체결 내역을 모달로 엽니다.">거래 내역</button>
+        <button type="button" class="detail-launcher-btn" data-tab="orderbook" onclick="openDetailsModal('orderbook')" data-guide="선택한 종목의 매수·매도 호가를 모달로 엽니다.">호가창</button>
       </div>
+      <aside class="usage-guide" aria-live="polite">
+        <h2 class="usage-guide-title">사용설명</h2>
+        <p id="usageGuideMessage" class="usage-guide-message">기능 위에 마우스를 올리면 사용 방법을 안내합니다.</p>
+      </aside>
 
       <div id="detailsModal" class="details-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="detailsModalTitle" aria-hidden="true" onclick="if(event.target === this) closeDetailsModal()">
         <section class="details-modal">
@@ -377,13 +385,13 @@
 
     <!-- ── 오른쪽 마켓 리스트 ── -->
     <div class="market-col">
-      <div style="padding:8px 12px;border-bottom:1px solid var(--border);flex-shrink:0;">
+      <div style="padding:8px 12px;border-bottom:1px solid var(--border);flex-shrink:0;" data-guide="내 보유 종목에서 현재가, 수량과 손익을 확인하고 종목을 선택할 수 있습니다.">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
           <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">내 보유 종목</span>
           <span class="live-dot" style="margin-left:auto;"></span>
         </div>
       </div>
-      <div class="market-col-scroll">
+      <div class="market-col-scroll" data-guide="보유 종목이 많으면 이 영역을 스크롤해 전체 목록을 확인합니다.">
         <table style="width:100%;border-collapse:collapse;font-size:12px;">
           <thead>
             <tr style="position:sticky;top:0;z-index:10;background:var(--surface);">

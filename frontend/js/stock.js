@@ -821,9 +821,19 @@ function relocateStockPanels() {
   document.getElementById('stockSummaryPanels')?.remove();
 }
 
+function initUsageGuide() {
+  const message = document.getElementById('usageGuideMessage');
+  if (!message) return;
+  document.addEventListener('pointerover', event => {
+    const guideTarget = event.target.closest('[data-guide]');
+    if (guideTarget?.dataset.guide) message.textContent = guideTarget.dataset.guide;
+  });
+}
+
 /* ── 부트 ────────────────────────────────────────────────────────────────── */
 (async () => {
   relocateStockPanels();
+  initUsageGuide();
   await initPage();
   initStockChart();
 
