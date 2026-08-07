@@ -15,6 +15,23 @@ let currentStockPrice = 0;
 let lwChart  = null;
 let lwCandle = null;
 let lwVolume = null;
+const movingAverageSeries = {};
+const movingAverageOptions = [
+  { period: 5,   color: '#F59E0B' },
+  { period: 20,  color: '#8B5CF6' },
+  { period: 60,  color: '#0891B2' },
+  { period: 120, color: '#EC4899' },
+];
+
+function calculateMovingAverage(candles, period) {
+  let total = 0;
+  return candles.reduce((values, candle, index) => {
+    total += candle.close;
+    if (index >= period) total -= candles[index - period].close;
+    if (index >= period - 1) values.push({ time: candle.time, value: total / period });
+    return values;
+  }, []);
+}
 
 function initStockChart() {
   const container = document.getElementById('stockChart');
@@ -40,6 +57,16 @@ function initStockChart() {
     priceFormat: { type: 'volume' },
     priceScaleId: 'volume',
     scaleMargins: { top: 0.85, bottom: 0 },
+  });
+
+  movingAverageOptions.forEach(({ period, color }) => {
+    movingAverageSeries[period] = lwChart.addLineSeries({
+      color,
+      lineWidth: 2,
+      lastValueVisible: false,
+      priceLineVisible: false,
+      crosshairMarkerVisible: false,
+    });
   });
 
   new ResizeObserver(() => {
@@ -481,6 +508,9 @@ async function loadChart(symbol, period) {
     })).sort((a, b) => a.time - b.time);
     lwCandle.setData(candles);
     lwVolume.setData(volumes);
+    movingAverageOptions.forEach(({ period }) => {
+      movingAverageSeries[period]?.setData(calculateMovingAverage(candles, period));
+    });
     lwChart.timeScale().fitContent();
   } catch {}
 }
