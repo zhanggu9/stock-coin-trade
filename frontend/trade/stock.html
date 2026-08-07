@@ -70,6 +70,21 @@
     .ma-toggle:hover { border-color:color-mix(in srgb, var(--ma-color) 38%, transparent); background:color-mix(in srgb, var(--ma-color) 9%, transparent); }
     .ma-toggle:not(.active) { color:var(--muted); opacity:.62; text-decoration:line-through; }
     .ma-toggle:not(.active)::before { background:currentColor; }
+    #stockChart { height:clamp(340px, 42vh, 520px) !important; min-height:340px; }
+    .detail-launcher { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; margin-top:8px; padding:7px; border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); box-shadow:var(--shadow-sm); }
+    .detail-launcher-btn { min-height:50px; padding:7px; border:1px solid var(--border); border-radius:8px; color:var(--accent-dark); background:linear-gradient(180deg,#fff,#F5F8FD); font-family:inherit; font-size:12px; font-weight:850; cursor:pointer; transition:transform .15s,box-shadow .15s,border-color .15s; }
+    .detail-launcher-btn::after { display:block; margin-top:3px; color:var(--muted); font-size:9px; font-weight:600; }
+    .detail-launcher-btn[data-tab="positions"]::after { content:'내 자산'; }
+    .detail-launcher-btn[data-tab="history"]::after { content:'체결 기록'; }
+    .detail-launcher-btn[data-tab="orderbook"]::after { content:'실시간 가격'; }
+    .detail-launcher-btn:hover { border-color:var(--accent); box-shadow:0 5px 14px rgba(41,98,255,.18); transform:translateY(-1px); }
+    .details-modal-backdrop { position:fixed; inset:0; z-index:110; display:none; align-items:center; justify-content:center; padding:20px; background:rgba(15,23,42,.5); backdrop-filter:blur(3px); }
+    .details-modal-backdrop.open { display:flex; }
+    .details-modal { width:min(1080px, 100%); max-height:calc(100dvh - 40px); overflow:hidden; border:1px solid var(--border); border-radius:14px; background:var(--surface); box-shadow:0 24px 64px rgba(15,23,42,.3); }
+    .details-modal-header { display:flex; align-items:center; justify-content:space-between; padding:13px 16px; border-bottom:1px solid var(--border); }
+    .details-modal-title { margin:0; color:var(--fg); font-size:16px; font-weight:900; }
+    .details-modal-close { width:30px; height:30px; border:0; border-radius:7px; color:var(--muted); background:var(--surface-2); font-size:20px; line-height:1; cursor:pointer; }
+    .details-modal-body { max-height:calc(100dvh - 130px); overflow:auto; }
 
     .stock-picker { position:relative; min-width:min(420px, 72vw); }
     .stock-picker-input-wrap { display:flex; align-items:center; gap:8px; min-height:38px; padding:0 10px; background:var(--surface-2); border:1.5px solid var(--border); border-radius:10px; transition:border-color .15s,box-shadow .15s; }
@@ -261,8 +276,20 @@
         </div>
       </div>
 
-      <!-- 보유 포지션 + 거래 내역 (탭) -->
-      <div class="glass-card" style="margin-top:8px;overflow:hidden;flex-shrink:0;">
+      <!-- 보유 포지션 + 거래 내역 (모달 탭) -->
+      <div class="detail-launcher" aria-label="주식 상세 메뉴">
+        <button type="button" class="detail-launcher-btn" data-tab="positions" onclick="openDetailsModal('positions')">보유 포지션</button>
+        <button type="button" class="detail-launcher-btn" data-tab="history" onclick="openDetailsModal('history')">거래 내역</button>
+        <button type="button" class="detail-launcher-btn" data-tab="orderbook" onclick="openDetailsModal('orderbook')">호가창</button>
+      </div>
+
+      <div id="detailsModal" class="details-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="detailsModalTitle" aria-hidden="true" onclick="if(event.target === this) closeDetailsModal()">
+        <section class="details-modal">
+          <header class="details-modal-header">
+            <h2 id="detailsModalTitle" class="details-modal-title">보유 포지션</h2>
+            <button type="button" class="details-modal-close" aria-label="닫기" onclick="closeDetailsModal()">×</button>
+          </header>
+          <div class="details-modal-body">
         <div class="trade-tabs" role="tablist" aria-label="주식 상세 정보">
           <button class="tab-btn trade-tab active" data-tab="positions" onclick="switchTab('positions')" role="tab" aria-selected="true"
             aria-controls="tab-positions">
@@ -278,7 +305,7 @@
           </button>
         </div>
 
-        <div id="tab-positions" style="max-height:200px;overflow-y:auto;">
+        <div id="tab-positions" style="max-height:60dvh;overflow-y:auto;">
           <table style="width:100%;border-collapse:collapse;font-size:12px;">
             <thead><tr style="background:var(--surface-2);">
               <th style="padding:6px 10px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;">종목</th>
@@ -292,7 +319,7 @@
           </table>
         </div>
 
-        <div id="tab-history" style="max-height:200px;overflow-y:auto;display:none;">
+        <div id="tab-history" style="max-height:60dvh;overflow-y:auto;display:none;">
           <table style="width:100%;border-collapse:collapse;font-size:12px;">
             <thead><tr style="background:var(--surface-2);">
               <th style="padding:6px 10px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;">시간</th>
@@ -323,6 +350,8 @@
             </div>
           </div>
         </div>
+          </div>
+        </section>
       </div>
 
     </div><!-- /left-col -->
@@ -411,6 +440,7 @@ function switchTab(name) {
       el.style.display  = '';
       btn.classList.add('active');
       btn.setAttribute('aria-selected', 'true');
+      document.getElementById('detailsModalTitle').textContent = btn.textContent.trim();
     } else {
       el.style.display  = 'none';
       btn.classList.remove('active');
@@ -418,10 +448,28 @@ function switchTab(name) {
     }
   });
 }
+
+function openDetailsModal(name) {
+  switchTab(name);
+  const modal = document.getElementById('detailsModal');
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+}
+
+function closeDetailsModal() {
+  const modal = document.getElementById('detailsModal');
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+}
+
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') closeDetailsModal();
+});
+
 switchTab('positions');
 </script>
 <script src="/js/config.js"></script>
 <script src="/js/common.js?v=20260802"></script>
-<script src="/js/stock.js?v=20260802-3"></script>
+<script src="/js/stock.js?v=20260808-4"></script>
 </body>
 </html>

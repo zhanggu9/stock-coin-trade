@@ -247,10 +247,13 @@ def get_dashboard_stock_quotes() -> dict[str, dict]:
         return quotes
 
 
-def _fetch_naver_chart(symbol: str, period: str) -> list[dict]:
+def _fetch_naver_chart(symbol: str, period: str, include_ma: bool = False) -> list[dict]:
     if not re.fullmatch(r"\d{6}", symbol):
         raise ValueError("숫자 6자리 종목코드만 국내 차트 조회를 지원합니다.")
-    days = {"1d": 7, "1w": 14, "1m": 45, "3m": 120, "1y": 380}.get(period, 45)
+    days = (
+        {"1d": 180, "1w": 300, "1m": 300, "3m": 340, "1y": 850}.get(period, 300)
+        if include_ma else {"1d": 7, "1w": 14, "1m": 45, "3m": 120, "1y": 380}.get(period, 45)
+    )
     end = datetime.now()
     start = end - timedelta(days=days)
     response = requests.get(
@@ -350,21 +353,22 @@ def get_quote_cached(symbol: str) -> dict:
     return data
 
 
-def get_chart_cached(symbol: str, period: str) -> list:
+def get_chart_cached(symbol: str, period: str, include_ma: bool = False) -> tuple[list, int | None]:
     symbol = (symbol or "").upper()
     now = time.time()
-    key = (symbol, period)
+    key = (symbol, period, include_ma)
     cached = _chart_cache.get(key)
     if cached and now - cached["ts"] < CHART_TTL:
-        return cached["data"]
+        return cached["data"], cached.get("visible_from")
 
     info = get_stock_info(symbol)
     if not info:
         raise ValueError(f"Unknown symbol: {symbol}")
 
     period_map   = {"1d": "1d",  "1w": "5d",  "1m": "1mo", "3m": "3mo", "1y": "1y"}
+    ma_period_map = {"1d": "5d", "1w": "2mo", "1m": "1y", "3m": "1y", "1y": "3y"}
     interval_map = {"1d": "5m",  "1w": "60m", "1m": "1d",  "3m": "1d",  "1y": "1wk"}
-    yf_period   = period_map.get(period, "1mo")
+    yf_period   = (ma_period_map if include_ma else period_map).get(period, "1mo")
     yf_interval = interval_map.get(period, "1d")
 
     ohlcv = []
@@ -385,13 +389,14 @@ def get_chart_cached(symbol: str, period: str) -> list:
             })
     except Exception as yahoo_error:
         try:
-            ohlcv = _fetch_naver_chart(symbol, period)
+            ohlcv = _fetch_naver_chart(symbol, period, include_ma)
         except Exception as naver_error:
             if symbol not in STOCKS:
                 raise RuntimeError("실시간 KRX 차트 데이터를 가져오지 못했습니다. 잠시 후 다시 시도해주세요.") from naver_error
             # Generate simulated OHLCV when both external providers are unavailable.
             base  = BASE_PRICES.get(symbol, 50000)
-            steps = {"1d": 78, "1w": 40, "1m": 30, "3m": 90, "1y": 52}.get(period, 30)
+            steps = ({"1d": 240, "1w": 160, "1m": 150, "3m": 210, "1y": 172}.get(period, 150)
+                     if include_ma else {"1d": 78, "1w": 40, "1m": 30, "3m": 90, "1y": 52}.get(period, 30))
             step_ms = {"1d": 300_000, "1w": 3_600_000, "1m": 86_400_000,
                        "3m": 86_400_000, "1y": 604_800_000}.get(period, 86_400_000)
             ts_ms = int(now * 1000) - steps * step_ms
@@ -408,8 +413,11 @@ def get_chart_cached(symbol: str, period: str) -> list:
                 price = c
                 ts_ms += step_ms
 
-    _chart_cache[key] = {"data": ohlcv, "ts": now}
-    return ohlcv
+    ohlcv.sort(key=lambda candle: candle["x"])
+    visible_bars = {"1d": 78, "1w": 40, "1m": 30, "3m": 90, "1y": 52}.get(period, 30)
+    visible_from = ohlcv[max(0, len(ohlcv) - visible_bars)]["x"] if include_ma and ohlcv else None
+    _chart_cache[key] = {"data": ohlcv, "visible_from": visible_from, "ts": now}
+    return ohlcv, visible_from
 
 
 def get_index_cached(index_sym: str) -> dict:

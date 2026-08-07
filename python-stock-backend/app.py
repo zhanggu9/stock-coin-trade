@@ -103,13 +103,14 @@ def quote():
 def chart():
     symbol = request.args.get("symbol", "").upper()
     period = request.args.get("period", "1m")
+    include_ma = request.args.get("include_ma") == "1"
     if not symbol:
         return jsonify({"message": "symbol is required"}), 400
     if not get_stock_info(symbol):
         return jsonify({"message": f"지원하지 않는 KRX 종목입니다: {symbol}"}), 404
     try:
-        ohlcv = get_chart_cached(symbol, period)
-        return jsonify({"symbol": symbol, "period": period, "data": ohlcv})
+        ohlcv, visible_from = get_chart_cached(symbol, period, include_ma)
+        return jsonify({"symbol": symbol, "period": period, "data": ohlcv, "visibleFrom": visible_from})
     except RuntimeError as e:
         return jsonify({"message": str(e)}), 503
     except ValueError as e:

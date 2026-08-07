@@ -1,0 +1,23 @@
+name: Trigger stock trade production deploy
+
+on:
+  push:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request production deployment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.STOCK_TRADE_DEPLOY_TOKEN }}
+          script: |
+            await github.rest.repos.createDispatchEvent({
+              owner: 'edumgt',
+              repo: 'investment-analysis',
+              event_type: 'stock-coin-trade-main-updated',
+              client_payload: { sha: context.sha },
+            });

@@ -511,7 +511,7 @@ document.getElementById('marketTabs')?.addEventListener('click', e => {
 async function loadChart(symbol, period) {
   if (!lwCandle) return;
   try {
-    const data = await requestJson(`/api/stocks/chart?symbol=${encodeURIComponent(symbol)}&period=${encodeURIComponent(period)}`);
+    const data = await requestJson(`/api/stocks/chart?symbol=${encodeURIComponent(symbol)}&period=${encodeURIComponent(period)}&include_ma=1`);
     const candles = (data.data ?? []).map(d => ({ time: Math.floor(d.x / 1000), open: d.o, high: d.h, low: d.l, close: d.c }))
       .sort((a, b) => a.time - b.time);
     const volumes = (data.data ?? []).map(d => ({
@@ -523,7 +523,12 @@ async function loadChart(symbol, period) {
     movingAverageOptions.forEach(({ period }) => {
       movingAverageSeries[period]?.setData(calculateMovingAverage(candles, period));
     });
-    lwChart.timeScale().fitContent();
+    const visibleFrom = data.visibleFrom ? Math.floor(data.visibleFrom / 1000) : null;
+    if (visibleFrom && candles.length) {
+      lwChart.timeScale().setVisibleRange({ from: visibleFrom, to: candles[candles.length - 1].time });
+    } else {
+      lwChart.timeScale().fitContent();
+    }
   } catch {}
 }
 
