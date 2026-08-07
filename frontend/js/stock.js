@@ -824,8 +824,21 @@ function setEl(id, val, color) {
   if (color) el.style.color = color;
 }
 
+function relocateStockPanels() {
+  const overview = document.getElementById('positionsOverview');
+  const marketColumn = document.querySelector('.market-col');
+  const quotePanel = document.getElementById('quotePanel');
+  const accountPanel = document.getElementById('accountPanel');
+  const orderPanel = document.getElementById('orderPanel');
+
+  if (overview && quotePanel && accountPanel) overview.append(quotePanel, accountPanel);
+  if (marketColumn && orderPanel) marketColumn.prepend(orderPanel);
+  document.getElementById('stockSummaryPanels')?.remove();
+}
+
 /* ── 부트 ────────────────────────────────────────────────────────────────── */
 (async () => {
+  relocateStockPanels();
   await initPage();
   initStockChart();
 
