@@ -22,6 +22,17 @@ const movingAverageOptions = [
   { period: 60,  color: '#0891B2' },
   { period: 120, color: '#EC4899' },
 ];
+const movingAverageVisibility = Object.fromEntries(movingAverageOptions.map(({ period }) => [period, true]));
+
+function toggleMovingAverage(period) {
+  if (!movingAverageSeries[period]) return;
+  movingAverageVisibility[period] = !movingAverageVisibility[period];
+  movingAverageSeries[period].applyOptions({ visible: movingAverageVisibility[period] });
+
+  const button = document.querySelector(`.ma-toggle[data-ma-period="${period}"]`);
+  button?.classList.toggle('active', movingAverageVisibility[period]);
+  button?.setAttribute('aria-pressed', String(movingAverageVisibility[period]));
+}
 
 function calculateMovingAverage(candles, period) {
   let total = 0;
@@ -63,6 +74,7 @@ function initStockChart() {
     movingAverageSeries[period] = lwChart.addLineSeries({
       color,
       lineWidth: 2,
+      visible: movingAverageVisibility[period],
       lastValueVisible: false,
       priceLineVisible: false,
       crosshairMarkerVisible: false,
