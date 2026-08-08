@@ -16,16 +16,28 @@ async function refresh() {
   if (!marketRes.ok) return;
   markets = (await marketRes.json()).markets || [];
   const me = await meRes.json(); document.getElementById('cash').textContent = won(me.asset);
-  renderTabs(); renderMarkets(); renderPositions((await positionRes.json()).positions || []);
+  renderSideMenu(); renderMarkets(); renderPositions((await positionRes.json()).positions || []);
   if (!selected && markets.length) selectMarket(markets[0].symbol);
 }
-function renderTabs() {
-  const categories = ['전체', ...new Set(markets.map(item => item.category))];
-  document.getElementById('tabs').innerHTML = categories.map(item => `<button class="market-tab ${item === category ? 'active' : ''}" data-category="${item}">${item}</button>`).join('');
-  document.querySelectorAll('[data-category]').forEach(btn => btn.onclick = () => { category = btn.dataset.category; renderTabs(); renderMarkets(); });
+function renderSideMenu() {
+  const chartCategories = ['선물', '옵션', '파생상품', '금', '은'];
+  const rows = [
+    { title: '부동산 지도 거래', icon: '🗺️', key: '부동산', note: '지역을 지도에서 선택하고 시세를 확인한 뒤 바로 주문합니다.' },
+    { title: '캔들 차트 거래', icon: '📈', key: 'ALL_CHART', note: '일봉 차트를 보며 선물·옵션·파생상품·금·은을 주문합니다.' },
+    ...chartCategories.map(name => ({ title: name, icon: '•', key: name, note: '' })),
+  ];
+  document.getElementById('sideMenu').innerHTML = rows.map(item => `<div ${item.note ? 'style="margin-bottom:8px;"' : ''}><button class="asset-menu-btn ${category === item.key || (item.key === 'ALL_CHART' && category === '전체') ? 'active' : ''}" data-menu-category="${item.key}"><span class="asset-menu-icon">${item.icon}</span><span>${item.title}</span></button>${item.note ? `<p class="asset-menu-note">${item.note}</p>` : ''}</div>`).join('');
+  document.querySelectorAll('[data-menu-category]').forEach(btn => btn.onclick = () => {
+    category = btn.dataset.menuCategory === 'ALL_CHART' ? '전체' : btn.dataset.menuCategory;
+    renderSideMenu(); renderMarkets();
+    if (category === '부동산') selectMarket(markets.find(item => item.category === '부동산')?.symbol);
+    else if (selected?.category === '부동산' || (category !== '전체' && selected?.category !== category)) selectMarket(markets.find(item => item.category === category)?.symbol);
+  });
 }
 function renderMarkets() {
-  const rows = markets.filter(item => category === '전체' || item.category === category);
+  const rows = markets.filter(item => category === '전체' ? item.category !== '부동산' : item.category === category);
+  document.getElementById('marketListTitle').textContent = category === '부동산' ? '부동산 지도 거래 상품' : category === '전체' ? '캔들 차트 거래 상품' : `${category} 캔들 차트 거래 상품`;
+  document.getElementById('marketListGuide').textContent = category === '부동산' ? '아래 상품 또는 지도 핀을 선택하면 지역 시세와 주문창이 연동됩니다.' : '상품을 선택하면 일봉 캔들 차트와 주문창이 함께 표시됩니다.';
   document.getElementById('marketBody').innerHTML = rows.map(item => `<tr class="market-row ${selected?.symbol === item.symbol ? 'selected' : ''}" data-symbol="${item.symbol}"><td><div class="font-bold" style="color:var(--fg);">${item.name}</div><div class="mt-1 text-xs" style="color:var(--muted);">${item.description}</div></td><td class="text-right font-bold" style="color:var(--fg);">${won(item.price)}</td><td class="text-right font-bold" style="color:${item.changeRate >= 0 ? '#E11D48' : '#2563EB'};">${item.changeRate >= 0 ? '+' : ''}${item.changeRate}%</td><td class="text-right font-bold" style="color:var(--accent);">${won(item.tradeAmountPerUnit)}</td><td class="text-right text-xs" style="color:var(--muted);">${item.unit}<br>${item.marginRate === 100 ? '현금 100%' : '증거금 ' + item.marginRate + '%'}</td></tr>`).join('');
   document.querySelectorAll('[data-symbol]').forEach(row => row.onclick = () => selectMarket(row.dataset.symbol));
 }
