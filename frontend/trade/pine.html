@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pine 전략 거래 — 모의투자</title>
+  <link rel="icon" href="/img/favicon.png">
+  <link rel="stylesheet" href="/css/style.css?v=20260802-2">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{fontFamily:{sans:['Pretendard','sans-serif']}}}}</script>
+  <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    .pine-page { max-width:1440px; margin:0 auto; padding:16px; }
+    .pine-card { border:1px solid var(--border); border-radius:12px; background:var(--surface); box-shadow:var(--shadow-sm); }
+    .pine-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+    .pine-select { min-width:190px; padding:8px 10px; border:1px solid var(--border); border-radius:7px; color:var(--fg); background:var(--surface-2); font:inherit; font-size:13px; }
+    .period { padding:5px 9px; border:1px solid var(--border); border-radius:6px; background:#fff; color:var(--fg-2); font-size:12px; font-weight:700; cursor:pointer; }
+    .period.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+    #pineChart { height:min(52vh,530px); min-height:330px; }
+    .editor-grid { display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:14px; margin-top:14px; }
+    .editor-head { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px; border-bottom:1px solid var(--border); }
+    #pineScript { display:block; width:100%; min-height:315px; resize:vertical; padding:15px; border:0; outline:0; background:#131722; color:#D1D4DC; font:13px/1.65 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; tab-size:2; }
+    .signal { padding:13px; border-radius:9px; background:var(--surface-2); }
+    .signal-value { margin-top:4px; font-size:20px; font-weight:900; color:var(--fg); }
+    .primary { padding:9px 12px; border:0; border-radius:7px; background:var(--accent); color:#fff; font:700 13px inherit; cursor:pointer; }
+    .primary:hover { background:var(--accent-dark); }.primary:disabled { opacity:.5; cursor:not-allowed; }
+    .secondary { padding:8px 10px; border:1px solid var(--border); border-radius:7px; background:#fff; color:var(--fg-2); font:700 12px inherit; cursor:pointer; }
+    .notice { margin:0; padding:11px 14px; color:var(--muted); font-size:12px; line-height:1.65; }
+    .log { max-height:165px; overflow:auto; margin:10px 0 0; padding:10px; border-radius:7px; background:var(--surface-2); color:var(--muted); font:11px/1.6 ui-monospace,monospace; white-space:pre-wrap; }
+    @media (max-width:900px) { .editor-grid { grid-template-columns:1fr; } .pine-page { padding:10px; } }
+  </style>
+</head>
+<body>
+  <div id="header-mount"></div>
+  <main class="pine-page">
+    <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin:4px 0 14px;flex-wrap:wrap;">
+      <div><h1 style="margin:0;font-size:23px;font-weight:900;color:var(--fg);">Pine 전략 거래</h1><p style="margin:4px 0 0;color:var(--muted);font-size:13px;">차트 신호를 확인하고 Pine 전략으로 모의주문을 실행하세요. <a href="/trade/pine-guide.html" style="color:var(--accent-dark);font-weight:800;text-decoration:none;">Pine Script란? →</a></p></div>
+      <span id="pinePrice" style="font-size:18px;font-weight:900;color:var(--accent-dark);">-</span>
+    </div>
+
+    <section class="pine-card">
+      <div class="pine-toolbar">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><select id="pineSymbol" class="pine-select" aria-label="종목 선택"></select><span id="pineStockMeta" style="font-size:12px;color:var(--muted);"></span></div>
+        <div id="pinePeriods" style="display:flex;gap:5px;"><button class="period" data-period="1m">1개월</button><button class="period" data-period="3m">3개월</button><button class="period active" data-period="1y">1년</button></div>
+      </div>
+      <div id="pineChart"></div>
+    </section>
+
+    <section class="editor-grid">
+      <article class="pine-card">
+        <div class="editor-head"><div><strong style="font-size:14px;">Pine Script 전략</strong><span style="display:block;margin-top:2px;font-size:11px;color:var(--muted);">최신 봉과 내 평균 진입단가 기준으로 신호를 계산합니다.</span></div><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;"><select id="pineExampleSelect" class="pine-select" style="min-width:150px;padding:6px 8px;"><option value="ma">이동평균 교차</option><option value="tp-sl">3% 익절 · 1.5% 손절</option><option value="rsi">RSI 반전</option></select><button class="secondary" id="pineExample">예제 불러오기</button><button class="primary" id="pineEvaluate">전략 테스트</button></div></div>
+        <textarea id="pineScript" spellcheck="false" aria-label="Pine Script 편집기"></textarea>
+        <p class="notice">지원 문법: <code>input.float</code>, <code>ta.sma</code>, <code>ta.ema</code>, <code>ta.rsi</code>, <code>ta.crossover</code>, <code>ta.crossunder</code>, <code>strategy.entry</code>, <code>strategy.close</code>, <code>strategy.exit(limit, stop)</code>. Long 포지션의 평균 진입가 기준 퍼센트 익절·손절을 테스트할 수 있습니다. TradingView Pine 전체 실행 환경이나 공매도는 지원하지 않습니다.</p>
+      </article>
+
+      <aside class="pine-card" style="padding:14px;">
+        <h2 style="margin:0;font-size:15px;font-weight:900;">전략 신호 · 모의주문</h2>
+        <div class="signal" style="margin-top:12px;"><span style="font-size:11px;color:var(--muted);">최신 신호</span><div id="pineSignal" class="signal-value">계산 대기</div><div id="pineSignalDetail" style="margin-top:4px;font-size:11px;color:var(--muted);">스크립트를 실행해 신호를 확인하세요.</div><div id="pineRiskLevels" style="display:none;margin-top:9px;padding-top:9px;border-top:1px solid var(--border);font-size:11px;line-height:1.65;"></div></div>
+        <label for="pineQuantity" style="display:block;margin-top:14px;font-size:12px;font-weight:800;color:var(--fg);">주문 수량 (주)</label>
+        <input id="pineQuantity" type="number" min="1" step="1" value="1" style="width:100%;margin-top:6px;padding:9px;border:1px solid var(--border);border-radius:7px;font:inherit;font-size:13px;">
+        <button id="pineOrder" class="primary" disabled style="width:100%;margin-top:10px;">신호대로 모의주문 실행</button>
+        <p id="pineOrderMessage" style="min-height:20px;margin:9px 0 0;font-size:12px;"></p>
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);">실행된 주문은 내 거래이력에 <strong>PINE</strong> 출처로 기록됩니다.</div>
+        <pre id="pineLog" class="log">차트 데이터를 불러오는 중...</pre>
+      </aside>
+    </section>
+  </main>
+  <script src="/js/config.js"></script>
+  <script src="/js/common.js?v=20260808-1"></script>
+  <script src="/js/pine.js?v=20260808-1"></script>
+</body>
+</html>

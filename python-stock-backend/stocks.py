@@ -38,7 +38,22 @@ def sell():
     return _place_order(stock_trading.SELL)
 
 
-def _place_order(side: str):
+@stock_bp.post("/orders/pine")
+def pine_order():
+    """Order endpoint used by the Pine strategy practice screen.
+
+    Strategy parsing and signal generation happen in the browser, but the
+    actual simulated fill remains server-authoritative and is labelled in the
+    order history so it cannot be confused with a manual web order.
+    """
+    data = request.get_json(silent=True) or {}
+    side = str(data.get("side", "")).upper()
+    if side not in (stock_trading.BUY, stock_trading.SELL):
+        return jsonify({"message": "side는 BUY 또는 SELL이어야 합니다."}), 400
+    return _place_order(side, source="PINE")
+
+
+def _place_order(side: str, source: str = "WEB"):
     member_id = session["member_id"]
     data = request.get_json(silent=True) or {}
     symbol = str(data.get("symbol", "")).upper()
@@ -50,7 +65,7 @@ def _place_order(side: str):
     with session_scope() as db:
         member = db.get(Member, member_id)
         try:
-            result = stock_trading.execute_order(db, member, symbol, side, quantity, source="WEB")
+            result = stock_trading.execute_order(db, member, symbol, side, quantity, source=source)
         except ValueError as e:
             return jsonify({"message": str(e)}), 400
         return jsonify(result)
