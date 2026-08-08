@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="320" viewBox="0 0 720 320">
+  <rect width="720" height="320" fill="#f8fbff"/>
+  <path d="M230 48V270M490 48V270" stroke="#334155" stroke-width="5"/>
+  <rect x="190" y="105" width="80" height="112" rx="3" fill="#22c55e"/><rect x="450" y="120" width="80" height="105" rx="3" fill="#ef4444"/>
+  <g fill="#1e3a5f" font-family="Arial,sans-serif"><text x="60" y="55" font-size="20" font-weight="700">캔들 구조: 몸통과 꼬리</text><text x="105" y="160" font-size="17">상승 캔들</text><text x="505" y="160" font-size="17">하락 캔들</text><text x="280" y="96" font-size="16">윗꼬리</text><text x="280" y="170" font-size="16">몸통</text><text x="280" y="248" font-size="16">아랫꼬리</text></g>
+  <path d="M300 90H245M300 165H270M300 245H245" stroke="#2563eb" stroke-width="2"/>
+</svg>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="320" viewBox="0 0 720 320">
+  <rect width="720" height="320" fill="#f8fbff"/>
+  <g stroke="#dbe6f5" stroke-width="1"><path d="M60 40V270M160 40V270M260 40V270M360 40V270M460 40V270M560 40V270M660 40V270"/><path d="M45 70H680M45 120H680M45 170H680M45 220H680M45 270H680"/></g>
+  <path d="M55 185 L110 142 L165 175 L220 120 L275 155 L330 108 L385 145 L440 115 L495 158 L550 132 L605 172 L675 145" fill="none" stroke="#2563eb" stroke-width="6" stroke-linecap="round"/>
+  <path d="M48 115H680" stroke="#ef4444" stroke-width="4"/><path d="M48 205H680" stroke="#16a34a" stroke-width="4"/>
+  <text x="60" y="103" fill="#dc2626" font-family="Arial,sans-serif" font-size="17" font-weight="700">저항선</text><text x="60" y="232" fill="#15803d" font-family="Arial,sans-serif" font-size="17" font-weight="700">지지선</text>
+</svg>

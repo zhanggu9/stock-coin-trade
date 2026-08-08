@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="320" viewBox="0 0 720 320">
+  <rect width="720" height="320" fill="#f8fbff"/>
+  <path d="M60 245 L135 185 L190 215 L285 118 L340 158 L445 65" fill="none" stroke="#2563eb" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M445 65 L515 125 L560 92 L650 190" fill="none" stroke="#ef4444" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#1e3a5f" font-family="Arial,sans-serif" font-size="18" font-weight="700"><text x="70" y="235">1</text><text x="140" y="178">2</text><text x="198" y="208">3</text><text x="292" y="110">4</text><text x="350" y="151">5</text><text x="454" y="56">A</text><text x="520" y="118">B</text><text x="568" y="85">C</text></g>
+  <text x="55" y="35" fill="#1e3a5f" font-family="Arial,sans-serif" font-size="20" font-weight="700">엘리어트 파동 · 5파 추진과 ABC 조정 예시</text><text x="120" y="280" fill="#2563eb" font-family="Arial,sans-serif" font-size="16">추진 파동</text><text x="530" y="280" fill="#dc2626" font-family="Arial,sans-serif" font-size="16">조정 파동</text>
+</svg>

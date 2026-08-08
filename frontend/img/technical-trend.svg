@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="320" viewBox="0 0 720 320">
+  <rect width="720" height="320" fill="#f8fbff"/>
+  <g stroke="#dbe6f5" stroke-width="1"><path d="M60 40V270M160 40V270M260 40V270M360 40V270M460 40V270M560 40V270M660 40V270"/><path d="M45 70H680M45 120H680M45 170H680M45 220H680M45 270H680"/></g>
+  <path d="M55 245 L125 218 L185 228 L255 174 L325 190 L395 128 L465 145 L535 88 L605 104 L675 55" fill="none" stroke="#2563eb" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M55 255 L675 78" stroke="#16a34a" stroke-width="3" stroke-dasharray="10 7"/>
+  <circle cx="255" cy="174" r="7" fill="#2563eb"/><circle cx="395" cy="128" r="7" fill="#2563eb"/><circle cx="535" cy="88" r="7" fill="#2563eb"/>
+  <text x="55" y="30" fill="#1e3a5f" font-family="Arial,sans-serif" font-size="19" font-weight="700">상승추세 · 고점과 저점이 높아지는 구조</text>
+  <text x="490" y="240" fill="#15803d" font-family="Arial,sans-serif" font-size="15">추세선</text>
+</svg>

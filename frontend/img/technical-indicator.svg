@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="320" viewBox="0 0 720 320">
+  <rect width="720" height="320" fill="#f8fbff"/>
+  <g stroke="#dbe6f5" stroke-width="1"><path d="M50 40V260M150 40V260M250 40V260M350 40V260M450 40V260M550 40V260M650 40V260"/><path d="M40 70H680M40 120H680M40 170H680M40 220H680M40 270H680"/></g>
+  <path d="M55 165 C110 135 140 190 195 142 S280 115 335 140 S420 95 475 120 S555 72 665 95" fill="none" stroke="#2563eb" stroke-width="5"/>
+  <path d="M55 188 C115 158 150 212 205 166 S300 140 355 164 S445 120 500 142 S570 98 665 118" fill="none" stroke="#f59e0b" stroke-width="4"/>
+  <path d="M50 258 C115 238 160 278 225 242 S320 214 385 238 S480 198 545 220 S610 178 675 195" fill="none" stroke="#7c3aed" stroke-width="4"/>
+  <path d="M40 238H680M40 278H680" stroke="#94a3b8" stroke-width="2" stroke-dasharray="7 5"/>
+  <text x="50" y="30" fill="#1e3a5f" font-family="Arial,sans-serif" font-size="20" font-weight="700">기술지표 예시 · 추세와 모멘텀을 함께 확인</text><text x="585" y="233" fill="#64748b" font-family="Arial,sans-serif" font-size="13">RSI 70</text><text x="585" y="274" fill="#64748b" font-family="Arial,sans-serif" font-size="13">RSI 30</text>
+</svg>

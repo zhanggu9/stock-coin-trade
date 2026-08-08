@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="320" viewBox="0 0 720 320">
+  <rect width="720" height="320" fill="#f8fbff"/>
+  <g stroke="#dbe6f5" stroke-width="1"><path d="M60 45V275M160 45V275M260 45V275M360 45V275M460 45V275M560 45V275M660 45V275"/><path d="M45 75H680M45 125H680M45 175H680M45 225H680M45 275H680"/></g>
+  <path d="M65 100 L130 135 L195 220 L260 145 L325 218 L390 130 L455 125 L520 100 L585 75 L660 55" fill="none" stroke="#2563eb" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M65 130H475" stroke="#ef4444" stroke-width="3" stroke-dasharray="8 5"/><path d="M455 125 L505 125" stroke="#16a34a" stroke-width="4"/><path d="M495 112l18 13-18 13" fill="none" stroke="#16a34a" stroke-width="4"/>
+  <text x="55" y="35" fill="#1e3a5f" font-family="Arial,sans-serif" font-size="20" font-weight="700">이중바닥 패턴 · 넥라인 돌파 예시</text><text x="145" y="245" fill="#2563eb" font-family="Arial,sans-serif" font-size="15">저점 1</text><text x="285" y="245" fill="#2563eb" font-family="Arial,sans-serif" font-size="15">저점 2</text><text x="75" y="120" fill="#dc2626" font-family="Arial,sans-serif" font-size="15">넥라인</text><text x="515" y="105" fill="#15803d" font-family="Arial,sans-serif" font-size="15">돌파</text>
+</svg>

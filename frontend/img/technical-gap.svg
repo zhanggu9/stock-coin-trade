@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="320" viewBox="0 0 720 320">
+  <rect width="720" height="320" fill="#f8fbff"/>
+  <g stroke="#dbe6f5" stroke-width="1"><path d="M60 40V270M160 40V270M260 40V270M360 40V270M460 40V270M560 40V270M660 40V270"/><path d="M45 70H680M45 120H680M45 170H680M45 220H680M45 270H680"/></g>
+  <g stroke="#2563eb" stroke-width="5" stroke-linecap="round"><path d="M100 220V170M130 205V135M160 185V125M190 170V115"/><path d="M350 115V70M380 105V55M410 90V45M440 82V38"/><path d="M475 90V135M505 105V150M535 120V170M565 135V180"/></g>
+  <path d="M205 120H330" stroke="#f59e0b" stroke-width="3" stroke-dasharray="8 6"/><path d="M270 107l18 13-18 13" fill="none" stroke="#f59e0b" stroke-width="3"/>
+  <text x="205" y="95" fill="#a16207" font-family="Arial,sans-serif" font-size="18" font-weight="700">갭 (가격 공백)</text>
+</svg>

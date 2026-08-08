@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="320" viewBox="0 0 720 320">
+  <rect width="720" height="320" fill="#f8fbff"/>
+  <g stroke="#dbe6f5" stroke-width="1"><path d="M60 40V270M160 40V270M260 40V270M360 40V270M460 40V270M560 40V270M660 40V270"/><path d="M45 70H680M45 120H680M45 170H680M45 220H680M45 270H680"/></g>
+  <path d="M80 245 L450 55 L620 148" fill="none" stroke="#2563eb" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <g stroke-width="3" stroke-dasharray="7 5"><path d="M80 128H620" stroke="#7c3aed"/><path d="M80 160H620" stroke="#2563eb"/><path d="M80 190H620" stroke="#16a34a"/></g>
+  <text x="490" y="123" fill="#6d28d9" font-family="Arial,sans-serif" font-size="15">38.2%</text><text x="490" y="155" fill="#1d4ed8" font-family="Arial,sans-serif" font-size="15">50.0%</text><text x="490" y="185" fill="#15803d" font-family="Arial,sans-serif" font-size="15">61.8%</text>
+  <text x="60" y="30" fill="#1e3a5f" font-family="Arial,sans-serif" font-size="19" font-weight="700">되돌림 · 피보나치 비율 예시</text>
+</svg>
