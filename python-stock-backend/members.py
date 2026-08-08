@@ -6,7 +6,7 @@ from flask import Blueprint, jsonify, request, session
 
 from db import session_scope
 from models import HoldCrypto, Member, StockPosition, UpbitMarket
-from alternatives import position_value
+from alternatives import get_positions as get_alternative_positions, position_value
 from stock_market import cached_price
 
 member_bp = Blueprint("member", __name__, url_prefix="/api/member")
@@ -38,6 +38,66 @@ def me():
         if not member:
             return jsonify({"loggedIn": False})
         return jsonify({"loggedIn": True, "username": member.username, "asset": member.asset})
+
+
+@member_bp.get("/portfolio-analysis")
+def portfolio_analysis():
+    """현재 평가액을 바탕으로 한 교육용 자산배분 요약과 비개인화 조언."""
+    member_id = session.get("member_id")
+    if not member_id:
+        return jsonify({"error": "UNAUTHORIZED", "message": "로그인이 필요합니다."}), 401
+
+    with session_scope() as db:
+        member = db.get(Member, member_id)
+        if not member:
+            return jsonify({"error": "UNAUTHORIZED"}), 401
+        stock_value = sum(position.quantity * (cached_price(position.symbol) or position.avg_price)
+                          for position in db.query(StockPosition).filter(StockPosition.member_id == member_id))
+        crypto_rows = db.query(HoldCrypto, UpbitMarket).join(
+            UpbitMarket, HoldCrypto.upbit_market_id == UpbitMarket.upbit_market_id
+        ).filter(HoldCrypto.member_id == member_id).all()
+        codes = sorted({market.market_code for _, market in crypto_rows})
+        prices = {}
+        if codes:
+            try:
+                response = requests.get("https://api.upbit.com/v1/ticker", params={"markets": ",".join(codes)}, timeout=1.5)
+                response.raise_for_status()
+                prices = {row["market"]: float(row["trade_price"]) for row in response.json()}
+            except Exception:
+                prices = _crypto_price_cache.get("prices", {})
+        crypto_value = sum(holding.buy_crypto_count * prices.get(market.market_code, holding.buy_average)
+                           for holding, market in crypto_rows)
+        alternatives = get_alternative_positions(db, member_id)
+        alternative_value = sum(row["evalAmount"] for row in alternatives)
+        values = [
+            {"name": "현금", "value": round(member.asset), "color": "#64748B"},
+            {"name": "주식", "value": round(stock_value), "color": "#2563EB"},
+            {"name": "코인", "value": round(crypto_value), "color": "#7C3AED"},
+            {"name": "대체자산", "value": round(alternative_value), "color": "#D97706"},
+        ]
+        total = sum(item["value"] for item in values)
+        for item in values:
+            item["weight"] = round(item["value"] / total * 100, 1) if total else 0
+
+    weights = {item["name"]: item["weight"] for item in values}
+    invested = 100 - weights["현금"]
+    advice = []
+    if not total or invested == 0:
+        advice.append("아직 투자 자산이 없습니다. 상품별 변동성과 주문 단위를 먼저 살펴본 뒤 소액으로 연습해 보세요.")
+    else:
+        largest = max(values, key=lambda item: item["weight"])
+        if largest["weight"] >= 65:
+            advice.append(f"{largest['name']} 비중이 {largest['weight']}%로 높습니다. 자산군을 나누면 한 시장의 변동 영향이 줄어들 수 있습니다.")
+        if weights["코인"] >= 30:
+            advice.append("코인 비중이 높은 편입니다. 변동성이 큰 자산이므로 주문 규모와 손실 가능 범위를 함께 점검해 보세요.")
+        if weights["대체자산"] >= 35:
+            advice.append("대체자산에는 선물·옵션처럼 증거금과 만기 구조가 있는 상품이 포함될 수 있습니다. 현금 여유와 계약 조건을 확인하세요.")
+        if weights["현금"] >= 50:
+            advice.append("현금 비중이 높아 변동성 방어 여력은 큽니다. 투자 목적과 기간에 맞는 분할 진입 계획을 세워볼 수 있습니다.")
+        if len(advice) == 0:
+            advice.append("자산군이 비교적 나뉘어 있습니다. 각 상품의 변동성·유동성·주문 단위를 주기적으로 점검해 비중을 관리하세요.")
+    return jsonify({"totalAsset": round(total), "allocation": values, "advice": advice,
+                    "notice": "모의투자 교육용 분석이며 개인별 투자 권유가 아닙니다."})
 
 
 @member_bp.get("/investor-rankings")

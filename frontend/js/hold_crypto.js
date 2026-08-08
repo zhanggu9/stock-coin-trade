@@ -101,6 +101,28 @@ async function loadAlternativePortfolio() {
   }
 }
 
+/* ── 포트폴리오 분석 모달 ───────────────────────────────────── */
+async function openPortfolioAnalysis() {
+  const modal = document.getElementById('portfolioAnalysisModal');
+  const content = document.getElementById('portfolioAnalysisContent');
+  modal.style.display = 'flex';
+  content.innerHTML = '<p class="text-sm" style="color:var(--muted);">분석 정보를 불러오는 중입니다.</p>';
+  try {
+    const res = await apiFetch('/api/member/portfolio-analysis');
+    if (!res.ok) throw new Error('analysis unavailable');
+    const data = await res.json();
+    const allocation = data.allocation || [];
+    content.innerHTML = `<div class="rounded-xl p-4" style="background:linear-gradient(135deg,#EEF4FF,#F8FAFC);border:1px solid #D7E3FC;"><div class="text-xs font-bold" style="color:var(--muted);">총 평가자산</div><div class="mt-1 text-2xl font-black" style="color:var(--fg);">${fmt(data.totalAsset)}원</div></div>
+      <div class="mt-5"><h3 class="text-sm font-black" style="color:var(--fg);">자산 배분</h3><div class="mt-3 space-y-3">${allocation.map(item => `<div><div class="flex items-center justify-between text-sm"><span class="font-bold" style="color:var(--fg);"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${item.color};margin-right:6px;"></span>${item.name}</span><span style="color:var(--muted);">${fmt(item.value)}원 · <strong style="color:var(--fg);">${item.weight}%</strong></span></div><div style="height:8px;margin-top:7px;border-radius:999px;background:var(--surface-2);overflow:hidden;"><div style="width:${item.weight}%;height:100%;border-radius:inherit;background:${item.color};"></div></div></div>`).join('')}</div></div>
+      <div class="mt-6 rounded-xl p-4" style="border:1px solid #FDE68A;background:#FFFBEB;"><h3 class="text-sm font-black" style="color:#92400E;">✦ 교육용 배분 조언</h3><ul class="mt-3 space-y-2 text-sm leading-relaxed" style="color:#78350F;">${(data.advice || []).map(item => `<li style="display:flex;gap:7px;"><span>•</span><span>${item}</span></li>`).join('')}</ul></div><p class="mt-4 text-xs" style="color:var(--muted);">${data.notice || ''}</p>`;
+  } catch {
+    content.innerHTML = '<p class="text-sm" style="color:#E11D48;">분석 정보를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.</p>';
+  }
+}
+function closePortfolioAnalysis() { document.getElementById('portfolioAnalysisModal').style.display = 'none'; }
+document.getElementById('portfolioAnalysisModal')?.addEventListener('click', event => { if (event.target.id === 'portfolioAnalysisModal') closePortfolioAnalysis(); });
+document.addEventListener('keydown', event => { if (event.key === 'Escape') closePortfolioAnalysis(); });
+
 function renderStockSectorSummary(positions, totalEval) {
   const container = document.getElementById('stockSectorSummary');
   if (!container) return;
