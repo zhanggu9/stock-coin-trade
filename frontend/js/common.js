@@ -69,7 +69,7 @@ function renderHeader(user) {
     <!-- 왼쪽 오프캔버스 — 네비게이션 메뉴 -->
     <aside id="oc-panel">
       <div class="oc-header">
-        <span class="brand-logo-text" style="font-size:17px;letter-spacing:1.5px;">모의투자</span>
+        <span class="brand-logo-text" style="font-size:17px;letter-spacing:1.5px;"><i class="fa-solid fa-chart-pie" aria-hidden="true" style="margin-right:6px;"></i>모의투자</span>
         <button class="oc-close-btn" onclick="closeOffcanvas()">✕</button>
       </div>
       <nav class="oc-nav">
@@ -96,7 +96,7 @@ function renderHeader(user) {
             <span class="hidden md:inline">메뉴</span>
           </button>
           <a href="/index.html" style="text-decoration:none;display:flex;align-items:center;">
-            <span class="brand-logo-text">모의투자</span>
+            <span class="brand-logo-text"><i class="fa-solid fa-chart-pie" aria-hidden="true" style="margin-right:6px;"></i>모의투자</span>
           </a>
         </div>
         <div style="display:flex;align-items:center;gap:12px;">
