@@ -3,7 +3,7 @@ import time
 from models import StockOrder, StockPosition
 from stock_market import STOCKS, current_price, get_stock_info
 
-INITIAL_CASH = 10_000_000  # matches the seed deposit granted at registration (members.py)
+INITIAL_CASH = 100_000_000  # matches the seed deposit granted at registration (members.py)
 
 BUY = "BUY"
 SELL = "SELL"
@@ -41,8 +41,9 @@ def get_positions(db, member_id: int) -> list[dict]:
 
 
 def get_account_snapshot(db, member) -> dict:
+    from alternatives import position_value
     positions = get_positions(db, member.member_id)
-    total_pos = sum(p["evalAmount"] for p in positions)
+    total_pos = sum(p["evalAmount"] for p in positions) + position_value(db, member.member_id)
     total_asset = member.asset + total_pos
     pnl_rate = round(((total_asset - INITIAL_CASH) / INITIAL_CASH * 100) if INITIAL_CASH else 0, 4)
     return {"cash": member.asset, "totalAsset": total_asset, "totalPnlRate": pnl_rate}

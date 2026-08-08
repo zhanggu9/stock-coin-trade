@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>파생·금속·부동산 모의투자 — EDUMGT</title><link rel="icon" href="/img/favicon.png">
+  <style>
+    @font-face { font-family:'Pretendard'; font-weight:400; font-display:swap; src:url('/fonts/Pretendard-Regular.woff2') format('woff2'); }
+    @font-face { font-family:'Pretendard'; font-weight:700; font-display:swap; src:url('/fonts/Pretendard-Bold.woff2') format('woff2'); }
+    @font-face { font-family:'Pretendard'; font-weight:800; font-display:swap; src:url('/fonts/Pretendard-ExtraBold.woff2') format('woff2'); }
+    #site-footer { margin-top:40px; }
+    .market-tab { border:1px solid var(--border); border-radius:999px; background:var(--surface); padding:6px 12px; color:var(--muted); font-size:12px; font-weight:700; cursor:pointer; }
+    .market-tab.active { color:#fff; border-color:var(--accent); background:var(--accent); }
+    .market-row { cursor:pointer; transition:background .15s; }.market-row:hover,.market-row.selected { background:var(--accent-light); }
+  </style>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{fontFamily:{sans:['Pretendard','sans-serif']}}}}</script>
+  <link rel="stylesheet" href="/css/style.css?v=20260802-2">
+</head>
+<body class="min-h-screen"><div id="header-mount"></div>
+<main class="mx-auto w-full max-w-[1640px] px-4 py-6">
+  <section class="glass-card p-5 mb-5" style="background:linear-gradient(120deg,#F8FAFF,#EEF7FF);">
+    <div class="flex flex-wrap items-start justify-between gap-4">
+      <div><span class="badge badge-gold">통합 모의투자</span><h1 class="mt-2 text-2xl font-black" style="color:var(--fg);">파생상품 · 귀금속 · 부동산</h1><p class="mt-2 text-sm" style="color:var(--muted);">선물·옵션·파생 ETN, 금·은 현물, 부동산 지분을 하나의 KRW 잔고로 연습합니다.</p></div>
+      <div class="stat-card min-w-[210px]"><div class="stat-label">주문 가능 KRW</div><div id="cash" class="stat-value">-</div><div class="mt-1 text-xs" style="color:var(--muted);">신규 가입 기준 모의투자금 100,000,000원</div></div>
+    </div>
+    <p class="mt-4 text-xs leading-relaxed" style="color:var(--muted);">※ 표시 가격은 교육용 기준 시세입니다. 실제 시세·투자 권유가 아니며, 선물은 증거금률, 옵션은 프리미엄 기준으로 체결됩니다.</p>
+  </section>
+  <section class="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+    <div class="glass-card overflow-hidden">
+      <div class="p-4" style="border-bottom:1px solid var(--border);"><div id="tabs" class="flex flex-wrap gap-2"></div></div>
+      <div class="overflow-x-auto"><table class="dark-table min-w-full"><thead><tr><th class="text-left">상품</th><th class="text-right">기준가격</th><th class="text-right">등락률</th><th class="text-right">주문금액</th><th class="text-right">단위 / 조건</th></tr></thead><tbody id="marketBody"></tbody></table></div>
+    </div>
+    <aside class="space-y-5">
+      <section class="glass-card p-5"><div class="flex items-center justify-between"><h2 class="text-lg font-black" style="color:var(--fg);">주문</h2><span id="selectedCategory" class="badge badge-muted">상품 선택</span></div>
+        <div class="mt-4"><div id="selectedName" class="font-bold" style="color:var(--fg);">좌측에서 상품을 선택하세요.</div><div id="selectedInfo" class="mt-1 text-xs" style="color:var(--muted);"></div></div>
+        <label class="mt-5 block text-xs font-bold" style="color:var(--muted);">주문 수량</label><input id="quantity" type="number" min="1" value="1" class="dark-input mt-2 w-full" style="padding:.65rem .8rem;">
+        <div class="mt-3 rounded-lg p-3 text-sm" style="background:var(--surface-2);"><div class="flex justify-between"><span style="color:var(--muted);">예상 주문금액</span><strong id="orderAmount" style="color:var(--fg);">-</strong></div><div id="orderNote" class="mt-1 text-xs" style="color:var(--muted);"></div></div>
+        <div class="mt-4 grid grid-cols-2 gap-2"><button id="buyBtn" class="btn-buy" type="button">매수</button><button id="sellBtn" class="btn-sell" type="button">매도</button></div><p id="orderMessage" class="mt-3 text-xs" aria-live="polite"></p>
+      </section>
+      <section class="glass-card overflow-hidden"><div class="px-5 py-4" style="border-bottom:1px solid var(--border);"><h2 class="font-black" style="color:var(--fg);">내 대체자산 포지션</h2></div><div class="overflow-x-auto"><table class="dark-table min-w-full"><thead><tr><th class="text-left">상품</th><th class="text-right">수량</th><th class="text-right">평가금액</th><th class="text-right">손익</th></tr></thead><tbody id="positionBody"></tbody></table></div></section>
+    </aside>
+  </section>
+</main><footer id="site-footer"><div class="mx-auto w-full max-w-[1640px] px-4 py-4 flex justify-between"><span class="brand-logo-text" style="font-size:13px;">EDUMGT</span><span style="font-size:12px;color:var(--muted);">모의투자 교육 서비스</span></div></footer>
+<script src="/js/config.js"></script><script src="/js/common.js?v=20260808"></script><script src="/js/alternatives.js?v=20260808"></script>
+</body></html>

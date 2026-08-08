@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request, session
 
 import stock_trading
 from db import session_scope
-from models import Member, StockOrder, StockPosition
+from models import AlternativeOrder, AlternativePosition, Member, StockOrder, StockPosition
 
 stock_bp = Blueprint("stocks", __name__, url_prefix="/api/stocks")
 
@@ -74,5 +74,7 @@ def reset_account():
         member = db.get(Member, member_id)
         db.query(StockPosition).filter(StockPosition.member_id == member_id).delete()
         db.query(StockOrder).filter(StockOrder.member_id == member_id).delete()
+        db.query(AlternativePosition).filter(AlternativePosition.member_id == member_id).delete()
+        db.query(AlternativeOrder).filter(AlternativeOrder.member_id == member_id).delete()
         member.asset = stock_trading.INITIAL_CASH
         return jsonify({"status": "ok", "cash": member.asset})

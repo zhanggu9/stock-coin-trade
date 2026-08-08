@@ -85,6 +85,35 @@ class StockOrder(Base):
     created_at = Column(DateTime, nullable=False, server_default=func.now())
 
 
+class AlternativePosition(Base):
+    """금속·파생상품·부동산 모의투자 보유 포지션."""
+    __tablename__ = "alternative_position"
+    __table_args__ = (UniqueConstraint("member_id", "symbol", name="uq_alternative_position_member_symbol"),)
+
+    alternative_position_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    member_id = Column(BigInteger, ForeignKey("member.member_id"), nullable=False)
+    symbol = Column(String(30), nullable=False)
+    category = Column(String(20), nullable=False)
+    quantity = Column(Integer, nullable=False)
+    avg_price = Column(BigInteger, nullable=False)
+
+
+class AlternativeOrder(Base):
+    __tablename__ = "alternative_order"
+
+    alternative_order_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    member_id = Column(BigInteger, ForeignKey("member.member_id"), nullable=False)
+    symbol = Column(String(30), nullable=False)
+    name = Column(String(100), nullable=False)
+    category = Column(String(20), nullable=False)
+    order_type = Column(String(4), nullable=False)
+    quantity = Column(Integer, nullable=False)
+    price = Column(BigInteger, nullable=False)
+    multiplier = Column(Integer, nullable=False, default=1)
+    amount = Column(BigInteger, nullable=False)
+    created_at = Column(DateTime, nullable=False, server_default=func.now())
+
+
 class ApiKey(Base):
     __tablename__ = "api_key"
 

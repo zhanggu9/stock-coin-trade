@@ -6,10 +6,11 @@ from flask import Blueprint, jsonify, request, session
 
 from db import session_scope
 from models import HoldCrypto, Member, StockPosition, UpbitMarket
+from alternatives import position_value
 from stock_market import cached_price
 
 member_bp = Blueprint("member", __name__, url_prefix="/api/member")
-INITIAL_ASSET = 10_000_000
+INITIAL_ASSET = 100_000_000
 RANKING_CACHE_TTL = 30
 _ranking_cache = {"ts": 0.0, "data": None}
 _ranking_cache_lock = threading.Lock()
@@ -75,6 +76,9 @@ def investor_rankings():
         for holding, market in crypto_rows:
             totals[holding.member_id] = totals.get(holding.member_id, 0) + holding.buy_crypto_count * prices.get(market.market_code, holding.buy_average)
 
+        for member in members:
+            totals[member.member_id] = totals.get(member.member_id, 0) + position_value(db, member.member_id)
+
         rankings = []
         for member in members:
             total_asset = round(totals.get(member.member_id, 0))
@@ -136,7 +140,7 @@ def register():
         if db.query(Member).filter(Member.email == email).first():
             return jsonify({"field": "email", "error": "이미 존재하는 회원입니다."}), 400
 
-        member = Member(username=username, email=email, password=_hash_password(password), asset=10_000_000)
+        member = Member(username=username, email=email, password=_hash_password(password), asset=INITIAL_ASSET)
         db.add(member)
         db.flush()
         session.clear()

@@ -39,6 +39,7 @@ function renderHeader(user) {
     { href: '/index.html',       label: '대시보드',      icon: 'fa-solid fa-gauge-high' },
     { href: '/trade/order.html', label: '코인',          icon: 'fa-solid fa-coins' },
     { href: '/trade/stock.html', label: '주식',          icon: 'fa-solid fa-chart-line' },
+    { href: '/trade/alternatives.html', label: '파생·금속·부동산', icon: 'fa-solid fa-landmark' },
     { href: '/trade/hold.html',  label: '보유자산',       icon: 'fa-solid fa-wallet' },
     { href: '/trade/history.html', label: '내 거래이력',   icon: 'fa-solid fa-clock-rotate-left' },
     { href: '/trade/avg-down.html', label: '물타기 계산기', icon: 'fa-solid fa-calculator' },

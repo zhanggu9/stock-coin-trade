@@ -13,7 +13,7 @@ from stock_market import BASE_PRICES, STOCKS
 LOGGER = logging.getLogger(__name__)
 DEMO_EMAIL_DOMAIN = "@sample-investor.local"
 DEMO_PASSWORD = "123456"
-INITIAL_ASSET = 10_000_000
+INITIAL_ASSET = 100_000_000
 
 DEMO_NAMES = (
     "김가온", "이도윤", "박서연", "최민준", "정하린", "윤지후", "한예린", "오현우", "서유진", "강시우",

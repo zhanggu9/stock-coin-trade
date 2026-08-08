@@ -170,7 +170,7 @@ CREATE TABLE IF NOT EXISTS `member` (
 -- 테이블 데이터 mockinv.member:~0 rows (대략적) 내보내기
 /*!40000 ALTER TABLE `member` DISABLE KEYS */;
 INSERT INTO `member` (`member_id`, `asset`, `email`, `password`, `username`) VALUES
-	(1, 8190003, 'jj@jj.com', '$2a$10$NdyqwR1CQUhS79ZkL3LtfeZ70ZMR88VgYK2JGuzflPs6Kl.N24YlC', '이코인');
+	(1, 98190003, 'jj@jj.com', '$2a$10$NdyqwR1CQUhS79ZkL3LtfeZ70ZMR88VgYK2JGuzflPs6Kl.N24YlC', '이코인');
 /*!40000 ALTER TABLE `member` ENABLE KEYS */;
 
 -- 테이블 mockinv.upbit_market 구조 내보내기
@@ -220,6 +220,35 @@ CREATE TABLE IF NOT EXISTS `stock_order` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- 테이블 mockinv.api_key 구조 내보내기
+CREATE TABLE IF NOT EXISTS `alternative_position` (
+  `alternative_position_id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `member_id` bigint(20) NOT NULL,
+  `symbol` varchar(30) NOT NULL,
+  `category` varchar(20) NOT NULL,
+  `quantity` int(11) NOT NULL,
+  `avg_price` bigint(20) NOT NULL,
+  PRIMARY KEY (`alternative_position_id`),
+  UNIQUE KEY `uq_alternative_position_member_symbol` (`member_id`,`symbol`),
+  CONSTRAINT `FK_alternative_position_member` FOREIGN KEY (`member_id`) REFERENCES `member` (`member_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `alternative_order` (
+  `alternative_order_id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `member_id` bigint(20) NOT NULL,
+  `symbol` varchar(30) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `category` varchar(20) NOT NULL,
+  `order_type` varchar(4) NOT NULL,
+  `quantity` int(11) NOT NULL,
+  `price` bigint(20) NOT NULL,
+  `multiplier` int(11) NOT NULL DEFAULT 1,
+  `amount` bigint(20) NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`alternative_order_id`),
+  KEY `idx_alternative_order_member_created` (`member_id`,`created_at`),
+  CONSTRAINT `FK_alternative_order_member` FOREIGN KEY (`member_id`) REFERENCES `member` (`member_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 CREATE TABLE IF NOT EXISTS `api_key` (
   `api_key_id` bigint(20) NOT NULL AUTO_INCREMENT,
   `member_id` bigint(20) NOT NULL,

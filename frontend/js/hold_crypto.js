@@ -18,6 +18,7 @@
   // 보유 코인 테이블 렌더
   renderHoldTable(holdCryptoList);
   await loadStockPortfolio();
+  await loadAlternativePortfolio();
 
   if (!holdCryptoList.length) {
     setText('total_member_asset', fmt(memberAsset));
@@ -76,6 +77,27 @@ async function loadStockPortfolio() {
     }).join('');
   } catch {
     if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center" style="color:var(--muted);">주식 포트폴리오를 불러올 수 없습니다.</td></tr>';
+  }
+}
+
+/* ── 선물·옵션·금속·부동산 포지션 ─────────────────────────────── */
+async function loadAlternativePortfolio() {
+  const tbody = document.getElementById('alternativePositionBody');
+  if (!tbody) return;
+  try {
+    const res = await apiFetch('/api/alternatives/positions');
+    if (!res.ok) throw new Error('alternative positions unavailable');
+    const { positions = [] } = await res.json();
+    if (!positions.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center" style="color:var(--muted);">보유한 대체자산이 없습니다.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = positions.map(pos => {
+      const pnl = Number(pos.pnl || 0);
+      return `<tr><td><div class="font-bold" style="color:var(--fg);">${pos.name}</div><div class="text-xs" style="color:var(--accent);">${pos.symbol}</div></td><td><span class="badge badge-muted">${pos.category}</span></td><td class="text-right" style="color:var(--fg);">${Number(pos.quantity).toLocaleString('ko-KR')}${pos.unit}</td><td class="text-right" style="color:var(--fg);">${fmt(pos.avgPrice)}원</td><td class="text-right font-bold" style="color:var(--accent);">${fmt(pos.evalAmount)}원</td><td class="text-right font-bold" style="color:${pnl >= 0 ? '#E11D48' : '#2563EB'};">${pnl >= 0 ? '+' : ''}${fmt(pnl)}원</td></tr>`;
+    }).join('');
+  } catch {
+    tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center" style="color:var(--muted);">대체자산 포트폴리오를 불러올 수 없습니다.</td></tr>';
   }
 }
 
