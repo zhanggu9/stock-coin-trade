@@ -22,7 +22,7 @@ Nginx (Frontend · :3000)
   └── /api/      → Python Backend 프록시
         │
         └── Python Backend (Flask REST API · :8200 내부)
-              └── MariaDB (external shared-net)
+              └── MariaDB (로컬 개발: Docker / 운영: 외부 DB 서버)
 ```
 
 | 레이어 | 기술 | 역할 |

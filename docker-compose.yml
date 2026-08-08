@@ -22,6 +22,7 @@ services:
   mariadb:
     image: mariadb:11.4
     container_name: crypto-mock-mariadb
+    profiles: ["local-db"]
     networks:
       - internal
     environment:
@@ -50,8 +51,8 @@ services:
     expose:
       - "8200"
     environment:
-      DB_HOST: mariadb
-      DB_PORT: "3306"
+      DB_HOST: ${DB_HOST:-mariadb}
+      DB_PORT: ${DB_PORT:-3306}
       DB_NAME: ${MARIADB_DATABASE:-mockinv}
       DB_USER: ${MARIADB_USER:-mockinv}
       DB_PASSWORD: ${MARIADB_PASSWORD:-12345678!!}
@@ -60,9 +61,6 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       # 기존 회원·보유자산을 변경하지 않고 없는 샘플 투자자만 추가한다.
       DEMO_SEED_ENABLED: ${DEMO_SEED_ENABLED:-true}
-    depends_on:
-      mariadb:
-        condition: service_healthy
     restart: unless-stopped
 
 volumes:
