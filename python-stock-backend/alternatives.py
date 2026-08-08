@@ -4,7 +4,7 @@
 변동하며, 각 상품의 단위·계약승수·증거금 정보를 응답에 함께 제공한다.
 """
 import math
-from datetime import date
+from datetime import date, timedelta
 
 from flask import Blueprint, jsonify, request, session
 from sqlalchemy import text
@@ -23,9 +23,9 @@ CATALOG = {
     "DRV-INV": {"name": "KOSPI 200 인버스", "category": "파생상품", "price": 7_920, "multiplier": 1, "unit": "1좌", "marginRate": 100, "description": "지수 하락 방향 모의 ETN"},
     "MET-GOLD": {"name": "금 (순금 99.99%)", "category": "금", "price": 178_300, "multiplier": 1, "unit": "1g", "marginRate": 100, "description": "국내 금 현물 기준 모의가격"},
     "MET-SILVER": {"name": "은 (99.9%)", "category": "은", "price": 2_480, "multiplier": 1, "unit": "1g", "marginRate": 100, "description": "국내 은 현물 기준 모의가격"},
-    "RE-SEOUL": {"name": "서울 강남 아파트 지분", "category": "부동산", "price": 12_850_000, "multiplier": 1, "unit": "1구좌", "marginRate": 100, "description": "전용 84㎡ 대표 단지 시세를 분할한 교육용 지분"},
-    "RE-PANGYO": {"name": "판교 아파트 지분", "category": "부동산", "price": 9_720_000, "multiplier": 1, "unit": "1구좌", "marginRate": 100, "description": "전용 84㎡ 대표 단지 시세를 분할한 교육용 지분"},
-    "RE-BUSAN": {"name": "부산 해운대 아파트 지분", "category": "부동산", "price": 6_380_000, "multiplier": 1, "unit": "1구좌", "marginRate": 100, "description": "전용 84㎡ 대표 단지 시세를 분할한 교육용 지분"},
+    "RE-SEOUL": {"name": "서울 강남 아파트 지분", "category": "부동산", "price": 12_850_000, "multiplier": 1, "unit": "1구좌", "marginRate": 100, "description": "전용 84㎡ 대표 단지 시세를 분할한 교육용 지분", "location": {"lat": 37.4979, "lng": 127.0276, "label": "서울 강남구"}},
+    "RE-PANGYO": {"name": "판교 아파트 지분", "category": "부동산", "price": 9_720_000, "multiplier": 1, "unit": "1구좌", "marginRate": 100, "description": "전용 84㎡ 대표 단지 시세를 분할한 교육용 지분", "location": {"lat": 37.3947, "lng": 127.1112, "label": "경기 성남시 판교"}},
+    "RE-BUSAN": {"name": "부산 해운대 아파트 지분", "category": "부동산", "price": 6_380_000, "multiplier": 1, "unit": "1구좌", "marginRate": 100, "description": "전용 84㎡ 대표 단지 시세를 분할한 교육용 지분", "location": {"lat": 35.1631, "lng": 129.1636, "label": "부산 해운대구"}},
 }
 
 
@@ -40,6 +40,25 @@ def _quote(symbol: str) -> dict:
     return {"symbol": symbol, **item, "price": price, "changeRate": rate,
             "notionalPerUnit": amount_per_unit, "tradeAmountPerUnit": margin_per_unit,
             "updatedAt": date.today().isoformat(), "source": "교육용 기준 시세"}
+
+
+def get_chart(symbol: str, days: int = 120) -> list[dict]:
+    """교육용 기준가에서 파생한 일봉 데이터. 마지막 종가는 현재 주문 기준가와 일치한다."""
+    quote = _quote(symbol)
+    days = max(30, min(days, 365))
+    raw = []
+    for index in range(days):
+        day = date.today() - timedelta(days=days - index - 1)
+        seed = sum(map(ord, symbol)) + day.toordinal()
+        center = 1 + math.sin(seed * .17) * .035 + math.cos(seed * .043) * .018
+        opening = center * (1 + math.sin(seed * .31) * .009)
+        closing = center * (1 + math.cos(seed * .23) * .011)
+        high = max(opening, closing) * (1.006 + abs(math.sin(seed)) * .012)
+        low = min(opening, closing) * (1 - .006 - abs(math.cos(seed)) * .01)
+        raw.append((day.isoformat(), opening, high, low, closing))
+    scale = quote["price"] / raw[-1][4]
+    return [{"time": row[0], "open": round(row[1] * scale), "high": round(row[2] * scale),
+             "low": round(row[3] * scale), "close": round(row[4] * scale)} for row in raw]
 
 
 def get_positions(db, member_id: int) -> list[dict]:
@@ -91,6 +110,18 @@ def require_login():
 @alternative_bp.get("/markets")
 def markets():
     return jsonify({"markets": [_quote(symbol) for symbol in CATALOG], "notice": "교육용 기준 시세이며 실제 투자 권유 또는 실거래 가격이 아닙니다."})
+
+
+@alternative_bp.get("/markets/<symbol>/chart")
+def chart(symbol: str):
+    symbol = symbol.upper()
+    if symbol not in CATALOG:
+        return jsonify({"message": "지원하지 않는 상품입니다."}), 404
+    try:
+        days = int(request.args.get("days", 120))
+    except (TypeError, ValueError):
+        days = 120
+    return jsonify({"symbol": symbol, "data": get_chart(symbol, days)})
 
 
 @alternative_bp.get("/positions")

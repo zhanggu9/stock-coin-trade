@@ -11,8 +11,12 @@
     .market-tab { border:1px solid var(--border); border-radius:999px; background:var(--surface); padding:6px 12px; color:var(--muted); font-size:12px; font-weight:700; cursor:pointer; }
     .market-tab.active { color:#fff; border-color:var(--accent); background:var(--accent); }
     .market-row { cursor:pointer; transition:background .15s; }.market-row:hover,.market-row.selected { background:var(--accent-light); }
+    #alternativeChart, #propertyMap { height:400px; } .asset-view { display:none; }.asset-view.active { display:block; }
   </style>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>tailwind.config={theme:{extend:{fontFamily:{sans:['Pretendard','sans-serif']}}}}</script>
   <link rel="stylesheet" href="/css/style.css?v=20260802-2">
 </head>
@@ -26,9 +30,16 @@
     <p class="mt-4 text-xs leading-relaxed" style="color:var(--muted);">※ 표시 가격은 교육용 기준 시세입니다. 실제 시세·투자 권유가 아니며, 선물은 증거금률, 옵션은 프리미엄 기준으로 체결됩니다.</p>
   </section>
   <section class="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
-    <div class="glass-card overflow-hidden">
+    <div class="space-y-5">
+      <div class="glass-card overflow-hidden">
       <div class="p-4" style="border-bottom:1px solid var(--border);"><div id="tabs" class="flex flex-wrap gap-2"></div></div>
       <div class="overflow-x-auto"><table class="dark-table min-w-full"><thead><tr><th class="text-left">상품</th><th class="text-right">기준가격</th><th class="text-right">등락률</th><th class="text-right">주문금액</th><th class="text-right">단위 / 조건</th></tr></thead><tbody id="marketBody"></tbody></table></div>
+      </div>
+      <section class="glass-card overflow-hidden">
+        <div class="px-5 py-4 flex items-center justify-between" style="border-bottom:1px solid var(--border);"><div><h2 id="viewTitle" class="font-black" style="color:var(--fg);">상품 차트</h2><p id="viewSubtitle" class="mt-1 text-xs" style="color:var(--muted);">선택한 상품의 일봉 기준 시세</p></div><span id="viewBadge" class="badge badge-muted">일봉</span></div>
+        <div id="chartView" class="asset-view active"><div id="alternativeChart"></div></div>
+        <div id="mapView" class="asset-view"><div id="propertyMap"></div><p class="px-5 py-3 text-xs" style="color:var(--muted);">지도 핀을 선택하면 해당 부동산 지분 상품과 교육용 기준 시세를 확인할 수 있습니다.</p></div>
+      </section>
     </div>
     <aside class="space-y-5">
       <section class="glass-card p-5"><div class="flex items-center justify-between"><h2 class="text-lg font-black" style="color:var(--fg);">주문</h2><span id="selectedCategory" class="badge badge-muted">상품 선택</span></div>
@@ -41,5 +52,5 @@
     </aside>
   </section>
 </main><footer id="site-footer"><div class="mx-auto w-full max-w-[1640px] px-4 py-4 flex justify-between"><span class="brand-logo-text" style="font-size:13px;">EDUMGT</span><span style="font-size:12px;color:var(--muted);">모의투자 교육 서비스</span></div></footer>
-<script src="/js/config.js"></script><script src="/js/common.js?v=20260808"></script><script src="/js/alternatives.js?v=20260808"></script>
+<script src="/js/config.js"></script><script src="/js/common.js?v=20260808"></script><script src="/js/alternatives.js?v=20260808-2"></script>
 </body></html>
