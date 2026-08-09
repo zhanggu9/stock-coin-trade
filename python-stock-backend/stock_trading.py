@@ -75,6 +75,8 @@ def get_order_history(db, member_id: int, limit: int = 50) -> list[dict]:
 def execute_order(db, member, symbol: str, side: str, quantity: int, source: str = "WEB") -> dict:
     """Execute a market BUY/SELL for `member` against their shared cash balance
     (member.asset). Raises ValueError with a user-facing message on failure."""
+    # 같은 회원이 여러 탭에서 동시에 주문해도 잔액 검증과 차감이 분리되지 않게 행을 잠근다.
+    db.refresh(member, with_for_update=True)
     symbol = (symbol or "").upper()
     side = (side or "").upper()
     if side not in (BUY, SELL):

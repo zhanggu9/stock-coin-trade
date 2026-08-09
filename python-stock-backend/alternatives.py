@@ -153,7 +153,8 @@ def order():
     quote = _quote(symbol)
     amount = quote["tradeAmountPerUnit"] * quantity
     with session_scope() as db:
-        member = db.get(Member, session["member_id"])
+        # 현금 확인과 차감을 하나의 잠금 단위로 묶어 동시 주문으로 인한 음수 잔액을 막는다.
+        member = db.query(Member).filter(Member.member_id == session["member_id"]).with_for_update().one()
         position = db.query(AlternativePosition).filter_by(member_id=member.member_id, symbol=symbol).first()
         if side == "BUY":
             if member.asset < amount:

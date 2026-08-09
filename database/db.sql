@@ -160,7 +160,7 @@ INSERT INTO `hold_crypto` (`hold_crypto_id`, `buy_average`, `buy_crypto_count`, 
 -- 테이블 mockinv.member 구조 내보내기
 CREATE TABLE IF NOT EXISTS `member` (
   `member_id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `asset` bigint(20) NOT NULL,
+  `asset` bigint(20) NOT NULL CHECK (`asset` >= 0),
   `email` varchar(255) DEFAULT NULL,
   `password` varchar(255) DEFAULT NULL,
   `username` varchar(255) DEFAULT NULL,

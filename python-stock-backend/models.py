@@ -1,6 +1,7 @@
 from sqlalchemy import (
     BigInteger,
     Boolean,
+    CheckConstraint,
     Column,
     DateTime,
     Float,
@@ -18,6 +19,7 @@ Base = declarative_base()
 
 class Member(Base):
     __tablename__ = "member"
+    __table_args__ = (CheckConstraint("asset >= 0", name="chk_member_asset_nonnegative"),)
 
     member_id = Column(BigInteger, primary_key=True, autoincrement=True)
     username = Column(String(255))

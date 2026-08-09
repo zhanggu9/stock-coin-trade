@@ -303,7 +303,7 @@ function renderInvestmentRankings(content, rankings) {
     return;
   }
   const medals = ['#F59E0B', '#94A3B8', '#B45309'];
-  content.innerHTML = `<div style="padding:1rem 1.1rem .65rem;font-size:12px;color:var(--muted);line-height:1.55;">초기 모의자산 1,000만원 대비 총 평가자산 기준입니다.</div>
+  content.innerHTML = `<div style="padding:1rem 1.1rem .65rem;font-size:12px;color:var(--muted);line-height:1.55;">초기 모의자산 1억 원 대비 총 평가자산 기준입니다.</div>
     <div style="padding:0 .8rem 1rem;">${rankings.map(row => {
       const color = row.profit >= 0 ? '#E11D48' : '#2563EB';
       const rankColor = medals[row.rank - 1] || '#64748B';

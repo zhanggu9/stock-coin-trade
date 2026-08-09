@@ -205,7 +205,7 @@ def order_buy():
         return jsonify({"error": "0보다 큰 수를 입력해주세요."}), 400
 
     with session_scope() as db:
-        member = db.get(Member, member_id)
+        member = db.query(Member).filter(Member.member_id == member_id).with_for_update().one()
         if buy_krw > member.asset:
             return jsonify({"error": "매수 가능 금액보다 클 수 없습니다."}), 400
 
@@ -270,7 +270,8 @@ def order_sell():
         return jsonify({"error": "0보다 큰 수를 입력해주세요."}), 400
 
     with session_scope() as db:
-        member = db.get(Member, member_id)
+        # 동일 자산의 동시 매도/매수를 직렬화해 수량 또는 현금이 음수가 되는 것을 막는다.
+        member = db.query(Member).filter(Member.member_id == member_id).with_for_update().one()
         market = db.query(UpbitMarket).filter(UpbitMarket.market_code == market_code).first()
         if not market:
             return jsonify({"error": "암호화폐를 보유중이지 않습니다."}), 400
@@ -281,6 +282,7 @@ def order_sell():
                 HoldCrypto.member_id == member_id,
                 HoldCrypto.upbit_market_id == market.upbit_market_id,
             )
+            .with_for_update()
             .first()
         )
         if held is None:
