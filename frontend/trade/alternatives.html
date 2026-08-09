@@ -34,14 +34,14 @@
     </div>
     <p class="mt-4 text-xs leading-relaxed" style="color:var(--muted);">※ 표시 가격은 교육용 기준 시세입니다. 실제 시세·투자 권유가 아니며, 선물은 증거금률, 옵션은 프리미엄 기준으로 체결됩니다.</p>
   </section>
-  <details class="futures-guide mb-5 rounded-xl px-5 py-4 text-sm">
+  <details class="futures-guide mb-5 rounded-xl px-5 py-4 text-sm" open>
     <summary class="font-bold" style="color:var(--fg);">선물의 계약승수·포인트와 이 화면의 연습용 계산 방식</summary>
     <div class="mt-4 grid gap-4 lg:grid-cols-2" style="color:var(--fg-2);">
       <div>
         <h2 class="font-bold" style="color:var(--fg);">실제 선물에서는</h2>
         <p class="mt-2 text-xs leading-relaxed">선물 가격이 지수라면 이를 <strong>포인트</strong>로 표시합니다. <strong>계약승수(거래승수)</strong>는 포인트 1포인트가 원화로 얼마인지를 정하는 값이며, 1계약의 명목금액과 손익 규모를 결정합니다.</p>
         <p class="mt-2 rounded-lg p-3 text-xs leading-relaxed" style="background:#EFF6FF;">명목금액 = 지수(포인트) × 계약승수<br>손익 = 가격 변동폭(포인트) × 계약승수 × 계약 수</p>
-        <p class="mt-2 text-xs leading-relaxed">예: KOSPI 200 선물의 일반적인 계약승수는 <strong>1포인트당 250,000원</strong>입니다. 지수 372.5포인트라면 1계약 명목금액은 약 93,125,000원이며, 실제 필요 증거금은 거래소·증권사가 정한 증거금률에 따라 달라집니다.</p>
+        <p class="mt-2 text-xs leading-relaxed">예: KOSPI 200 선물의 계약승수는 <strong>1포인트당 250,000원</strong>입니다. 지수 372.5포인트라면 1계약 명목금액은 약 93,125,000원이고, 지수가 1포인트 움직이면 1계약의 손익도 250,000원 움직입니다. 실제 필요 증거금은 거래소·증권사가 정한 증거금률에 따라 달라집니다.</p>
       </div>
       <div>
         <h2 class="font-bold" style="color:var(--fg);">이 서비스의 연습용 선물은</h2>
@@ -69,7 +69,7 @@
     </div>
     <aside class="space-y-5">
       <section class="glass-card p-5"><div class="flex items-center justify-between"><h2 class="text-lg font-black" style="color:var(--fg);">주문</h2><span id="selectedCategory" class="badge badge-muted">상품 선택</span></div>
-        <div class="mt-4"><div id="selectedName" class="font-bold" style="color:var(--fg);">좌측에서 상품을 선택하세요.</div><div id="selectedInfo" class="mt-1 text-xs" style="color:var(--muted);"></div></div>
+        <div class="mt-4"><div id="selectedName" class="font-bold" style="color:var(--fg);">좌측에서 상품을 선택하세요.</div><div id="selectedInfo" class="mt-1 text-xs" style="color:var(--muted);"></div><div id="futuresContractInfo" class="mt-2 hidden rounded-lg p-2 text-xs leading-relaxed" style="background:#EFF6FF;color:#1E3A8A;"></div></div>
         <label class="mt-5 block text-xs font-bold" style="color:var(--muted);">주문 수량</label><input id="quantity" type="number" min="1" value="1" class="dark-input mt-2 w-full" style="padding:.65rem .8rem;">
         <div class="mt-3 rounded-lg p-3 text-sm" style="background:var(--surface-2);"><div class="flex justify-between"><span style="color:var(--muted);">예상 주문금액</span><strong id="orderAmount" style="color:var(--fg);">-</strong></div><div id="orderNote" class="mt-1 text-xs" style="color:var(--muted);"></div></div>
         <div class="mt-4 grid grid-cols-2 gap-2"><button id="buyBtn" class="btn-buy" type="button">매수</button><button id="sellBtn" class="btn-sell" type="button">매도</button></div><p id="orderMessage" class="mt-3 text-xs" aria-live="polite"></p>
@@ -78,5 +78,5 @@
     </aside>
   </section>
 </main><footer id="site-footer"><div class="mx-auto w-full max-w-[1640px] px-4 py-4 flex justify-between"><span class="brand-logo-text" style="font-size:13px;">EDUMGT</span><span style="font-size:12px;color:var(--muted);">모의투자 교육 서비스</span></div></footer>
-<script src="/js/config.js"></script><script src="/js/common.js?v=20260808"></script><script src="/js/alternatives.js?v=20260808-2"></script>
+<script src="/js/config.js"></script><script src="/js/common.js?v=20260808"></script><script src="/js/alternatives.js?v=20260809-3"></script>
 </body></html>

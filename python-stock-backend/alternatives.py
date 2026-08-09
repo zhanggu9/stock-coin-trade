@@ -15,7 +15,7 @@ from models import AlternativeOrder, AlternativePosition, Member
 alternative_bp = Blueprint("alternatives", __name__, url_prefix="/api/alternatives")
 
 CATALOG = {
-    "FUT-K200": {"name": "KOSPI 200 선물", "category": "선물", "price": 372_500, "multiplier": 1, "unit": "1계약", "marginRate": 15, "description": "KOSPI 200 지수 선물 모의계약"},
+    "FUT-K200": {"name": "KOSPI 200 선물", "category": "선물", "price": 372_500, "multiplier": 1, "unit": "1계약", "marginRate": 15, "description": "KOSPI 200 지수 선물 축소 모의계약", "pointScale": 1_000, "actualMultiplier": 250_000},
     "FUT-USD": {"name": "미국 달러 선물", "category": "선물", "price": 13_850, "multiplier": 10, "unit": "10 USD", "marginRate": 12, "description": "원/달러 환율 선물 모의계약"},
     "OPT-K200-C": {"name": "KOSPI 200 콜옵션", "category": "옵션", "price": 12_800, "multiplier": 25, "unit": "1계약", "marginRate": 100, "description": "상승 전망을 연습하는 콜옵션"},
     "OPT-K200-P": {"name": "KOSPI 200 풋옵션", "category": "옵션", "price": 10_400, "multiplier": 25, "unit": "1계약", "marginRate": 100, "description": "하락 위험 헤지를 연습하는 풋옵션"},
@@ -37,9 +37,12 @@ def _quote(symbol: str) -> dict:
     price = max(1, round(item["price"] * (1 + rate / 100)))
     amount_per_unit = price * item["multiplier"]
     margin_per_unit = round(amount_per_unit * item["marginRate"] / 100)
-    return {"symbol": symbol, **item, "price": price, "changeRate": rate,
+    quote = {"symbol": symbol, **item, "price": price, "changeRate": rate,
             "notionalPerUnit": amount_per_unit, "tradeAmountPerUnit": margin_per_unit,
             "updatedAt": date.today().isoformat(), "source": "교육용 기준 시세"}
+    if item.get("pointScale"):
+        quote["actualPoint"] = price / item["pointScale"]
+    return quote
 
 
 def get_chart(symbol: str, days: int = 120) -> list[dict]:

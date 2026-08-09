@@ -34,17 +34,25 @@ function renderSideMenu() {
     else if (selected?.category === '부동산' || (category !== '전체' && selected?.category !== category)) selectMarket(markets.find(item => item.category === category)?.symbol);
   });
 }
+function formatActualFutures(item) {
+  if (!item.actualMultiplier) return '';
+  const notional = item.actualPoint * item.actualMultiplier;
+  return `실제 기준: ${Number(item.actualPoint).toLocaleString('ko-KR')}포인트 × ${won(item.actualMultiplier)} = ${won(notional)} (1포인트당 손익 ${won(item.actualMultiplier)})`;
+}
 function renderMarkets() {
   const rows = markets.filter(item => category === '전체' ? item.category !== '부동산' : item.category === category);
   document.getElementById('marketListTitle').textContent = category === '부동산' ? '부동산 지도 거래 상품' : category === '전체' ? '캔들 차트 거래 상품' : `${category} 캔들 차트 거래 상품`;
   document.getElementById('marketListGuide').textContent = category === '부동산' ? '아래 상품 또는 지도 핀을 선택하면 지역 시세와 주문창이 연동됩니다.' : '상품을 선택하면 일봉 캔들 차트와 주문창이 함께 표시됩니다.';
-  document.getElementById('marketBody').innerHTML = rows.map(item => `<tr class="market-row ${selected?.symbol === item.symbol ? 'selected' : ''}" data-symbol="${item.symbol}"><td><div class="font-bold" style="color:var(--fg);">${item.name}</div><div class="mt-1 text-xs" style="color:var(--muted);">${item.description}</div></td><td class="text-right font-bold" style="color:var(--fg);">${won(item.price)}</td><td class="text-right font-bold" style="color:${item.changeRate >= 0 ? '#E11D48' : '#2563EB'};">${item.changeRate >= 0 ? '+' : ''}${item.changeRate}%</td><td class="text-right font-bold" style="color:var(--accent);">${won(item.tradeAmountPerUnit)}</td><td class="text-right text-xs" style="color:var(--muted);">${item.unit}<br>${item.marginRate === 100 ? '현금 100%' : '증거금 ' + item.marginRate + '%'}</td></tr>`).join('');
+  document.getElementById('marketBody').innerHTML = rows.map(item => `<tr class="market-row ${selected?.symbol === item.symbol ? 'selected' : ''}" data-symbol="${item.symbol}"><td><div class="font-bold" style="color:var(--fg);">${item.name}</div><div class="mt-1 text-xs" style="color:var(--muted);">${item.description}${item.actualMultiplier ? ' · 실제 기준은 주문창에서 확인' : ''}</div></td><td class="text-right font-bold" style="color:var(--fg);">${won(item.price)}</td><td class="text-right font-bold" style="color:${item.changeRate >= 0 ? '#E11D48' : '#2563EB'};">${item.changeRate >= 0 ? '+' : ''}${item.changeRate}%</td><td class="text-right font-bold" style="color:var(--accent);">${won(item.tradeAmountPerUnit)}</td><td class="text-right text-xs" style="color:var(--muted);">${item.unit}<br>${item.marginRate === 100 ? '현금 100%' : '증거금 ' + item.marginRate + '%'}</td></tr>`).join('');
   document.querySelectorAll('[data-symbol]').forEach(row => row.onclick = () => selectMarket(row.dataset.symbol));
 }
 async function selectMarket(symbol) {
   selected = markets.find(item => item.symbol === symbol); if (!selected) return;
   document.getElementById('selectedName').textContent = selected.name; document.getElementById('selectedCategory').textContent = selected.category;
-  document.getElementById('selectedInfo').textContent = `${selected.description} · 기준가 ${won(selected.price)} / ${selected.unit}`;
+  document.getElementById('selectedInfo').textContent = `${selected.description} · 교육용 기준가 ${won(selected.price)} / ${selected.unit}`;
+  const futuresContractInfo = document.getElementById('futuresContractInfo');
+  futuresContractInfo.textContent = selected.actualMultiplier ? `${formatActualFutures(selected)}. 현재 주문은 계약승수 1의 축소 모의계약이며, 실제 선물 주문이 아닙니다.` : '';
+  futuresContractInfo.classList.toggle('hidden', !selected.actualMultiplier);
   document.getElementById('viewTitle').textContent = selected.category === '부동산' ? '부동산 시세 지도' : `${selected.name} 일봉 차트`;
   document.getElementById('viewSubtitle').textContent = selected.category === '부동산' ? `${selected.location?.label || ''} · 지도에서 다른 지역도 선택할 수 있습니다.` : '교육용 기준 시세 일봉 · 주문 기준가는 당일 종가와 연동됩니다.';
   document.getElementById('viewBadge').textContent = selected.category === '부동산' ? '지도 시세' : '일봉';
