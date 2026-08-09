@@ -17,6 +17,9 @@ const lessons = [
     { id:'technical-pattern', title:'패턴 · 캔들 차트 분석', subtitle:'가격 패턴과 캔들 심리로 전환 신호 찾기', description:'차트 패턴을 단독 신호로 쓰지 않고 거래량·추세·지지저항과 결합합니다.', theory:['이중바닥·컵앤핸들·삼각수렴은 완성 조건과 돌파 거래량이 중요합니다.','캔들 몸통은 종가 방향, 꼬리는 가격대에서의 매수·매도 공방을 보여줍니다.','반전 패턴은 기존 추세가 충분히 진행된 뒤에 신뢰도가 높아집니다.'], tip:'패턴은 “발견”보다 <b>무효화 가격</b>을 먼저 정할 때 실전에 도움이 됩니다.', code:`body = abs(df.close - df.open)\nrange_ = df.high - df.low\ndf['doji'] = (body / range_) < 0.1\n# 거래량이 동반된 돌파만 후보로 추림\ndf['breakout'] = (df.close > df.high.shift(20)) & (df.volume > df.volume.rolling(20).mean())`, data:{headers:['신호','가격대','거래량','해석'], rows:[['저항 돌파','72,000','평균 1.8배','강세'],['도지','71,650','평균 수준','관망'],['지지 확인','69,800','평균 1.2배','유지']]}, result:{value:'돌파 확인',label:'거래량 동반 저항 돌파',bars:[['패턴 완성도',74],['거래량 확인',82],['추세 일치',70]],note:'저항 돌파 뒤 종가 기준으로 지지 전환되는지 확인합니다. 돌파 당일 추격매수는 손익비를 낮출 수 있습니다.'}},
     { id:'technical-indicators', title:'지표 분석 · 엘리어트파동이론', subtitle:'RSI · MACD · 파동을 보조 신호로 활용하기', description:'보조지표는 가격보다 늦을 수 있으므로 추세와 가격 구조를 우선합니다.', theory:['RSI는 과매수·과매도보다 다이버전스와 50선 회복을 함께 봅니다.','MACD는 모멘텀 변화, 볼린저밴드는 변동성 확대·축소를 관찰합니다.','엘리어트 파동은 하나의 가설입니다. 카운팅보다 무효화 조건이 중요합니다.'], tip:'지표가 여러 개 일치해도 <b>가격의 손절선</b> 없이 진입하지 마세요.', code:`delta = df.close.diff()\ngain = delta.clip(lower=0).rolling(14).mean()\nloss = -delta.clip(upper=0).rolling(14).mean()\ndf['rsi14'] = 100 - (100 / (1 + gain / loss))\nprint(df[['close','rsi14']].tail())`, data:{headers:['지표','현재','전일','해석'], rows:[['RSI(14)','58.4','55.1','중립 상단'],['MACD','+182','+146','상승'],['볼린저 %B','0.72','0.65','상단 접근']]}, result:{value:'중립 · 상승',label:'모멘텀 회복 구간',bars:[['RSI 모멘텀',58],['MACD 방향',72],['변동성',55]],note:'RSI가 과매수권이 아니고 MACD가 개선 중입니다. 다만 밴드 상단 근처에서는 분할 진입과 손절가 설정이 필요합니다.'}},
     { id:'technical-practice', title:'분석기업선정 및 기술적 분석 실습', subtitle:'종목 스크리닝부터 매매계획 수립까지', description:'유동성과 추세가 있는 종목을 고르고, 진입·목표·손절 가격을 수치로 설계합니다.', theory:['거래대금·변동성·추세 조건으로 실습 종목을 먼저 좁힙니다.','진입가, 손절가, 목표가와 포지션 크기를 동시에 정합니다.','손익비와 승률을 기록해 전략을 검증합니다.'], tip:'매매 계획은 장중이 아니라 <b>장 시작 전</b> 작성하는 것이 좋습니다.', code:`entry, stop, target = 71600, 69800, 75200\nrisk = entry - stop\nreward = target - entry\nrr = reward / risk\nposition = 1_000_000 / risk  # 허용 손실 100만원 기준\nprint(f'손익비 {rr:.2f}, 수량 {position:.0f}주')`, data:{headers:['항목','가격','설정 근거'], rows:[['진입가','71,600원','돌파 후 눌림'],['손절가','69,800원','20일선 이탈'],['목표가','75,200원','전고점 구간']]}, result:{value:'2.00 : 1',label:'예상 손익비',bars:[['진입 신뢰도',71],['손절 명확성',88],['보상 가능성',79]],note:'손익비가 2 이상인 계획입니다. 진입 후에는 손절선을 임의로 낮추지 않고, 거래 기록으로 규칙을 검증하세요.'}}
+  ]},
+  { group:'분석 도구', icon:'fa-shield-halved', items:[
+    { id:'json-consistency', title:'정합성검사' }
   ]}
 ];
 
@@ -391,7 +394,94 @@ function runFinancialSimulation(item) {
   document.querySelector('.result-note').innerHTML = issues.length ? `<strong>검토 항목:</strong> ${issues.join('<br>')}` : '<strong>정합성 양호:</strong> 손익계산서·재무상태표·현금흐름표의 관계가 기본 등식에 맞습니다.';
   if (issues.length) openFinanceValidationModal(issues);
 }
+function escapeHtml(value) { return String(value).replace(/[&<>'"]/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[char]); }
+function jsonValueType(value) { return value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value; }
+function jsonParseErrorLocation(source, error) {
+  const position = Number(error.message.match(/position (\d+)/i)?.[1]);
+  if (!Number.isFinite(position)) return '';
+  const before = source.slice(0, position);
+  return ` (${before.split('\n').length}행 ${position - before.lastIndexOf('\n')}열 부근)`;
+}
+function inspectJsonConsistency(data) {
+  const stats = { objects:0, arrays:0, values:0, maxDepth:0 };
+  const issues = [];
+  const addIssue = message => { if (issues.length < 20) issues.push(message); };
+  const visit = (value, path, depth) => {
+    stats.maxDepth = Math.max(stats.maxDepth, depth);
+    if (Array.isArray(value)) {
+      stats.arrays += 1;
+      const objectRows = value.filter(row => row && typeof row === 'object' && !Array.isArray(row));
+      if (objectRows.length && objectRows.length !== value.length) addIssue(`${path} 배열에 객체와 다른 자료형이 함께 있습니다.`);
+      if (objectRows.length > 1) {
+        const referenceKeys = Object.keys(objectRows[0]);
+        const referenceSet = new Set(referenceKeys);
+        objectRows.slice(1).forEach((row, index) => {
+          const rowPath = `${path}[${value.indexOf(row)}]`;
+          const keys = Object.keys(row);
+          const missing = referenceKeys.filter(key => !(key in row));
+          const extra = keys.filter(key => !referenceSet.has(key));
+          if (missing.length) addIssue(`${rowPath}: 기준 객체에 있는 필드 ${missing.map(key => `“${key}”`).join(', ')}가 없습니다.`);
+          if (extra.length) addIssue(`${rowPath}: 기준 객체에 없는 필드 ${extra.map(key => `“${key}”`).join(', ')}가 있습니다.`);
+          keys.filter(key => referenceSet.has(key)).forEach(key => {
+            const expected = jsonValueType(objectRows[0][key]);
+            const actual = jsonValueType(row[key]);
+            if (expected !== actual) addIssue(`${rowPath}.${key}: 자료형이 기준(${expected})과 다릅니다. 현재 ${actual}`);
+          });
+        });
+      }
+      value.forEach((child, index) => visit(child, `${path}[${index}]`, depth + 1));
+      return;
+    }
+    if (value && typeof value === 'object') {
+      stats.objects += 1;
+      Object.entries(value).forEach(([key, child]) => visit(child, `${path}.${key}`, depth + 1));
+      return;
+    }
+    stats.values += 1;
+  };
+  visit(data, '$', 0);
+  return { stats, issues };
+}
+function renderJsonCheckResult(result) {
+  const target = document.querySelector('[data-json-check-result]');
+  if (!target) return;
+  const { stats, issues } = result;
+  const status = issues.length ? '검토 필요' : '정합성 양호';
+  target.innerHTML = `<div class="json-check-status ${issues.length ? 'has-issues' : 'is-valid'}"><i class="fa-solid ${issues.length ? 'fa-triangle-exclamation' : 'fa-circle-check'}"></i><div><strong>${status}</strong><span>${issues.length ? `${issues.length}개의 구조 불일치를 확인하세요.` : 'JSON 형식과 탐지 가능한 객체 구조가 일관됩니다.'}</span></div></div><div class="json-check-stats"><span>객체 <b>${stats.objects}</b></span><span>배열 <b>${stats.arrays}</b></span><span>값 <b>${stats.values}</b></span><span>최대 깊이 <b>${stats.maxDepth}</b></span></div><div class="json-check-issues">${issues.length ? `<ol>${issues.map(issue => `<li>${escapeHtml(issue)}</li>`).join('')}</ol>` : '<p>배열 안의 객체 필드와 자료형을 비교했으며, 불일치가 발견되지 않았습니다.</p>'}</div>`;
+}
+function runJsonConsistencyCheck() {
+  const input = document.querySelector('[data-json-consistency-input]');
+  if (!input) return;
+  const source = input.value.trim();
+  if (!source) {
+    renderJsonCheckResult({ stats:{ objects:0, arrays:0, values:0, maxDepth:0 }, issues:['검사할 JSON 내용을 입력하세요.'] });
+    return;
+  }
+  try {
+    renderJsonCheckResult(inspectJsonConsistency(JSON.parse(source)));
+  } catch (error) {
+    renderJsonCheckResult({ stats:{ objects:0, arrays:0, values:0, maxDepth:0 }, issues:[`JSON 문법 오류${jsonParseErrorLocation(source, error)}: ${error.message}`] });
+  }
+}
+function renderJsonConsistencyChecker() {
+  const saved = lessonLearningState('json-consistency').fields.jsonSource ?? '';
+  document.getElementById('analysis-breadcrumb').innerHTML = '';
+  document.getElementById('analysis-hero').innerHTML = `<div class="academy-hero-content"><span class="academy-hero-tag"><i class="fa-solid fa-shield-halved"></i> ANALYSIS TOOL</span><h2>JSON 정합성검사</h2><p>JSON 데이터를 붙여넣고 문법, 배열 내 객체의 필드 누락·추가, 자료형 불일치를 확인하세요.</p></div>`;
+  document.getElementById('analysis-panels').innerHTML = `<article class="academy-panel full json-consistency-panel"><div class="academy-panel-head"><span class="academy-panel-num"><i class="fa-solid fa-code"></i></span><h3>JSON 입력 및 정합성 검사</h3></div><div class="academy-panel-body"><div class="json-consistency-workspace"><section class="json-input-column"><div class="json-column-head"><label for="json-consistency-input">JSON 내용</label><span>붙여넣기 후 검사 버튼을 누르세요</span></div><textarea id="json-consistency-input" class="json-consistency-input" data-json-consistency-input spellcheck="false" placeholder='[\n  {"ticker": "005930", "price": 71000}\n]'></textarea></section><section class="json-result-column"><div class="json-column-head"><strong>정합성 검사</strong><span>브라우저에서만 검사됩니다</span></div><div class="json-check-result" data-json-check-result><p>JSON을 입력한 뒤 검사를 실행하세요.</p></div></section></div><div class="json-check-actions"><button class="sim-action" type="button" data-json-check-run><i class="fa-solid fa-shield-halved"></i> 정합성 검사 실행</button><button class="json-format-action" type="button" data-json-format><i class="fa-solid fa-align-left"></i> JSON 정렬</button></div></div></article>`;
+  const input = document.querySelector('[data-json-consistency-input]');
+  input.value = saved;
+  input.addEventListener('input', () => {
+    lessonLearningState('json-consistency').fields.jsonSource = input.value;
+    saveLearningState();
+  });
+  document.querySelector('[data-json-check-run]').addEventListener('click', runJsonConsistencyCheck);
+  document.querySelector('[data-json-format]').addEventListener('click', () => {
+    try { input.value = JSON.stringify(JSON.parse(input.value), null, 2); input.dispatchEvent(new Event('input')); runJsonConsistencyCheck(); }
+    catch { runJsonConsistencyCheck(); }
+  });
+}
 function renderLesson() {
+  if (activeLesson === 'json-consistency') { renderJsonConsistencyChecker(); return; }
   const item = lessonMap[activeLesson];
   document.getElementById('analysis-breadcrumb').innerHTML = '';
   document.getElementById('analysis-hero').innerHTML = `<div class="academy-hero-content"><h2>${item.title}</h2><div class="learning-progress" aria-label="전체 학습 데이터 저장 진행률"><div class="learning-progress-copy"><span>전체 학습 진행률</span><strong data-learning-progress-label>전체 저장 데이터 0%</strong></div><div class="learning-progress-track"><span data-learning-progress-bar></span></div></div></div>`;
