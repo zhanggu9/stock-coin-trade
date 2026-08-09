@@ -13,6 +13,7 @@
     .asset-menu-icon { width:25px; height:25px; display:inline-flex; align-items:center; justify-content:center; border-radius:7px; background:rgba(255,255,255,.16); font-size:13px; }.asset-menu-note { margin:4px 0 10px; padding:0 11px; color:var(--muted); font-size:11px; line-height:1.45; }
     .market-row { cursor:pointer; transition:background .15s; }.market-row:hover,.market-row.selected { background:var(--accent-light); }
     #alternativeChart, #propertyMap { height:400px; } .asset-view { display:none; }.asset-view.active { display:block; }
+    .futures-guide { border:1px solid #BFDBFE; background:#F8FBFF; }.futures-guide summary { cursor:pointer; list-style:none; }.futures-guide summary::-webkit-details-marker { display:none; }.futures-guide summary::after { content:'＋'; float:right; color:var(--accent); font-size:18px; line-height:1; }.futures-guide[open] summary::after { content:'−'; }
   </style>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -30,6 +31,23 @@
     </div>
     <p class="mt-4 text-xs leading-relaxed" style="color:var(--muted);">※ 표시 가격은 교육용 기준 시세입니다. 실제 시세·투자 권유가 아니며, 선물은 증거금률, 옵션은 프리미엄 기준으로 체결됩니다.</p>
   </section>
+  <details class="futures-guide mb-5 rounded-xl px-5 py-4 text-sm">
+    <summary class="font-bold" style="color:var(--fg);">선물의 계약승수·포인트와 이 화면의 연습용 계산 방식</summary>
+    <div class="mt-4 grid gap-4 lg:grid-cols-2" style="color:var(--fg-2);">
+      <div>
+        <h2 class="font-bold" style="color:var(--fg);">실제 선물에서는</h2>
+        <p class="mt-2 text-xs leading-relaxed">선물 가격이 지수라면 이를 <strong>포인트</strong>로 표시합니다. <strong>계약승수(거래승수)</strong>는 포인트 1포인트가 원화로 얼마인지를 정하는 값이며, 1계약의 명목금액과 손익 규모를 결정합니다.</p>
+        <p class="mt-2 rounded-lg p-3 text-xs leading-relaxed" style="background:#EFF6FF;">명목금액 = 지수(포인트) × 계약승수<br>손익 = 가격 변동폭(포인트) × 계약승수 × 계약 수</p>
+        <p class="mt-2 text-xs leading-relaxed">예: KOSPI 200 선물의 일반적인 계약승수는 <strong>1포인트당 250,000원</strong>입니다. 지수 372.5포인트라면 1계약 명목금액은 약 93,125,000원이며, 실제 필요 증거금은 거래소·증권사가 정한 증거금률에 따라 달라집니다.</p>
+      </div>
+      <div>
+        <h2 class="font-bold" style="color:var(--fg);">이 서비스의 연습용 선물은</h2>
+        <p class="mt-2 text-xs leading-relaxed">과도한 주문금액을 피하고 1억 원의 모의자금 안에서 연습할 수 있도록, 실제 KOSPI 200 선물 계약을 그대로 재현하지 않은 <strong>축소 모의계약</strong>입니다.</p>
+        <p class="mt-2 rounded-lg p-3 text-xs leading-relaxed" style="background:#EFF6FF;">화면의 교육용 기준가를 원화로 사용<br>연습용 계약승수: 1<br>명목금액 = 기준가 × 1<br>주문금액 = 명목금액 × 증거금률(현재 15%)</p>
+        <p class="mt-2 text-xs leading-relaxed">따라서 기준가가 372,500원일 때 1계약의 명목금액은 372,500원, 주문 시 차감되는 증거금은 55,875원입니다. 이는 실제 KOSPI 200 선물의 1계약 규모나 손익을 뜻하지 않습니다.</p>
+      </div>
+    </div>
+  </details>
   <section class="grid grid-cols-1 gap-5 xl:grid-cols-[230px_minmax(0,1fr)_380px]">
     <aside class="glass-card h-fit p-3 xl:sticky xl:top-4">
       <div class="px-2 pb-3" style="border-bottom:1px solid var(--border);"><h2 class="text-sm font-black" style="color:var(--fg);">거래 기능</h2><p class="mt-1 text-xs" style="color:var(--muted);">방식에 따라 상품을 선택하세요.</p></div>
