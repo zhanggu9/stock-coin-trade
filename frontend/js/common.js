@@ -46,6 +46,7 @@ function renderHeader(user) {
     { href: '/trade/history.html', label: '내 거래이력',   icon: 'fa-solid fa-clock-rotate-left' },
     { href: '/trade/avg-down.html', label: '물타기 계산기', icon: 'fa-solid fa-calculator' },
     { href: '/analysis.html',        label: '투자 분석 학습', icon: 'fa-solid fa-graduation-cap' },
+    { href: '/ai-sheet.html',        label: 'AI Sheet', icon: 'fa-solid fa-table-cells-large' },
     { href: '/openapi.html',        label: 'Open API',   icon: 'fa-solid fa-key' },
   ];
 
