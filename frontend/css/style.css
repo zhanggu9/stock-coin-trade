@@ -59,6 +59,47 @@ html, body {
     min-height: 100vh;
 }
 
+/* ── Shared application frame ────────────────────────────────────────────
+   Header/footer live in the outer grid.  Only main is scrollable, preventing
+   every page from choosing a different fixed-footer workaround. */
+body.app-shell-layout {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    padding-bottom: 0 !important;
+}
+body.app-shell-layout > #header-mount { min-width: 0; }
+body.app-shell-layout #site-header { position: static; }
+body.app-shell-layout > main {
+    width: min(100%, 1920px) !important;
+    max-width: 1920px !important;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    margin: 0 auto !important;
+    padding-inline: clamp(16px, 2vw, 36px) !important;
+}
+body.app-shell-layout > footer {
+    min-width: 0;
+    margin: 0 !important;
+    position: static !important;
+    inset: auto !important;
+    flex-shrink: 0;
+    border-top: 1px solid #27272A;
+    background: #000;
+    color: #CBD5E1;
+}
+body.app-shell-layout > footer:not(#site-footer) { padding: 12px clamp(16px, 2vw, 36px); }
+
+/* Korean UI text never falls below the readable desktop/mobile baseline. */
+body.app-shell-layout :is(p, span, a, button, input, select, textarea, label, li, td, th),
+body.alternatives-layout :is(p, span, a, button, input, select, textarea, label, li, td, th),
+.trading-root :is(p, span, a, button, input, select, textarea, label, li, td, th) {
+    font-size: max(16px, 1em);
+}
+
 /* ── Brand logo ─────────────────────────────────────────────────────────── */
 .brand-logo-text {
     background: linear-gradient(135deg, #2962FF, #0D47A1);

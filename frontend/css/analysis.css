@@ -1,5 +1,5 @@
 .academy-shell { display:grid; grid-template-columns:288px minmax(0,1fr); min-height:calc(100vh - 57px); background:var(--bg); }
-.academy-sidebar { position:sticky; top:57px; height:calc(100vh - 57px); overflow-y:auto; border-right:1px solid var(--border); background:#fff; }
+.academy-sidebar { position:sticky; top:0; height:calc(100dvh - 110px); overflow-y:auto; border-right:1px solid var(--border); background:#fff; }
 .academy-side-head { padding:25px 22px 20px; border-bottom:1px solid var(--border); background:linear-gradient(145deg,#f7faff,#fff); }
 .academy-eyebrow { display:block; color:var(--accent); font-size:10px; font-weight:800; letter-spacing:.12em; }
 .academy-side-head h1 { margin:5px 0 7px; font-size:21px; font-weight:800; color:var(--fg); }

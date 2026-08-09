@@ -684,5 +684,10 @@ async function initPage({ requireAuth = false } = {}) {
     return null;
   }
   renderHeader(user);
+  const hasMain = document.body.querySelector(':scope > main');
+  const hasFooter = document.body.querySelector(':scope > footer');
+  if (hasMain && hasFooter && !document.body.classList.contains('alternatives-layout')) {
+    document.body.classList.add('app-shell-layout');
+  }
   return user;
 }
