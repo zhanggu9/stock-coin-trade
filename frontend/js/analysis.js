@@ -18,6 +18,9 @@ const lessons = [
     { id:'technical-indicators', title:'지표 분석 · 엘리어트파동이론', subtitle:'RSI · MACD · 파동을 보조 신호로 활용하기', description:'보조지표는 가격보다 늦을 수 있으므로 추세와 가격 구조를 우선합니다.', theory:['RSI는 과매수·과매도보다 다이버전스와 50선 회복을 함께 봅니다.','MACD는 모멘텀 변화, 볼린저밴드는 변동성 확대·축소를 관찰합니다.','엘리어트 파동은 하나의 가설입니다. 카운팅보다 무효화 조건이 중요합니다.'], tip:'지표가 여러 개 일치해도 <b>가격의 손절선</b> 없이 진입하지 마세요.', code:`delta = df.close.diff()\ngain = delta.clip(lower=0).rolling(14).mean()\nloss = -delta.clip(upper=0).rolling(14).mean()\ndf['rsi14'] = 100 - (100 / (1 + gain / loss))\nprint(df[['close','rsi14']].tail())`, data:{headers:['지표','현재','전일','해석'], rows:[['RSI(14)','58.4','55.1','중립 상단'],['MACD','+182','+146','상승'],['볼린저 %B','0.72','0.65','상단 접근']]}, result:{value:'중립 · 상승',label:'모멘텀 회복 구간',bars:[['RSI 모멘텀',58],['MACD 방향',72],['변동성',55]],note:'RSI가 과매수권이 아니고 MACD가 개선 중입니다. 다만 밴드 상단 근처에서는 분할 진입과 손절가 설정이 필요합니다.'}},
     { id:'technical-practice', title:'분석기업선정 및 기술적 분석 실습', subtitle:'종목 스크리닝부터 매매계획 수립까지', description:'유동성과 추세가 있는 종목을 고르고, 진입·목표·손절 가격을 수치로 설계합니다.', theory:['거래대금·변동성·추세 조건으로 실습 종목을 먼저 좁힙니다.','진입가, 손절가, 목표가와 포지션 크기를 동시에 정합니다.','손익비와 승률을 기록해 전략을 검증합니다.'], tip:'매매 계획은 장중이 아니라 <b>장 시작 전</b> 작성하는 것이 좋습니다.', code:`entry, stop, target = 71600, 69800, 75200\nrisk = entry - stop\nreward = target - entry\nrr = reward / risk\nposition = 1_000_000 / risk  # 허용 손실 100만원 기준\nprint(f'손익비 {rr:.2f}, 수량 {position:.0f}주')`, data:{headers:['항목','가격','설정 근거'], rows:[['진입가','71,600원','돌파 후 눌림'],['손절가','69,800원','20일선 이탈'],['목표가','75,200원','전고점 구간']]}, result:{value:'2.00 : 1',label:'예상 손익비',bars:[['진입 신뢰도',71],['손절 명확성',88],['보상 가능성',79]],note:'손익비가 2 이상인 계획입니다. 진입 후에는 손절선을 임의로 낮추지 않고, 거래 기록으로 규칙을 검증하세요.'}}
   ]},
+  { group:'일자별 학습', icon:'fa-calendar-days', items:[
+    { id:'quant-day5', title:'5일차 · 데이터 활용 퀀트 모델링' }
+  ]},
   { group:'분석 도구', icon:'fa-shield-halved', items:[
     { id:'json-consistency', title:'정합성검사' }
   ]}
@@ -33,6 +36,7 @@ function saveLearningState() { localStorage.setItem(analysisStorageKey, JSON.str
 function lessonLearningState(id) { return learningState.lessons[id] ??= { fields:{}, actions:{} }; }
 function markLearningProgress(key) { learningState.completed[key] = true; }
 function trackedFieldKey(field) {
+  if (field.dataset.quantField) return `quant:${field.dataset.quantField}`;
   if (field.dataset.finance) return `finance:${field.dataset.finance}`;
   if (field.dataset.technicalNote) return `technical:${field.dataset.technicalNote}`;
   if (field.dataset.practiceNote) return `practice:${field.dataset.practiceNote}`;
@@ -42,14 +46,14 @@ function trackedFieldKey(field) {
   return null;
 }
 function saveTrackedField(field) { const key=trackedFieldKey(field); if (!key) return; const state=lessonLearningState(activeLesson); state.fields[key] = field.type === 'checkbox' || field.type === 'radio' ? field.checked : field.value; markLearningProgress(`input:${activeLesson}:${key}`); saveLearningState(); updateLearningProgress(); }
-function restoreTrackedFields(id) { const fields=lessonLearningState(id).fields; document.querySelectorAll('[data-finance],[data-technical-note],[data-practice-note],[data-sim-condition],[data-sim-condition-range],input[name="practice-stock"]').forEach(field => { const key=trackedFieldKey(field); if (!(key in fields)) return; if (field.type === 'checkbox' || field.type === 'radio') field.checked=Boolean(fields[key]) && (field.type !== 'radio' || field.value === fields[key] || fields[key] === true); else field.value=fields[key]; }); }
+function restoreTrackedFields(id) { const fields=lessonLearningState(id).fields; document.querySelectorAll('[data-finance],[data-technical-note],[data-practice-note],[data-sim-condition],[data-sim-condition-range],[data-quant-field],input[name="practice-stock"]').forEach(field => { const key=trackedFieldKey(field); if (!(key in fields)) return; if (field.type === 'checkbox' || field.type === 'radio') field.checked=Boolean(fields[key]) && (field.type !== 'radio' || field.value === fields[key] || fields[key] === true); else field.value=fields[key]; }); }
 function learningProgress(id=activeLesson) {
   const state=lessonLearningState(id), fields=state.fields, panel=document.getElementById('analysis-panels');
   if (!panel) return { completed:0, total:1, percent:0 };
-  const elements=[...panel.querySelectorAll('[data-finance],[data-technical-note],[data-practice-note],[data-sim-condition],[data-sim-condition-range],input[name="practice-stock"]')];
+  const elements=[...panel.querySelectorAll('[data-finance],[data-technical-note],[data-practice-note],[data-sim-condition],[data-sim-condition-range],[data-quant-field],input[name="practice-stock"]')];
   const keys=[...new Set(elements.map(trackedFieldKey).filter(Boolean))];
   const completed=keys.filter(key => { const value=fields[key]; return typeof value === 'boolean' ? value : String(value ?? '').trim() !== ''; }).length + Object.keys(state.actions).filter(key => key.startsWith('run:') || key === 'sector-select').length;
-  const total=keys.length + (panel.querySelector('[data-sim-run],[data-finance-run],[data-practice-review],[data-technical-practice-review]') ? 1 : 0) + (id === 'fundamental-practice' ? 1 : 0);
+  const total=keys.length + (panel.querySelector('[data-sim-run],[data-finance-run],[data-practice-review],[data-technical-practice-review],[data-quant-backtest],[data-quant-seasonality],[data-pine-check]') ? 1 : 0) + (id === 'fundamental-practice' ? 1 : 0);
   return { completed:Math.min(completed,total), total, percent:Math.min(100, Math.round(completed / Math.max(total,1) * 100)) };
 }
 function globalLearningProgress() { const completed=Object.keys(learningState.completed).length; return { completed, total:globalProgressTarget, percent:Math.min(100, Math.round(completed / globalProgressTarget * 100)) }; }
@@ -480,7 +484,61 @@ function renderJsonConsistencyChecker() {
     catch { runJsonConsistencyCheck(); }
   });
 }
+const pineTemplates = {
+  crossover: `//@version=5
+strategy("MA Crossover Practice", overlay=true, initial_capital=10000000)
+fast = ta.sma(close, 20)
+slow = ta.sma(close, 60)
+longCondition = ta.crossover(fast, slow)
+if longCondition
+    strategy.entry("Long", strategy.long)
+if ta.crossunder(fast, slow)
+    strategy.close("Long")
+plot(fast, color=color.blue)
+plot(slow, color=color.orange)`,
+  rsi: `//@version=5
+strategy("RSI Reversal Practice", overlay=true, initial_capital=10000000)
+rsiValue = ta.rsi(close, 14)
+if ta.crossover(rsiValue, 30)
+    strategy.entry("Long", strategy.long)
+if ta.crossunder(rsiValue, 70)
+    strategy.close("Long")
+plot(rsiValue, "RSI", color=color.purple)`
+};
+function formatPercent(value) { return `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`; }
+function calculateQuantBacktest(strategy, cost) {
+  const patterns = { crossover:[1.8,-2.1,3.4,0.6,2.9,-1.6,1.5,2.6,-0.8,3.1,1.2,2.3], momentum:[2.4,-1.8,4.2,1.1,3.7,-2.4,2.8,3.1,-1.3,4.0,1.6,2.9], reversal:[1.6,-1.2,2.1,0.9,1.8,-0.7,1.2,1.7,-0.5,2.0,0.8,1.5] };
+  const returns = patterns[strategy].map(value => value - cost * 2.4); let equity=100, peak=100, mdd=0;
+  returns.forEach(value => { equity *= 1 + value / 100; peak=Math.max(peak,equity); mdd=Math.min(mdd,(equity / peak - 1) * 100); });
+  const mean=returns.reduce((a,b)=>a+b,0)/returns.length, deviation=Math.sqrt(returns.reduce((sum,value)=>sum+(value-mean)**2,0)/(returns.length-1));
+  return { returns, equity, cagr:(Math.pow(equity/100,1/(returns.length/12))-1)*100, mdd, sharpe:(mean*12-3)/(deviation*Math.sqrt(12)), win:returns.filter(value=>value>0).length/returns.length*100 };
+}
+function renderQuantBacktest() {
+  const strategy=document.querySelector('[data-quant-field="strategy"]')?.value ?? 'crossover', cost=Number(document.querySelector('[data-quant-field="cost"]')?.value ?? .15), data=calculateQuantBacktest(strategy,cost), labels=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  const rows=data.returns.map((value,index)=>`<div class="quant-return-bar"><span>${labels[index]}</span><i class="${value < 0 ? 'loss' : ''}" style="width:${Math.min(100,Math.abs(value)*22)}%"></i><b>${formatPercent(value)}</b></div>`).join('');
+  document.querySelector('[data-quant-backtest-result]').innerHTML=`<div class="quant-metric-grid"><div><span>누적 수익률</span><strong>${formatPercent(data.equity-100)}</strong></div><div><span>CAGR</span><strong>${formatPercent(data.cagr)}</strong></div><div><span>MDD</span><strong class="down">${data.mdd.toFixed(1)}%</strong></div><div><span>Sharpe ratio</span><strong>${data.sharpe.toFixed(2)}</strong></div><div><span>승률</span><strong>${data.win.toFixed(0)}%</strong></div></div><div class="quant-return-chart">${rows}</div><p class="quant-result-note"><b>해석:</b> MDD는 고점 대비 최대 하락폭이며 작을수록 낙폭 관리가 좋습니다. Sharpe ratio는 변동성 1단위당 초과수익으로, 비용·슬리피지를 반영해 과대평가를 줄여야 합니다.</p>`;
+}
+function renderSeasonality() {
+  const type=document.querySelector('[data-quant-field="seasonality"]')?.value ?? 'month';
+  const data=type === 'weekday' ? [['월요일',-0.18,51],['화요일',0.12,54],['수요일',0.21,56],['목요일',0.08,53],['금요일',-0.05,50]] : [['1월',1.9,58],['2월',0.7,54],['3월',1.1,55],['4월',0.3,52],['5월',-0.4,48],['6월',-0.8,45],['7월',0.6,53],['8월',-0.3,49],['9월',-1.1,43],['10월',1.5,57],['11월',2.1,60],['12월',2.8,63]];
+  const best=[...data].sort((a,b)=>b[1]-a[1])[0], worst=[...data].sort((a,b)=>a[1]-b[1])[0];
+  document.querySelector('[data-seasonality-result]').innerHTML=`<div class="seasonality-summary"><span>가장 강한 구간 <b>${best[0]} ${formatPercent(best[1])}</b></span><span>가장 약한 구간 <b>${worst[0]} ${formatPercent(worst[1])}</b></span></div><div class="seasonality-table">${data.map(([label,average,win])=>`<div><b>${label}</b><span class="seasonality-track"><i class="${average < 0 ? 'loss' : ''}" style="width:${Math.abs(average)*25}%"></i></span><strong>${formatPercent(average)}</strong><small>승률 ${win}%</small></div>`).join('')}</div><p class="quant-result-note">표본의 평균 수익률과 승률은 학습용 예시입니다. 연말 랠리·월별·요일 효과는 시장·기간에 따라 달라지므로, 여러 기간과 비용을 포함해 재검증한 뒤 가설로만 사용하세요.</p>`;
+}
+function checkPineScript() {
+  const code=document.querySelector('[data-quant-field="pine-code"]')?.value ?? '', tests=[['버전 선언',/\/\/\@version=5/.test(code)],['strategy 선언',/\bstrategy\s*\(/.test(code)],['진입 규칙',/strategy\.entry\s*\(/.test(code)],['청산/손절 규칙',/strategy\.(close|exit)\s*\(/.test(code)]], passed=tests.filter(([,ok])=>ok).length;
+  document.querySelector('[data-pine-result]').innerHTML=`<div class="pine-status ${passed === tests.length ? 'valid' : ''}"><b>${passed === tests.length ? '구조 점검 통과' : `${passed}/4 항목 확인`}</b><span>이 도구는 TradingView 실행 전 전략의 필수 구조를 빠르게 확인하는 학습용 점검기입니다.</span></div><ul class="pine-check-list">${tests.map(([label,ok])=>`<li class="${ok ? 'ok' : ''}"><i class="fa-solid ${ok ? 'fa-circle-check' : 'fa-circle-xmark'}"></i>${label}</li>`).join('')}</ul>`;
+}
+function renderQuantDay5() {
+  const state=lessonLearningState('quant-day5').fields;
+  document.getElementById('analysis-breadcrumb').innerHTML = '<span>일자별 학습</span><i class="fa-solid fa-chevron-right"></i><strong>5일차</strong>';
+  document.getElementById('analysis-hero').innerHTML = `<div class="academy-hero-content"><span class="academy-hero-tag"><i class="fa-solid fa-flask"></i> DAY 5 PRACTICE</span><h2>데이터 활용 퀀트 모델링</h2><p>성과 지표를 해석하고, 계절성 가설을 검증하며, Pine Script 전략의 뼈대를 직접 작성합니다.</p></div>`;
+  document.getElementById('analysis-panels').innerHTML = `<article class="academy-panel full quant-panel"><div class="academy-panel-head"><span class="academy-panel-num">01</span><h3>백테스트 성과 지표 실습</h3></div><div class="academy-panel-body"><p class="academy-summary">전략·거래비용을 바꿔 <b>CAGR, MDD, Sharpe ratio, 승률</b>이 함께 어떻게 달라지는지 확인하세요. 수익률만 높고 MDD가 큰 전략은 실제 운용 난도가 높을 수 있습니다.</p><div class="quant-controls"><label>전략<select class="sim-select" data-quant-field="strategy"><option value="crossover">이동평균 교차</option><option value="momentum">모멘텀</option><option value="reversal">평균회귀</option></select></label><label>왕복 거래비용(%)<input class="sim-select" type="number" min="0" max="2" step="0.05" value="${state['quant:cost'] ?? '.15'}" data-quant-field="cost"></label><button class="sim-action" type="button" data-quant-backtest>백테스트 계산</button></div><div data-quant-backtest-result class="quant-work-result">조건을 설정하고 계산하세요.</div><div class="quant-improve"><b>개선 방향</b><span>① 비용·슬리피지 반영 ② 상승/하락 국면 분리 ③ Out-of-sample 검증 ④ MDD 한도와 포지션 크기 규칙을 함께 설계</span></div></div></article><article class="academy-panel quant-panel"><div class="academy-panel-head"><span class="academy-panel-num">02</span><h3>주식 시장 계절성 탐색</h3></div><div class="academy-panel-body"><p class="academy-summary">연말 랠리, 월별 효과, 요일 효과는 예측이 아니라 <b>검증할 가설</b>입니다. 기준을 바꿔 평균 수익률과 승률을 비교하세요.</p><label class="quant-select-label">분석 기준<select class="sim-select" data-quant-field="seasonality"><option value="month">월별 효과 · 연말 랠리 포함</option><option value="weekday">요일 효과</option></select></label><button class="sim-action" type="button" data-quant-seasonality>계절성 비교</button><div data-seasonality-result class="quant-work-result">분석 기준을 선택하세요.</div></div></article><article class="academy-panel quant-panel"><div class="academy-panel-head"><span class="academy-panel-num">03</span><h3>TradingView Pine Script 기초</h3></div><div class="academy-panel-body"><p class="academy-summary">아래 코드를 수정해 진입·청산 규칙을 만들어 보세요. 구조 점검 후 TradingView Pine Editor에서 실제 차트 백테스트를 실행할 수 있습니다.</p><div class="pine-toolbar"><select class="sim-select" data-pine-template><option value="crossover">이동평균 교차 템플릿</option><option value="rsi">RSI 반전 템플릿</option></select><a href="/trade/pine-guide.html" class="pine-guide-link">기존 Pine 가이드 열기 <i class="fa-solid fa-arrow-up-right-from-square"></i></a></div><textarea class="pine-editor" data-quant-field="pine-code" spellcheck="false">${state['quant:pine-code'] ?? pineTemplates.crossover}</textarea><button class="sim-action" type="button" data-pine-check>전략 구조 점검</button><div data-pine-result class="quant-work-result">코드를 수정한 뒤 점검하세요.</div></div></article>`;
+  restoreTrackedFields('quant-day5');
+  document.querySelector('[data-quant-backtest]').addEventListener('click', renderQuantBacktest); document.querySelector('[data-quant-seasonality]').addEventListener('click', renderSeasonality); document.querySelector('[data-pine-check]').addEventListener('click', checkPineScript);
+  document.querySelector('[data-pine-template]').addEventListener('change', event => { const editor=document.querySelector('[data-quant-field="pine-code"]'); editor.value=pineTemplates[event.target.value]; editor.dispatchEvent(new Event('input')); });
+}
 function renderLesson() {
+  if (activeLesson === 'quant-day5') { renderQuantDay5(); return; }
   if (activeLesson === 'json-consistency') { renderJsonConsistencyChecker(); return; }
   const item = lessonMap[activeLesson];
   document.getElementById('analysis-breadcrumb').innerHTML = '';
@@ -582,8 +640,8 @@ function recordLearningClick(event) {
   const clickKey=`click:${target.tagName.toLowerCase()}:${target.dataset.lesson ?? target.dataset.metricIndex ?? target.dataset.marketCheckIndex ?? target.dataset.strategyConceptIndex ?? target.dataset.financialTermIndex ?? target.dataset.valuationTermIndex ?? target.dataset.technicalTermIndex ?? target.dataset.sectorSelect ?? target.getAttribute('href') ?? text}`;
   learningState.clicks.push({ lesson:activeLesson, target:target.tagName.toLowerCase(), text, at:new Date().toISOString() });
   markLearningProgress(clickKey);
-  const run=target.closest('[data-sim-run],[data-finance-run],[data-practice-review],[data-technical-practice-review]');
-  if (run) { const action=`run:${run.dataset.simRun !== undefined ? 'simulation' : run.dataset.financeRun !== undefined ? 'finance' : run.dataset.practiceReview !== undefined ? 'company-practice' : 'technical-practice'}`; state.actions[action]=true; markLearningProgress(`action:${activeLesson}:${action}`); }
+  const run=target.closest('[data-sim-run],[data-finance-run],[data-practice-review],[data-technical-practice-review],[data-quant-backtest],[data-quant-seasonality],[data-pine-check]');
+  if (run) { const action=`run:${run.dataset.simRun !== undefined ? 'simulation' : run.dataset.financeRun !== undefined ? 'finance' : run.dataset.practiceReview !== undefined ? 'company-practice' : run.dataset.technicalPracticeReview !== undefined ? 'technical-practice' : run.dataset.quantBacktest !== undefined ? 'quant-backtest' : run.dataset.quantSeasonality !== undefined ? 'seasonality' : 'pine-check'}`; state.actions[action]=true; markLearningProgress(`action:${activeLesson}:${action}`); }
   const sector=target.closest('[data-sector-select]');
   if (sector) { state.fields.sector=sector.dataset.sectorSelect; state.actions['sector-select']=true; markLearningProgress(`action:${activeLesson}:sector-select`); }
   saveLearningState(); updateLearningProgress();
