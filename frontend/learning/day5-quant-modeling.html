@@ -20,13 +20,47 @@
   <main class="learn-wrap">
     <section style="padding:28px;border-radius:15px;background:linear-gradient(135deg,#E4F0FF,#F9FBFF);border:1px solid #C9DAFF;">
       <div class="kicker">LEARNING · DAY 05</div>
-      <h1 style="font-size:30px;line-height:1.25;font-weight:900;margin:7px 0;color:var(--fg);">데이터 활용 퀀트 모델링</h1>
-      <p style="max-width:820px;margin:0;color:var(--fg-2);font-size:15px;line-height:1.75;">백테스트 숫자를 읽고, 계절성 가설을 검증하고, TradingView 전략의 출발점을 만듭니다. 아래 입력값과 표를 직접 바꾸며 <strong>수익률보다 위험을 먼저 보는 습관</strong>을 익혀보세요.</p>
-      <div class="objective"><div><b>01 · 성과 해석</b>MDD·Sharpe Ratio로 전략의 품질 판단</div><div><b>02 · 계절성 검증</b>월별·요일별 패턴을 가설로 다루기</div><div><b>03 · 자동화 기초</b>Pine Script 전략의 진입·청산 구조 이해</div></div>
+      <h1 style="font-size:30px;line-height:1.25;font-weight:900;margin:7px 0;color:var(--fg);">TradingView · Pine Script 첫 실습</h1>
+      <p style="max-width:820px;margin:0;color:var(--fg-2);font-size:15px;line-height:1.75;">가입과 기본 차트 설정부터 모의투자, 가장 쉬운 Pine Script, 전략 검증까지 순서대로 진행합니다. 기존의 백테스트·계절성·리스크 관리 실습도 뒤에서 그대로 이어집니다.</p>
+      <div class="objective"><div><b>01 · 준비</b>계정 보안과 차트·종목·시간봉 설정</div><div><b>02 · 첫 실행</b>종가 선을 그리는 가장 쉬운 Pine Script</div><div><b>03 · 모의 검증</b>전략 테스터와 앱 모의주문으로 연습</div></div>
     </section>
 
     <section class="learn-card">
-      <div class="kicker">PRACTICE 1</div><h2 class="lesson-title">백테스트 성과 지표 분석</h2>
+      <div class="kicker">STEP 0 · 가입과 보안</div><h2 class="lesson-title">TradingView 계정을 만들고 준비하기</h2>
+      <p class="desc">TradingView 공식 사이트에서 가입한 뒤 이메일 인증과 비밀번호를 설정합니다. 비밀번호는 다른 서비스와 겹치지 않게 만들고, 가능하면 2단계 인증도 켜세요. 이 앱의 모의투자는 별도 계정으로 진행됩니다.</p>
+      <figure class="tv-guide-figure"><img src="/images/tradingview-password-guide.svg" alt="TradingView 계정 비밀번호 설정 화면 예시" width="1446" height="857"><figcaption>가입 후에는 계정 보안 설정을 먼저 마칩니다. 화면은 교육용 참고 이미지입니다.</figcaption></figure>
+      <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:14px"><a class="btn" href="https://www.tradingview.com/accounts/signin/" target="_blank" rel="noopener noreferrer" style="text-decoration:none">TradingView 가입·로그인 ↗</a><a href="/member/register.html" style="padding:9px 13px;border:1px solid var(--border);border-radius:7px;text-decoration:none;color:var(--fg);font-size:13px;font-weight:800;background:#fff">모의투자 회원가입</a></div>
+      <div class="tip">실제 거래소·증권사 계정이나 비밀번호, API 키는 이 학습 화면에 입력하지 마세요. 이 서비스의 주문은 학습용 모의주문입니다.</div>
+    </section>
+
+    <section class="learn-card">
+      <div class="kicker">STEP 1 · 기본 차트 설정</div><h2 class="lesson-title">종목과 시간봉을 한 번만 정확히 맞추기</h2>
+      <p class="desc">처음에는 삼성전자(005930)와 일봉으로 고정해 연습합니다. 다른 종목·시간봉을 동시에 바꾸면 결과를 비교하기 어려우므로, 아래 설정을 기준점으로 사용하세요.</p>
+      <div class="metric-grid" style="margin-top:14px"><figure class="tv-guide-figure" style="margin:0"><img src="/images/tradingview-symbol-search-guide.svg" alt="TradingView에서 삼성전자 005930을 검색하는 예시" width="1800" height="887"><figcaption>종목명 또는 005930을 검색하고 KRX:005930인지 확인합니다.</figcaption></figure><figure class="tv-guide-figure" style="margin:0"><img src="/images/tradingview-samsung-daily-timeframe-guide.svg" alt="TradingView 삼성전자 차트를 일봉으로 설정하는 예시" width="1880" height="925"><figcaption>상단의 1일 또는 1날을 선택해 일봉으로 맞춥니다.</figcaption></figure></div>
+      <ul class="checklist"><li>차트 오른쪽 가격축의 통화가 <strong>KRW</strong>인지 확인합니다.</li><li>마우스 휠로 확대·축소하고, 드래그로 과거 구간을 살펴봅니다.</li><li>같은 종목·같은 기간을 유지한 뒤에만 다음 단계로 갑니다.</li></ul>
+      <a href="/learning/tradingview-post-payment-guide.html" style="display:inline-block;margin-top:12px;color:var(--accent-dark);font-size:13px;font-weight:800;text-decoration:none">종목 검색·차트 이동을 이미지로 더 자세히 보기 →</a>
+    </section>
+
+    <section class="learn-card">
+      <div class="kicker">STEP 2 · 모의투자 설정</div><h2 class="lesson-title">돈을 쓰지 않고 주문 흐름을 연습하기</h2>
+      <p class="desc">이 서비스에서는 Pine 신호를 확인한 뒤 학습용 모의주문을 실행할 수 있습니다. 먼저 로그인하고, 한 번에 1주만 주문해 신호·수량·거래이력이 어떻게 연결되는지 확인하세요.</p>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px;" class="pine-challenges"><div class="result-item"><span>01</span><strong style="font-size:14px">로그인</strong><p style="font-size:12px;margin:5px 0 0;color:var(--fg-2)">모의투자 계정으로 로그인합니다.</p></div><div class="result-item"><span>02</span><strong style="font-size:14px">Pine 전략 거래</strong><p style="font-size:12px;margin:5px 0 0;color:var(--fg-2)">종목을 고르고 예제 전략을 불러옵니다.</p></div><div class="result-item"><span>03</span><strong style="font-size:14px">1주 주문</strong><p style="font-size:12px;margin:5px 0 0;color:var(--fg-2)">신호가 있을 때만 1주로 흐름을 확인합니다.</p></div></div>
+      <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:14px"><a class="btn" href="/trade/pine.html" style="text-decoration:none">Pine 전략 모의주문 열기</a><a href="/trade/history.html" style="padding:9px 13px;border:1px solid var(--border);border-radius:7px;text-decoration:none;color:var(--fg);font-size:13px;font-weight:800;background:#fff">내 거래이력 보기</a></div>
+    </section>
+
+    <section class="learn-card">
+      <div class="kicker">STEP 3 · 첫 Pine Script</div><h2 class="lesson-title">종가 선 하나를 차트에 그려 보기</h2>
+      <p class="desc">처음부터 매수·매도 전략을 만들지 않습니다. 아래 세 줄을 Pine Editor에 붙여넣고 <strong>차트에 넣기</strong>를 누릅니다. 차트에 파란 선이 보이면 스크립트 작성과 적용을 성공한 것입니다.</p>
+      <figure class="tv-guide-figure"><img src="/images/tradingview-pine-editor-basic-test-guide.svg" alt="Pine Editor에 기본 지표를 입력하고 차트에 적용하는 예시" width="1600" height="780"><figcaption>Pine Editor를 열고 코드를 붙여넣은 뒤 차트에 넣기를 누릅니다.</figcaption></figure>
+      <pre class="code"><span class="key">//@version=6</span>
+indicator(<span class="key">"나의 첫 종가 선"</span>, overlay=true)
+plot(close, color=color.blue, linewidth=2)</pre>
+      <ul class="checklist"><li><code>indicator</code>는 차트에 그림을 표시하는 스크립트입니다.</li><li><code>overlay=true</code>는 보조창이 아니라 가격 차트 위에 표시한다는 뜻입니다.</li><li><code>close</code>는 각 봉의 종가입니다. 먼저 이 값 하나가 표시되는지 확인하세요.</li></ul>
+      <a href="/learning/tradingview-post-payment-guide.html" style="display:inline-block;margin-top:12px;color:var(--accent-dark);font-size:13px;font-weight:800;text-decoration:none">Pine Editor 여는 방법과 첫 적용을 이미지로 보기 →</a>
+    </section>
+
+    <section class="learn-card">
+      <div class="kicker">ADVANCED 1 · 데이터 해석</div><h2 class="lesson-title">백테스트 성과 지표 분석</h2>
       <p class="desc">연환산 수익률이 높아도 낙폭이 과도하면 실제 운용을 지속하기 어렵습니다. 예시 값을 바꿔 Sharpe Ratio와 회복 관점의 Calmar Ratio를 계산해 보세요.</p>
       <div class="metric-grid" style="margin-top:17px;"><div>
         <div class="form-grid"><div class="field"><label for="annualReturn">연환산 수익률 (%)</label><input id="annualReturn" type="number" value="18"></div><div class="field"><label for="riskFree">무위험 수익률 (%)</label><input id="riskFree" type="number" value="3"></div><div class="field"><label for="volatility">연환산 변동성 (%)</label><input id="volatility" type="number" value="16"></div><div class="field"><label for="mdd">최대 낙폭 MDD (%)</label><input id="mdd" type="number" value="-12"></div></div>
@@ -36,14 +70,14 @@
     </section>
 
     <section class="learn-card">
-      <div class="kicker">PRACTICE 2</div><h2 class="lesson-title">주식 시장의 계절성 분석</h2><p class="desc">아래는 <strong>학습용 가상 월별 평균 수익률</strong>입니다. 계절성은 반복될 수 있는 경향일 뿐, 다음 달 수익을 보장하지 않는다는 전제로 관찰합니다.</p>
+      <div class="kicker">ADVANCED 2 · 데이터 해석</div><h2 class="lesson-title">주식 시장의 계절성 분석</h2><p class="desc">아래는 <strong>학습용 가상 월별 평균 수익률</strong>입니다. 계절성은 반복될 수 있는 경향일 뿐, 다음 달 수익을 보장하지 않는다는 전제로 관찰합니다.</p>
       <div style="display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin-top:14px"><div class="field" style="min-width:220px"><label for="seasonFilter">관찰 기준</label><select id="seasonFilter" onchange="renderSeasonality()"><option value="month">월별 효과</option><option value="weekday">요일 효과</option></select></div><button class="btn" type="button" onclick="renderSeasonality()">표 갱신</button></div>
       <div style="overflow:auto"><table class="season-table"><thead><tr><th id="seasonName">월</th><th>평균 수익률</th><th>상승 비율</th><th>관찰 횟수</th><th>상대 강도</th></tr></thead><tbody id="seasonBody"></tbody></table></div>
       <div class="tip">실습 과제: 가장 강한 구간을 하나 고른 뒤, (1) 표본 수가 충분한지, (2) 거래비용 뒤에도 의미가 있는지, (3) 최근 3년에도 유지되는지를 차례로 확인해 보세요. 연말 랠리·월말 효과·요일 효과는 모두 검증 대상인 가설입니다.</div>
     </section>
 
     <section class="learn-card">
-      <div class="kicker">PRACTICE 3 · TRADINGVIEW</div><h2 class="lesson-title">TradingView에서 전략을 검증하는 순서</h2>
+      <div class="kicker">STEP 4 · TRADINGVIEW 전략 검증</div><h2 class="lesson-title">TradingView에서 전략을 검증하는 순서</h2>
       <p class="desc">5일차는 숫자를 읽는 데서 끝내지 않고, TradingView 차트에서 가설을 직접 검증하는 날입니다. 아래 순서를 따라 종목·시간봉·전략 조건을 한 번에 하나씩 바꿔 보세요.</p>
       <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:16px;" class="tv-practice-steps"><div class="result-item"><span>STEP 01</span><strong style="font-size:14px">차트 열기</strong><p style="font-size:12px;margin:5px 0 0;color:var(--fg-2)">연습할 종목과 1시간·일봉 중 하나를 고릅니다.</p></div><div class="result-item"><span>STEP 02</span><strong style="font-size:14px">Pine Editor</strong><p style="font-size:12px;margin:5px 0 0;color:var(--fg-2)">화면 하단 Editor에 예제 코드를 붙여넣습니다.</p></div><div class="result-item"><span>STEP 03</span><strong style="font-size:14px">차트 적용</strong><p style="font-size:12px;margin:5px 0 0;color:var(--fg-2)">Add to chart로 진입·청산 표식을 확인합니다.</p></div><div class="result-item"><span>STEP 04</span><strong style="font-size:14px">전략 테스터</strong><p style="font-size:12px;margin:5px 0 0;color:var(--fg-2)">순이익보다 MDD·승률·거래 수를 함께 기록합니다.</p></div></div>
       <div class="tip">실습 규칙: 한 번에 <strong>하나의 변수만</strong> 바꾸세요. 예를 들어 이동평균 기간을 20/60에서 10/30으로 변경한 뒤, 같은 종목·같은 기간에서 결과를 비교합니다. 종목과 시간봉까지 함께 바꾸면 무엇이 결과를 바꿨는지 알기 어렵습니다.</div>
@@ -51,8 +85,8 @@
     </section>
 
     <section class="learn-card">
-      <div class="kicker">PRACTICE 4 · PINE SCRIPT</div><h2 class="lesson-title">이동평균 전략을 직접 수정하기</h2><p class="desc">다음 예제는 단기·장기 이동평균 교차에 손절과 익절 규칙을 더한 Pine Script v5 전략입니다. TradingView의 Pine Editor에 붙여넣고 <em>Strategy Tester</em>에서 결과를 확인해 보세요.</p>
-      <figure class="tv-guide-figure"><img src="/images/tradingview-password-guide.svg" alt="TradingView 계정 설정에서 비밀번호 설정을 안내하는 팝업 예시" width="1446" height="857"><figcaption>TradingView 사용 전, 계정 보안 설정과 2단계 인증을 완료하세요. 화면은 교육용 참고 이미지입니다.</figcaption></figure><a href="/learning/tradingview-card-payment-guide.html" style="display:inline-block;margin-top:12px;padding:9px 13px;border-radius:7px;background:var(--accent);color:#fff;text-decoration:none;font-size:13px;font-weight:800;">다음 단계 · 카드 결제 등록 안내 →</a>
+      <div class="kicker">STEP 5 · PINE SCRIPT 전략</div><h2 class="lesson-title">이동평균 전략을 직접 수정하기</h2><p class="desc">첫 종가 선을 적용한 뒤에만 진행하세요. 다음 예제는 단기·장기 이동평균 교차에 손절과 익절 규칙을 더한 Pine Script v5 전략입니다. TradingView의 Pine Editor에 붙여넣고 <em>Strategy Tester</em>에서 결과를 확인해 보세요.</p>
+      <a href="/learning/tradingview-card-payment-guide.html" style="display:inline-block;margin-top:12px;padding:9px 13px;border-radius:7px;background:var(--accent);color:#fff;text-decoration:none;font-size:13px;font-weight:800;">TradingView 결제 등록 안내 보기 →</a>
       <pre class="code"><span class="comment">// Day 5: 이동평균 교차 + 리스크 관리 예제</span>
 <span class="key">//@version=5</span>
 strategy(<span class="key">"Day5 MA Risk Strategy"</span>, overlay=true, initial_capital=10000000)
