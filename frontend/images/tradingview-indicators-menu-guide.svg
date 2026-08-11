@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1560" height="560" viewBox="0 0 1560 560" role="img" aria-labelledby="title desc">
+  <title id="title">TradingView 상단 지표 메뉴에서 코드 없이 이동평균선·RSI를 추가하는 예시</title><desc id="desc">상단 툴바의 지표 버튼을 클릭해 검색창에 이동평균이나 RSI를 입력하고 목록에서 선택하면 차트에 바로 지표가 추가되는 것을 보여주는 교육용 참고 이미지</desc>
+  <rect width="1560" height="560" fill="#f8f9fa"/>
+  <rect width="1560" height="34" fill="#fff" stroke="#e6e9eb"/>
+  <circle cx="15" cy="14" r="12" fill="#f0b90b"/><text x="10" y="19" font-family="Arial" font-size="16" fill="#111">k</text>
+  <rect x="40" y="1" width="86" height="26" rx="6" fill="#fff" stroke="#e2e5e8"/><text x="49" y="18" font-family="Arial" font-size="13" font-weight="700">005930</text>
+  <rect x="255" y="1" width="60" height="26" rx="6" fill="#fff" stroke="#111" stroke-width="1.5"/><text x="266" y="18" font-family="Arial" font-size="13" font-weight="700">지표</text>
+  <g font-family="Arial" font-size="13" fill="#111"><text x="360" y="18">알러트</text><text x="450" y="18">리플레이</text></g>
+
+  <rect x="0" y="34" width="40" height="360" fill="#f5f6f7" stroke="#dce0e3"/>
+  <rect x="40" y="34" width="1000" height="360" fill="#fff"/>
+  <g stroke="#e6e9eb" stroke-width="1" stroke-dasharray="2 3"><path d="M40 110h1000M40 186h1000M40 262h1000M40 338h1000"/></g>
+  <g stroke="#00a99b" stroke-width="8"><line x1="70" y1="260" x2="70" y2="310"/><line x1="130" y1="230" x2="130" y2="280"/><line x1="270" y1="150" x2="270" y2="200"/><line x1="470" y1="180" x2="470" y2="220"/><line x1="600" y1="120" x2="600" y2="170"/><line x1="800" y1="140" x2="800" y2="180"/><line x1="920" y1="110" x2="920" y2="150"/></g>
+  <g stroke="#e24a58" stroke-width="8"><line x1="170" y1="245" x2="170" y2="290"/><line x1="220" y1="200" x2="220" y2="240"/><line x1="340" y1="165" x2="340" y2="205"/><line x1="530" y1="175" x2="530" y2="215"/><line x1="700" y1="155" x2="700" y2="195"/><line x1="860" y1="115" x2="860" y2="155"/></g>
+  <polyline points="70,300 130,280 170,270 220,240 270,190 340,205 470,220 530,225 600,190 700,205 800,175 860,150 920,140" fill="none" stroke="#f5a623" stroke-width="2.5"/>
+  <text x="930" y="140" font-family="Arial" font-size="11" font-weight="700" fill="#f5a623">MA(20)</text>
+
+  <rect x="40" y="400" width="1000" height="120" fill="#fff" stroke="#eee"/>
+  <text x="50" y="418" font-family="Arial" font-size="11" font-weight="700" fill="#333">RSI (14)</text>
+  <line x1="40" y1="440" x2="1040" y2="440" stroke="#eee" stroke-dasharray="3 3"/><text x="1044" y="444" font-family="Arial" font-size="10" fill="#999">70</text>
+  <line x1="40" y1="490" x2="1040" y2="490" stroke="#eee" stroke-dasharray="3 3"/><text x="1044" y="494" font-family="Arial" font-size="10" fill="#999">30</text>
+  <polyline points="70,470 130,455 170,430 220,460 270,480 340,440 470,420 530,450 600,405 700,435 800,415 860,455 920,470" fill="none" stroke="#8e44ec" stroke-width="2"/>
+
+  <rect x="1064" y="34" width="480" height="440" rx="8" fill="#fff" stroke="#d2d5d9"/>
+  <g font-family="Arial"><text x="1084" y="66" font-size="17" font-weight="700">지표, 전략 및 심볼</text>
+    <path d="m1500 50 14 14m0-14-14 14" stroke="#222" stroke-width="1.5"/>
+    <rect x="1084" y="82" width="440" height="36" rx="8" fill="#fff" stroke="#d9dce0"/>
+    <circle cx="1102" cy="100" r="7" fill="none" stroke="#969aa0" stroke-width="2"/><path d="m1107 105 5 5" stroke="#969aa0" stroke-width="2"/>
+    <text x="1128" y="105" font-size="14">이동평균</text>
+    <rect x="1084" y="132" width="440" height="34" fill="#eef4ff"/><text x="1100" y="154" font-size="13" font-weight="700" fill="#1763e8">Moving Average · MA</text>
+    <rect x="1084" y="166" width="440" height="34" fill="#fff"/><text x="1100" y="188" font-size="13">Moving Average Exponential · EMA</text>
+    <rect x="1084" y="200" width="440" height="34" fill="#fff"/><text x="1100" y="222" font-size="13">MACD</text>
+    <rect x="1084" y="234" width="440" height="34" fill="#fff"/><text x="1100" y="256" font-size="13">Relative Strength Index · RSI</text>
+    <rect x="1084" y="268" width="440" height="34" fill="#fff"/><text x="1100" y="290" font-size="13">Volume</text>
+    <line x1="1084" y1="314" x2="1524" y2="314" stroke="#eee"/>
+    <text x="1084" y="340" font-size="12" fill="#888">코드를 몰라도 검색 후 클릭 한 번이면 차트에 추가됩니다.</text>
+    <text x="1084" y="360" font-size="12" fill="#888">여러 개를 동시에 추가해 겹쳐 비교할 수도 있습니다.</text>
+  </g>
+
+  <path d="M300 30 C320 55 320 70 285 82" fill="none" stroke="#d3008f" stroke-width="9" stroke-linecap="round"/><path d="m295 70 15 25-32 -3z" fill="#d3008f"/>
+  <circle cx="298" cy="12" r="20" fill="#d3008f"/><text x="291" y="19" font-family="Arial" font-size="16" font-weight="700" fill="#fff">1</text>
+  <rect x="200" y="90" width="260" height="40" rx="8" fill="#fff4fb" stroke="#d3008f" stroke-width="2"/><text x="215" y="115" font-family="Arial" font-size="13" font-weight="700" fill="#8c0060">상단 "지표" 버튼 클릭</text>
+
+  <circle cx="1300" cy="150" r="20" fill="#d3008f"/><text x="1293" y="157" font-family="Arial" font-size="16" font-weight="700" fill="#fff">2</text>
+  <rect x="1064" y="484" width="480" height="40" rx="8" fill="#fff4fb" stroke="#d3008f" stroke-width="2"/><text x="1080" y="509" font-family="Arial" font-size="13" font-weight="700" fill="#8c0060">원하는 지표 검색 후 클릭 → 즉시 차트에 반영</text>
+</svg>

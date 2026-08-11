@@ -46,6 +46,46 @@
       <p class="desc">처음에는 삼성전자(005930)와 일봉으로 고정해 연습합니다. 다른 종목·시간봉을 동시에 바꾸면 결과를 비교하기 어려우므로, 아래 설정을 기준점으로 사용하세요.</p>
       <div class="metric-grid" style="margin-top:14px"><figure class="tv-guide-figure" style="margin:0"><img src="/images/tradingview-symbol-search-guide.svg" alt="TradingView에서 삼성전자 005930을 검색하는 예시" width="1800" height="887"><figcaption>종목명 또는 005930을 검색하고 KRX:005930인지 확인합니다.</figcaption></figure><figure class="tv-guide-figure" style="margin:0"><img src="/images/tradingview-samsung-daily-timeframe-guide.svg" alt="TradingView 삼성전자 차트를 일봉으로 설정하는 예시" width="1880" height="925"><figcaption>상단의 1일 또는 1날을 선택해 일봉으로 맞춥니다.</figcaption></figure></div>
       <ul class="checklist"><li>차트 오른쪽 가격축의 통화가 <strong>KRW</strong>인지 확인합니다.</li><li>마우스 휠로 확대·축소하고, 드래그로 과거 구간을 살펴봅니다.</li><li>같은 종목·같은 기간을 유지한 뒤에만 다음 단계로 갑니다.</li></ul>
+      <p class="desc" style="margin-top:16px"><strong>다른 종목으로 바꾸기</strong>: 차트 왼쪽 위 <strong>종목명</strong>(예: <code>035720</code>)을 클릭하면 언제든 다시 <strong>심볼 찾기</strong> 창이 열립니다. <code>전체·주식·펀드·선물·외환·암호화폐·지표·채권·경제·옵션</code> 탭으로 자산 종류를 좁히고, <strong>모든 나라·모든 타입·모든 섹터</strong> 필터로 검색 범위를 더 줄일 수 있습니다.</p>
+      <figure class="tv-guide-figure"><img src="/images/tradingview-symbol-switch-guide.svg" alt="TradingView 종목명을 클릭해 심볼 찾기 창을 열고 자산 종류·필터로 검색하는 예시" width="1520" height="620"><figcaption>차트는 교육용 참고 이미지입니다.</figcaption></figure>
+      <ul class="checklist"><li>종목 코드(예: <code>035720</code>) 또는 회사명(예: 카카오)으로 검색할 수 있습니다.</li><li>같은 검색창에서 탭만 바꾸면 주식뿐 아니라 코인·환율·지수·채권까지 검색할 수 있습니다.</li><li>결과 목록의 <strong>거래소 표기(KRX, LSE 등)</strong>를 확인해, 같은 회사라도 다른 거래소·상품과 혼동하지 않도록 주의하세요.</li></ul>
+      <p class="desc" style="margin-top:16px"><strong>시간봉(인터벌) 바꾸기</strong>: 종목명 바로 오른쪽의 시간봉 버튼(처음엔 <code>1일</code>)을 클릭하면 1분·5분·1시간·일·주·월 목록이 열립니다. 단기 흐름을 보고 싶으면 <code>1시간</code>이나 <code>5분</code>처럼 더 짧은 주기로, 긴 추세를 보고 싶으면 <code>주</code>·<code>월</code>로 바꿔보세요. 선택한 즉시 같은 종목이 그 주기의 캔들로 다시 그려집니다.</p>
+      <figure class="tv-guide-figure"><img src="/images/tradingview-interval-change-guide.svg" alt="TradingView에서 종목명 옆 시간봉 버튼을 클릭해 1시간 봉으로 바꾸는 예시" width="1500" height="460"><figcaption>차트는 교육용 참고 이미지입니다. 인터벌을 바꾸면 같은 종목이라도 캔들 모양과 변동 폭이 크게 달라 보일 수 있습니다.</figcaption></figure>
+      <div class="tip">주의: 시간봉을 바꾸면 이동평균·RSI 같은 지표 값도 그 주기 기준으로 다시 계산됩니다. 일봉에서 잘 맞던 전략이 1시간봉에서는 신호 빈도와 승률이 달라질 수 있으니, 실습할 때는 어떤 시간봉으로 테스트했는지 항상 함께 기록하세요.</div>
+    </section>
+
+    <section class="learn-card">
+      <div class="kicker">STEP 1-1 · 코드 없이 지표 추가</div><h2 class="lesson-title">지표 메뉴로 이동평균선·RSI 바로 추가하기</h2>
+      <p class="desc">Pine Script를 배우기 전에도, 상단 <strong>지표</strong> 버튼만으로 이동평균선(MA)·거래량(Volume)·MACD·RSI 같은 기본 지표를 코드 한 줄 없이 붙일 수 있습니다. 먼저 이 방법으로 지표가 어떻게 보이는지 익힌 뒤, STEP 4부터 직접 Pine Script로 같은 지표를 만들어 보면 이해가 빠릅니다.</p>
+      <figure class="tv-guide-figure"><img src="/images/tradingview-indicators-menu-guide.svg" alt="TradingView 상단 지표 메뉴에서 이동평균선과 RSI를 검색해 추가하는 예시" width="1560" height="560"><figcaption>차트는 교육용 참고 이미지입니다. 실제 메뉴 구성은 버전에 따라 다를 수 있습니다.</figcaption></figure>
+      <ul class="checklist"><li>상단 <strong>지표</strong> 버튼 → 원하는 지표명(예: <code>이동평균</code>, <code>RSI</code>) 검색 → 클릭하면 즉시 차트에 추가됩니다.</li><li>가격 위에 겹쳐 그려지는 지표(이동평균 등)와, 별도 창에 그려지는 지표(RSI, MACD 등)가 있습니다.</li><li>지표를 더블클릭하면 기간(길이)·색상 같은 설정을 세부적으로 바꿀 수 있습니다.</li></ul>
+    </section>
+
+    <section class="learn-card">
+      <div class="kicker">STEP 1-2 · 그리기 도구</div><h2 class="lesson-title">추세선과 지지·저항선 그리기</h2>
+      <p class="desc">차트 왼쪽 세로 도구 모음에서 추세선, 수평선 등을 그려 지지선·저항선을 표시할 수 있습니다. 자석(Magnet) 기능을 켜면 선이 캔들의 고가·저가에 자동으로 달라붙어 더 정확하게 그릴 수 있습니다.</p>
+      <figure class="tv-guide-figure"><img src="/images/tradingview-drawing-tools-guide.svg" alt="TradingView 왼쪽 도구 모음의 추세선 도구로 고점을 잇는 선을 그리는 예시" width="1400" height="520"><figcaption>차트는 교육용 참고 이미지입니다.</figcaption></figure>
+      <ul class="checklist"><li>왼쪽 도구 모음에서 <strong>추세선</strong> 도구를 고른 뒤, 차트에서 두 지점을 클릭해 선을 긋습니다.</li><li>도구 모음 하단의 <strong>자석 아이콘</strong>을 켜면 선 끝이 캔들 고가·저가에 스냅됩니다.</li><li><code>Alt+H</code> 단축키로 그려둔 모든 선·도형을 한 번에 숨기거나 다시 표시할 수 있어, 지표만 깔끔히 보고 싶을 때 유용합니다.</li></ul>
+      <div class="tip">참고: 차트에 그린 선·지표 설정은 TradingView가 자동으로 저장(오토세이브)합니다. 다시 접속해도 마지막으로 보던 상태 그대로 이어서 볼 수 있습니다.</div>
+    </section>
+
+    <section class="learn-card">
+      <div class="kicker">STEP 1-3 · 관심종목과 알람</div><h2 class="lesson-title">관심 종목을 등록하고 가격 알람 받기</h2>
+      <p class="desc">여러 종목을 매번 검색하지 않으려면 <strong>Watchlist(관심종목)</strong>에 등록해두고, 원하는 가격에 도달했을 때 <strong>얼러트(알람)</strong>로 알림을 받을 수 있습니다. 차트 앞에 계속 붙어있지 않아도 되므로 실습 효율이 올라갑니다.</p>
+      <figure class="tv-guide-figure"><img src="/images/tradingview-watchlist-alert-guide.svg" alt="TradingView 관심종목에 종목을 추가하고 목표가 알람을 생성하는 예시" width="1400" height="520"><figcaption>차트는 교육용 참고 이미지입니다.</figcaption></figure>
+      <ul class="checklist"><li>우측 <strong>Watchlist</strong> 패널의 <code>+</code> 버튼으로 종목을 검색해 등록합니다.</li><li>상단 <strong>얼러트</strong> 버튼 → 조건(예: 가격이 특정 값보다 클 때)과 목표가를 입력하고 생성하면, 조건 충족 시 알림을 받습니다.</li><li>Pine 전략에서 참고한 진입·청산 가격대에 알람 조건을 걸어두면, 화면을 계속 보고 있지 않아도 신호 발생 시점을 놓치지 않을 수 있습니다.</li></ul>
+    </section>
+
+    <section class="learn-card">
+      <div class="kicker">STEP 1-4 · 레이아웃 저장</div><h2 class="lesson-title">차트 설정을 레이아웃으로 저장하고 관리하기</h2>
+      <p class="desc">종목·시간봉·지표·그려둔 선을 매번 새로 맞추지 않으려면, 지금까지의 화면 구성을 <strong>레이아웃</strong>으로 저장해두세요. 우측 상단 레이아웃 아이콘을 누르면 저장·자동저장·새 레이아웃 만들기 메뉴가 열립니다.</p>
+      <figure class="tv-guide-figure"><img src="/images/tradingview-layout-save-guide.svg" alt="TradingView 레이아웃 메뉴에서 저장, 자동저장, 새 레이아웃 만들기를 선택하는 예시" width="900" height="640"><figcaption>차트는 교육용 참고 이미지입니다.</figcaption></figure>
+      <ul class="checklist">
+        <li><strong>레이아웃 세이브(Ctrl+S)</strong>: 지금 화면 그대로(종목·시간봉·지표·그림) 저장합니다. <strong>자동저장</strong>을 켜두면 매번 저장하지 않아도 변경사항이 자동 반영됩니다.</li>
+        <li><strong>+ 새 레이아웃 만들기</strong>: 용도별로 화면을 나눠 저장할 수 있습니다. 예를 들어 STEP 6의 이동평균 전략용 레이아웃과 STEP 7·8의 카카오·네이버 비교용 레이아웃을 따로 만들어두면, 서로 다른 실습을 오갈 때 설정을 다시 맞출 필요가 없습니다.</li>
+        <li><strong>최근 사용함</strong> 목록에서 바로 이전 레이아웃으로 전환할 수 있고, <strong>이름 바꾸기·카피 만들기</strong>로 레이아웃을 정리할 수 있습니다.</li>
+      </ul>
+      <div class="tip">참고: <strong>레이아웃 공유</strong>를 켜면 이 화면 구성을 다른 사람과 링크로 공유할 수 있습니다. 단, 공유되는 것은 차트 설정이며 계정·API 키 등 개인 정보는 포함되지 않습니다. 그래도 실습용 화면과 실제 계좌 화면은 구분해서 관리하는 습관을 들이세요.</div>
     </section>
 
     <section class="learn-card">
@@ -130,6 +170,37 @@ plot(slow, color=color.orange)</pre>
       <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px;" class="pine-challenges"><div class="result-item"><span>미션 A</span><strong style="font-size:14px">기간 바꾸기</strong><p style="font-size:12px;margin:5px 0 0;color:var(--fg-2)">20·60을 10·30으로 바꾸고 거래 수와 MDD를 비교합니다.</p></div><div class="result-item"><span>미션 B</span><strong style="font-size:14px">손절 조정</strong><p style="font-size:12px;margin:5px 0 0;color:var(--fg-2)">0.95를 0.97 또는 0.93으로 바꿔 손실 폭을 관찰합니다.</p></div><div class="result-item"><span>미션 C</span><strong style="font-size:14px">익절 조정</strong><p style="font-size:12px;margin:5px 0 0;color:var(--fg-2)">1.10을 1.05·1.15로 바꾸고 수익과 승률을 기록합니다.</p></div></div>
       <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:14px"><a class="btn" href="https://www.tradingview.com" target="_blank" rel="noopener noreferrer" style="text-decoration:none">TradingView에서 실습하기 ↗</a><a href="/trade/pine-guide.html" style="padding:9px 13px;border:1px solid var(--border);border-radius:7px;text-decoration:none;color:var(--fg);font-size:13px;font-weight:800;background:#fff">Pine Script 안내 보기</a></div>
       <div class="tip"><strong>현실적인 백테스트 설정:</strong> Strategy 속성에서 초기자본, 주문 크기, 수수료, 슬리피지, 피라미딩을 실제로 가정한 값으로 설정한 뒤 비교하세요. 순이익만 보지 말고 최대 낙폭(MDD), 승률, 거래 횟수와 개별 거래 목록을 기록합니다. 자동매매 연결 전에는 신호 중복 방지, 주문 실패 처리, API 키 보안, 일일 손실 한도, 알림·로그를 반드시 설계해야 합니다. 이 페이지와 앱의 전략 거래는 교육·모의 실습용입니다.</div>
+    </section>
+
+    <section class="learn-card">
+      <div class="kicker">STEP 7 · 여러 종목 비교</div><h2 class="lesson-title">카카오와 네이버를 한 차트에서 겹쳐 보기</h2>
+      <p class="desc">한 종목만 보면 그 종목이 시장 대비 잘한 건지, 업종 전체가 오른 건지 구분하기 어렵습니다. TradingView의 <strong>비교(오버레이)</strong> 기능으로 두 종목을 같은 화면에서 등락률 기준으로 비교해 보세요.</p>
+      <figure class="tv-guide-figure"><img src="/images/tradingview-compare-overlay-guide.svg" alt="TradingView 차트에서 심볼명 옆 플러스 아이콘으로 네이버를 비교 추가하는 예시" width="1600" height="820"><figcaption>차트는 교육용 참고 이미지입니다. 실제 화면 구성은 계정·버전에 따라 다를 수 있습니다.</figcaption></figure>
+      <ol class="checklist" style="padding-left:20px;list-style:decimal">
+        <li>좌측 상단 <strong>종목명 옆 + 아이콘</strong>을 클릭해 <code>비교 또는 심볼 추가</code> 창을 엽니다.</li>
+        <li>비교할 종목(예: 네이버 <code>035420</code>)을 검색해 선택하면, 기존 카카오 차트 위에 겹쳐 표시됩니다.</li>
+        <li>차트를 우클릭해 <strong>눈금 병합 해제</strong> 후, 오른쪽 가격축을 우클릭해 <strong>%(퍼센트)</strong> 스케일로 바꿉니다. 두 종목이 같은 기준(등락률)으로 겹쳐져 어느 쪽이 더 올랐는지 바로 비교됩니다.</li>
+      </ol>
+      <div class="tip">참고: 각 종목의 캔들·거래량을 각각 자세히 보고 싶다면, 오버레이 대신 상단 레이아웃 아이콘에서 <strong>화면 분할</strong>을 선택하고 양쪽 차트를 <strong>모든 차트 동기화</strong>로 묶는 방법도 있습니다. Watchlist에 이미 등록된 종목은 검색 없이 차트로 드래그해도 같은 방식으로 추가됩니다.</div>
+    </section>
+
+    <section class="learn-card">
+      <div class="kicker">STEP 8 · PINE SCRIPT 분석</div><h2 class="lesson-title">두 종목의 상대강도를 Pine Script로 수치화하기</h2>
+      <p class="desc">STEP 7에서는 카카오·네이버를 겹쳐서 눈으로만 비교했습니다. 이번에는 <code>request.security()</code>로 다른 종목의 데이터를 가져와 두 종목의 비율(상대강도)을 직접 계산하고, 차트 하단 별도 창에 지표로 그려봅니다. 1시간봉처럼 짧은 시간봉에서도 그대로 동작합니다.</p>
+      <pre class="code"><span class="key">//@version=6</span>
+indicator(<span class="key">"카카오/네이버 상대강도"</span>, overlay=false)
+
+naverClose = request.security(<span class="key">"KRX:035420"</span>, timeframe.period, close)
+ratio = close / naverClose
+plot(ratio, color=color.blue, linewidth=2)
+plot(ta.sma(ratio, 20), color=color.orange)</pre>
+      <figure class="tv-guide-figure"><img src="/images/tradingview-relative-strength-pine-guide.svg" alt="Pine Editor에 상대강도 스크립트를 작성해 차트 하단에 적용한 예시" width="1600" height="760"><figcaption>차트는 교육용 참고 이미지입니다. 실제 결과 값은 종목·기간·시간봉에 따라 달라집니다.</figcaption></figure>
+      <ul class="checklist">
+        <li><strong>파란선(ratio)</strong>은 카카오 종가 ÷ 네이버 종가입니다. 절대적인 가격이 아니라 <strong>두 종목의 힘의 비율</strong>을 보여줍니다.</li>
+        <li><strong>주황선</strong>은 그 비율의 20기간 이동평균입니다. 파란선이 주황선을 위로 뚫고 올라가면 카카오가, 아래로 내려가면 네이버가 상대적으로 더 강해지고 있다는 뜻입니다.</li>
+        <li>STEP 7의 오버레이 비교는 "느낌"을 보여주고, 이 지표는 그걸 <strong>교차(crossover) 조건</strong>으로 바꿔 신호나 전략 진입 조건에 바로 활용할 수 있게 해줍니다.</li>
+      </ul>
+      <div class="tip">주의: <code>request.security()</code>로 다른 종목 데이터를 가져올 때는 반복 재계산(repainting) 가능성이 있습니다. 실시간 값이 봉 마감 전에 바뀔 수 있으니, 신호로 쓰기 전에 봉이 마감된 이후 값인지 꼭 확인하세요.</div>
     </section>
   </main>
   <footer class="footer"><div>EDUMGT · TradingView(Pine) 학습 · 투자 교육용 콘텐츠</div></footer>

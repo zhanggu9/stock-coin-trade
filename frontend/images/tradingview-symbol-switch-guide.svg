@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1520" height="620" viewBox="0 0 1520 620" role="img" aria-labelledby="title desc">
+  <title id="title">TradingView 상단 종목명을 클릭해 심볼 찾기로 다른 자산을 검색하는 예시</title><desc id="desc">차트 왼쪽 위 종목명을 클릭하면 심볼 찾기 창이 열리고 전체 주식 펀드 선물 외환 암호화폐 지수 채권 경제 옵션 탭과 나라 타입 섹터 필터로 검색 범위를 좁힐 수 있는 것을 보여주는 교육용 참고 이미지</desc>
+  <rect width="1520" height="620" fill="#f8f9fa"/>
+  <rect width="1520" height="34" fill="#fff" stroke="#e6e9eb"/>
+  <rect x="40" y="1" width="86" height="26" rx="6" fill="#eef4ff" stroke="#1763e8" stroke-width="1.5"/><text x="49" y="18" font-family="Arial" font-size="13" font-weight="700" fill="#1763e8">035720</text>
+  <rect x="158" y="1" width="52" height="26" rx="6" fill="#fff" stroke="#c8ccd1"/><text x="167" y="18" font-family="Arial" font-size="12" font-weight="700">1시간</text>
+
+  <rect x="0" y="34" width="1520" height="586" fill="#fff"/>
+  <g stroke="#00a99b" stroke-width="8"><line x1="40" y1="480" x2="40" y2="530"/><line x1="90" y1="450" x2="90" y2="500"/></g>
+  <g stroke="#e24a58" stroke-width="8"><line x1="65" y1="465" x2="65" y2="510"/></g>
+  <text x="20" y="90" font-family="Arial" font-size="13" fill="#111">40,700</text>
+
+  <rect width="1520" height="620" fill="#000" opacity=".2"/>
+  <rect x="330" y="70" width="860" height="490" rx="10" fill="#fff" stroke="#d2d5d9"/>
+  <g font-family="Arial">
+    <text x="356" y="112" font-size="21" font-weight="700">심볼 찾기</text>
+    <path d="m1150 96 16 16m0-16-16 16" stroke="#222" stroke-width="1.5"/>
+    <rect x="356" y="132" width="828" height="40" rx="8" fill="#fff" stroke="#111" stroke-width="1.5"/>
+    <circle cx="378" cy="152" r="8" fill="none" stroke="#969aa0" stroke-width="2"/><path d="m384 158 6 6" stroke="#969aa0" stroke-width="2"/>
+    <rect x="400" y="141" width="76" height="22" fill="#cde3ff"/><text x="406" y="157" font-size="14" fill="#1763e8" font-weight="700">035720</text>
+
+    <g font-size="12" font-weight="700">
+      <rect x="356" y="188" width="42" height="26" rx="13" fill="#f0f1f3"/><text x="366" y="205">전체</text>
+      <rect x="402" y="188" width="42" height="26" rx="13" fill="#292c31"/><text x="412" y="205" fill="#fff">주식</text>
+      <rect x="448" y="188" width="42" height="26" rx="13" fill="#f0f1f3"/><text x="458" y="205">펀드</text>
+      <rect x="494" y="188" width="42" height="26" rx="13" fill="#f0f1f3"/><text x="502" y="205">선물</text>
+      <rect x="540" y="188" width="46" height="26" rx="13" fill="#f0f1f3"/><text x="548" y="205">외환</text>
+      <rect x="590" y="188" width="66" height="26" rx="13" fill="#f0f1f3"/><text x="598" y="205">암호화폐</text>
+      <rect x="660" y="188" width="42" height="26" rx="13" fill="#f0f1f3"/><text x="670" y="205">지표</text>
+      <rect x="706" y="188" width="42" height="26" rx="13" fill="#f0f1f3"/><text x="714" y="205">채권</text>
+      <rect x="752" y="188" width="42" height="26" rx="13" fill="#f0f1f3"/><text x="761" y="205">경제</text>
+      <rect x="798" y="188" width="46" height="26" rx="13" fill="#f0f1f3"/><text x="807" y="205">옵션</text>
+    </g>
+
+    <g font-size="12" fill="#555">
+      <rect x="356" y="228" width="98" height="26" rx="13" fill="#fff" stroke="#dfe3e6"/><text x="368" y="245">모든 나라 ⌄</text>
+      <rect x="464" y="228" width="98" height="26" rx="13" fill="#fff" stroke="#dfe3e6"/><text x="476" y="245">모든 타입 ⌄</text>
+      <rect x="572" y="228" width="98" height="26" rx="13" fill="#fff" stroke="#dfe3e6"/><text x="584" y="245">모든 섹터 ⌄</text>
+    </g>
+
+    <rect x="356" y="266" width="828" height="40" fill="#fff" stroke="#111" stroke-width="1.5"/>
+    <circle cx="378" cy="286" r="10" fill="#f0b90b"/><text x="373" y="291" font-size="12">K</text>
+    <text x="400" y="291" font-size="14" font-weight="700" fill="#1763e8">035720</text><text x="470" y="291" font-size="14">카카오보통주</text><text x="1080" y="291" font-size="12" fill="#555">stock  KRX</text>
+
+    <g font-size="13" fill="#333">
+      <text x="400" y="336">F99715</text><text x="500" y="336" fill="#888">VON EXP AMP/BPM/STM 50 030728</text><text x="1080" y="336" fill="#888">structured MILSEDEX</text>
+      <text x="400" y="368">BT305I</text><text x="500" y="368" fill="#888">BPA CC INTEL/MICRON/INFINEON 30</text><text x="1080" y="368" fill="#888">structured MILSEDEX</text>
+      <text x="400" y="400">SPOT</text><text x="500" y="400" fill="#888">Spotify Technology SA</text><text x="1080" y="400" fill="#888">dr  BYMA</text>
+    </g>
+    <line x1="356" y1="424" x2="1184" y2="424" stroke="#eee"/>
+    <text x="356" y="454" font-size="12" fill="#888">탭을 바꾸면 같은 검색창에서 코인·외환·지수·채권·경제지표까지 검색할 수 있습니다.</text>
+    <text x="356" y="478" font-size="12" fill="#888">종목명 칸은 언제든 클릭해 다시 열 수 있어, 실습 중 종목을 자유롭게 바꿀 수 있습니다.</text>
+  </g>
+
+  <path d="M83 30 C60 55 120 60 240 82" fill="none" stroke="#d3008f" stroke-width="11" stroke-linecap="round"/><path d="m228 68 40 20-52 8z" fill="#d3008f"/>
+  <circle cx="83" cy="14" r="20" fill="#d3008f"/><text x="76" y="21" font-family="Arial" font-size="16" font-weight="700" fill="#fff">1</text>
+
+  <circle cx="480" cy="200" r="0" fill="none"/>
+</svg>

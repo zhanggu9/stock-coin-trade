@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="520" viewBox="0 0 1400 520" role="img" aria-labelledby="title desc">
+  <title id="title">TradingView 관심종목 등록과 가격 알람 설정 예시</title><desc id="desc">우측 Watchlist에 종목을 추가하고 알러트 버튼으로 목표가에 도달하면 알림을 받도록 조건을 설정하는 것을 보여주는 교육용 참고 이미지</desc>
+  <rect width="1400" height="520" fill="#f8f9fa"/>
+  <rect width="1400" height="34" fill="#fff" stroke="#e6e9eb"/>
+  <rect x="40" y="1" width="86" height="26" rx="6" fill="#fff" stroke="#e2e5e8"/><text x="49" y="18" font-family="Arial" font-size="13" font-weight="700">005930</text>
+  <rect x="330" y="1" width="60" height="26" rx="6" fill="#fff" stroke="#111" stroke-width="1.5"/><text x="341" y="18" font-family="Arial" font-size="13" font-weight="700">얼러트</text>
+
+  <rect x="0" y="34" width="900" height="486" fill="#fff"/>
+  <g stroke="#e6e9eb" stroke-width="1" stroke-dasharray="2 3"><path d="M0 150h900M0 266h900M0 382h900"/></g>
+  <g stroke="#00a99b" stroke-width="9"><line x1="60" y1="300" x2="60" y2="360"/><line x1="180" y1="250" x2="180" y2="310"/><line x1="360" y1="180" x2="360" y2="240"/><line x1="560" y1="140" x2="560" y2="200"/><line x1="740" y1="110" x2="740" y2="170"/></g>
+  <g stroke="#e24a58" stroke-width="9"><line x1="120" y1="270" x2="120" y2="330"/><line x1="270" y1="210" x2="270" y2="270"/><line x1="460" y1="160" x2="460" y2="220"/><line x1="650" y1="120" x2="650" y2="180"/><line x1="800" y1="140" x2="800" y2="200"/></g>
+  <line x1="0" y1="150" x2="900" y2="150" stroke="#d3008f" stroke-width="2" stroke-dasharray="6 4"/>
+  <text x="8" y="145" font-family="Arial" font-size="12" font-weight="700" fill="#d3008f">알람 목표가 82,000</text>
+
+  <rect x="900" y="34" width="500" height="486" fill="#fff" stroke="#e6e9eb"/>
+  <text x="920" y="66" font-family="Arial" font-size="15" font-weight="700">Watchlist</text><rect x="1352" y="52" width="24" height="24" rx="6" fill="#f0f1f3"/><text x="1358" y="70" font-family="Arial" font-size="15">+</text>
+  <g font-family="Arial" font-size="13">
+    <rect x="912" y="88" width="476" height="30" fill="#fff8e0" stroke="#f0b90b"/><text x="920" y="107">005930  삼성전자</text><text x="1330" y="107" fill="#00a99b">+1.4%</text>
+    <rect x="912" y="118" width="476" height="30" fill="#fff"/><text x="920" y="137" fill="#aaa">035420  네이버</text><text x="1330" y="137" fill="#e24a58" opacity=".5">-0.6%</text>
+    <rect x="912" y="148" width="476" height="30" fill="#fff"/><text x="920" y="167" fill="#aaa">035720  카카오</text><text x="1330" y="167" fill="#00a99b" opacity=".5">+2.9%</text>
+  </g>
+
+  <rect x="960" y="210" width="400" height="270" rx="8" fill="#fff" stroke="#d2d5d9"/>
+  <g font-family="Arial"><text x="980" y="242" font-size="16" font-weight="700">알람 생성</text>
+    <path d="m1330 226 14 14m0-14-14 14" stroke="#222" stroke-width="1.5"/>
+    <text x="980" y="270" font-size="12" fill="#888">조건</text>
+    <rect x="980" y="278" width="360" height="34" rx="6" fill="#fff" stroke="#d9dce0"/><text x="994" y="300" font-size="13">삼성전자 · 가격이 다음보다 클 때</text>
+    <text x="980" y="332" font-size="12" fill="#888">목표가</text>
+    <rect x="980" y="340" width="170" height="34" rx="6" fill="#fff" stroke="#d9dce0"/><text x="994" y="362" font-size="14" font-weight="700">82,000</text>
+    <rect x="980" y="410" width="360" height="40" rx="8" fill="#1763e8"/><text x="1115" y="435" font-size="14" font-weight="700" fill="#fff">생성</text>
+  </g>
+
+  <circle cx="60" cy="70" r="20" fill="#d3008f"/><text x="53" y="77" font-family="Arial" font-size="16" font-weight="700" fill="#fff">1</text>
+  <rect x="90" y="55" width="290" height="40" rx="8" fill="#fff4fb" stroke="#d3008f" stroke-width="2"/>
+  <text x="104" y="80" font-family="Arial" font-size="13" font-weight="700" fill="#8c0060">Watchlist의 + 버튼으로 종목 등록</text>
+  <path d="M990 24 C1050 34 1090 45 1100 55" fill="none" stroke="#d3008f" stroke-width="8" stroke-linecap="round" marker-end="none"/>
+  <circle cx="990" cy="24" r="0" fill="none"/>
+
+  <circle cx="530" cy="120" r="20" fill="#d3008f"/><text x="523" y="127" font-family="Arial" font-size="16" font-weight="700" fill="#fff">2</text>
+  <rect x="380" y="90" width="300" height="40" rx="8" fill="#fff4fb" stroke="#d3008f" stroke-width="2"/>
+  <text x="394" y="115" font-family="Arial" font-size="13" font-weight="700" fill="#8c0060">"얼러트"로 목표가 도달 시 알림 설정</text>
+</svg>

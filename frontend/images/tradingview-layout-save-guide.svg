@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="640" viewBox="0 0 900 640" role="img" aria-labelledby="title desc">
+  <title id="title">TradingView 레이아웃 메뉴에서 저장·자동저장·새 레이아웃 만들기 예시</title><desc id="desc">상단 우측 레이아웃 아이콘을 클릭하면 레이아웃 세이브, 자동저장 토글, 레이아웃 공유, 카피 만들기, 이름 바꾸기, 새 레이아웃 만들기, 최근 사용함 목록이 나타나는 것을 보여주는 교육용 참고 이미지</desc>
+  <rect width="900" height="640" fill="#f8f9fa"/>
+  <rect width="900" height="34" fill="#fff" stroke="#e6e9eb"/>
+  <rect x="20" y="4" width="56" height="26" rx="6" fill="#fff" stroke="#c8ccd1"/><text x="30" y="21" font-family="Arial" font-size="12" font-weight="700">테스트</text>
+  <text x="150" y="21" font-family="Arial" font-size="15">⌄</text>
+  <circle cx="196" cy="16" r="12" fill="#fff" stroke="#c8ccd1"/><text x="188" y="21" font-family="Arial" font-size="13">▦</text>
+  <circle cx="236" cy="16" r="12" fill="#fff" stroke="#c8ccd1"/><text x="229" y="21" font-family="Arial" font-size="13">◎</text>
+  <circle cx="276" cy="16" r="12" fill="#fff" stroke="#c8ccd1"/><text x="268" y="21" font-family="Arial" font-size="13">⛶</text>
+  <circle cx="316" cy="16" r="12" fill="#fff" stroke="#c8ccd1"/><text x="309" y="21" font-family="Arial" font-size="13">📷</text>
+  <rect x="760" y="4" width="50" height="26" rx="6" fill="#111"/><text x="770" y="21" font-family="Arial" font-size="12" font-weight="700" fill="#fff">거래</text>
+  <rect x="818" y="4" width="72" height="26" rx="13" fill="#111"/><text x="826" y="21" font-family="Arial" font-size="12" font-weight="700" fill="#fff">퍼블리쉬</text>
+
+  <rect x="0" y="34" width="230" height="606" fill="#fff"/>
+  <g font-family="Arial" font-size="13"><text x="12" y="130" fill="#666">KRW ⌄</text></g>
+  <line x1="0" y1="270" x2="230" y2="270" stroke="#eee" stroke-dasharray="4 3"/>
+  <rect x="8" y="252" width="66" height="24" fill="#e24a58"/><text x="14" y="269" font-family="Arial" font-size="11" font-weight="700" fill="#fff">035720 +13.85%</text>
+  <rect x="8" y="360" width="66" height="24" fill="#1763e8"/><text x="14" y="377" font-family="Arial" font-size="11" font-weight="700" fill="#fff">035420 +9.91%</text>
+
+  <rect x="230" y="34" width="330" height="606" fill="#fff" stroke="#e6e9eb"/>
+  <g font-family="Arial" font-size="12"><text x="250" y="90">지표 ⌄</text><text x="380" y="90">…</text></g>
+  <rect x="230" y="558" width="330" height="82" fill="#fff" stroke="#eee"/>
+  <circle cx="252" cy="590" r="14" fill="#f0b90b"/><text x="245" y="596" font-family="Arial" font-size="15" fill="#111">K</text>
+  <text x="275" y="588" font-family="Arial" font-size="14" font-weight="700">035720</text>
+  <text x="275" y="608" font-family="Arial" font-size="11" fill="#888">카카오보통주 · 1 · KRX</text>
+
+  <rect x="560" y="34" width="20" height="606" fill="#fff" stroke="#e6e9eb"/>
+
+  <rect width="900" height="640" fill="#000" opacity=".1"/>
+  <rect x="230" y="40" width="290" height="450" rx="10" fill="#fff" stroke="#d2d5d9"/>
+  <g font-family="Arial" font-size="14">
+    <text x="252" y="72" font-weight="700">레이아웃 세이브</text><text x="470" y="72" fill="#888" font-size="12">Ctrl+S</text>
+    <line x1="242" y1="86" x2="498" y2="86" stroke="#f0f0f0"/>
+    <text x="252" y="116" font-weight="700">자동저장</text>
+    <rect x="450" y="102" width="48" height="24" rx="12" fill="#1763e8"/><circle cx="486" cy="114" r="10" fill="#fff"/>
+    <line x1="242" y1="132" x2="498" y2="132" stroke="#f0f0f0"/>
+    <text x="252" y="162" font-weight="700">레이아웃 공유</text><circle cx="475" cy="157" r="8" fill="none" stroke="#aaa"/><text x="471" y="161" font-size="10" fill="#aaa">i</text>
+    <rect x="450" y="148" width="48" height="24" rx="12" fill="#dfe3e6"/><circle cx="462" cy="160" r="10" fill="#fff"/>
+    <line x1="242" y1="178" x2="498" y2="178" stroke="#f0f0f0"/>
+    <text x="252" y="208" font-weight="700">📄  카피 만들기...</text>
+    <text x="252" y="240" font-weight="700">✎  이름 바꾸기...</text>
+    <text x="252" y="272" font-weight="700">⬇  차트 데이터 다운로드...</text>
+    <line x1="242" y1="288" x2="498" y2="288" stroke="#f0f0f0"/>
+    <text x="252" y="320" font-weight="700">＋  새 레이아웃 만들기...</text>
+    <line x1="242" y1="336" x2="498" y2="336" stroke="#f0f0f0"/>
+    <text x="252" y="360" font-size="12" fill="#888">최근 사용함</text>
+    <rect x="242" y="370" width="256" height="52" rx="6" fill="#f5f6f7"/>
+    <text x="256" y="390" font-weight="700">테스트</text><text x="256" y="408" font-size="11" fill="#888">035720, 60</text>
+    <rect x="242" y="426" width="256" height="34" rx="6" fill="#fff"/>
+    <text x="256" y="447" fill="#888">이름없음</text><text x="380" y="447" font-size="11" fill="#bbb">W93PM2, D</text>
+  </g>
+  <rect x="230" y="466" width="290" height="24" fill="#fff" stroke="#eee"/><text x="252" y="483" font-family="Arial" font-size="12" font-weight="700">📁 레이아웃 열기...</text>
+
+  <ellipse cx="365" cy="320" rx="128" ry="20" fill="none" stroke="#d3008f" stroke-width="7"/>
+</svg>

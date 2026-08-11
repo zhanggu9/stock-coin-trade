@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="760" viewBox="0 0 1600 760" role="img" aria-labelledby="title desc">
+  <title id="title">Pine Editor에 카카오·네이버 상대강도 스크립트를 작성해 차트 하단에 적용한 예시</title><desc id="desc">request.security로 네이버 종가를 가져와 카카오 종가와의 비율을 계산하는 Pine 스크립트를 작성하고 차트에 추가하면 하단 별도 창에 상대강도 라인과 20기간 이동평균 라인이 표시되는 것을 보여주는 교육용 참고 이미지</desc>
+  <rect width="1600" height="760" fill="#f8f9fa"/>
+  <rect width="1600" height="32" fill="#fff" stroke="#e6e9eb"/>
+  <circle cx="15" cy="14" r="11" fill="#f0b90b"/><text x="10" y="18" font-family="Arial" font-size="14" fill="#111">k</text>
+  <rect x="38" y="2" width="80" height="24" rx="6" fill="#fff" stroke="#e2e5e8"/><text x="46" y="18" font-family="Arial" font-size="12" font-weight="700">035720</text>
+  <rect x="158" y="2" width="52" height="24" rx="6" fill="#fff" stroke="#c8ccd1"/><text x="167" y="18" font-family="Arial" font-size="12" font-weight="700">1시간</text>
+
+  <rect x="0" y="32" width="36" height="500" fill="#f5f6f7" stroke="#dce0e3"/>
+  <rect x="36" y="32" width="884" height="270" fill="#fff"/>
+  <text x="46" y="52" font-family="Arial" font-size="11" fill="#111">카카오보통주 · 1시간 · KRX</text>
+  <text x="46" y="70" font-family="Arial" font-size="10" fill="#00913a">N NAVER보통주 · KRX 9.91%</text>
+  <polyline points="46,220 90,190 130,150 170,130 230,90 300,120 360,150 430,175 480,185 530,110 600,95 650,140 700,155 750,120 800,100 850,80 900,90" fill="none" stroke="#1763e8" stroke-width="2"/>
+  <g stroke="#00a99b" stroke-width="6"><line x1="60" y1="200" x2="60" y2="240"/><line x1="150" y1="170" x2="150" y2="210"/><line x1="330" y1="200" x2="330" y2="240"/><line x1="620" y1="150" x2="620" y2="190"/><line x1="770" y1="130" x2="770" y2="170"/></g>
+  <g stroke="#e24a58" stroke-width="6"><line x1="100" y1="185" x2="100" y2="220"/><line x1="270" y1="140" x2="270" y2="180"/><line x1="480" y1="195" x2="480" y2="235"/><line x1="700" y1="165" x2="700" y2="205"/></g>
+
+  <rect x="36" y="302" width="884" height="80" fill="#fff" stroke="#eee"/>
+  <g fill="#9fd8cf"><rect x="50" y="340" width="12" height="40"/><rect x="120" y="330" width="12" height="50"/><rect x="300" y="335" width="12" height="45"/><rect x="600" y="325" width="12" height="55"/><rect x="760" y="332" width="12" height="48"/></g>
+  <g fill="#f4b8bd"><rect x="90" y="345" width="12" height="35"/><rect x="260" y="338" width="12" height="42"/><rect x="470" y="342" width="12" height="38"/><rect x="690" y="336" width="12" height="44"/></g>
+
+  <rect x="36" y="382" width="884" height="130" fill="#fff" stroke="#eee"/>
+  <text x="46" y="400" font-family="Arial" font-size="11" font-weight="700" fill="#333">카카오/네이버 상대강도</text>
+  <polyline points="46,470 90,460 130,455 170,470 230,485 300,495 360,500 430,460 480,440 530,420 600,430 650,425 700,435 750,420 800,410 850,400 900,395" fill="none" stroke="#1763e8" stroke-width="2.5"/>
+  <polyline points="46,495 130,492 230,488 330,482 430,472 530,460 630,448 730,436 830,424 900,415" fill="none" stroke="#f5a623" stroke-width="2.5"/>
+
+  <rect x="936" y="16" width="640" height="736" fill="#fff" stroke="#e6e9eb"/>
+  <text x="956" y="44" font-family="Arial" font-size="15" font-weight="700">Pine 에디터</text>
+  <text x="956" y="80" font-family="Arial" font-size="14">~ 연습용 ⌄</text>
+  <g font-family="ui-monospace,Consolas,monospace" font-size="13" fill="#333">
+    <text x="964" y="122" fill="#888">1</text><text x="990" y="122" fill="#787b86">//@version=6</text>
+    <text x="964" y="140" fill="#888">2</text><text x="990" y="140"><tspan fill="#1763e8">indicator</tspan>(<tspan fill="#00913a">"카카오/네이버 상대강도"</tspan>, overlay=<tspan fill="#1763e8">false</tspan>)</text>
+    <text x="964" y="176" fill="#888">4</text><text x="990" y="176">naverClose = <tspan fill="#1763e8">request.security</tspan>(<tspan fill="#00913a">"KRX:035420"</tspan>, timeframe.period, close)</text>
+    <text x="964" y="194" fill="#888">5</text><text x="990" y="194">ratio = close / naverClose</text>
+    <text x="964" y="212" fill="#888">6</text><text x="990" y="212"><tspan fill="#1763e8">plot</tspan>(ratio, color=color.blue, linewidth=2)</text>
+    <text x="964" y="230" fill="#888">7</text><text x="990" y="230"><tspan fill="#1763e8">plot</tspan>(ta.sma(ratio, 20), color=color.orange)</text>
+  </g>
+  <ellipse cx="1270" cy="175" rx="220" ry="90" fill="none" stroke="#d3008f" stroke-width="7"/>
+  <path d="M1120 280 C1050 380 990 460 940 555" fill="none" stroke="#d3008f" stroke-width="14" stroke-linecap="round"/>
+  <path d="m960 620 -80 30 30 -100z" fill="#d3008f"/>
+
+  <rect x="960" y="560" width="590" height="60" rx="8" fill="#fff4fb" stroke="#d3008f" stroke-width="2"/>
+  <text x="975" y="584" font-family="Arial" font-size="13" font-weight="700" fill="#8c0060">파란선 = 카카오/네이버 비율, 주황선 = 그 비율의 20기간 평균</text>
+  <text x="975" y="604" font-family="Arial" font-size="13" font-weight="700" fill="#8c0060">파란선이 주황선 위로 올라올수록 카카오가 네이버보다 상대적으로 강세</text>
+</svg>
