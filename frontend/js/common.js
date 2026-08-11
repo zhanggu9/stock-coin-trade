@@ -49,7 +49,6 @@ function renderHeader(user) {
     ]},
     { type: 'group', label: '학습', items: [
       { href: '/learning/day5-quant-modeling.html', label: '5일차 · 데이터 활용 퀀트 모델링', icon: 'fa-solid fa-chart-column' },
-      { href: '/analysis.html', label: '투자 분석 학습', icon: 'fa-solid fa-graduation-cap' },
       { href: '/learning/tradingview-card-payment-guide.html', label: 'TradingView 결제 등록 안내', icon: 'fa-solid fa-credit-card' },
       { href: '/learning/tradingview-post-payment-guide.html', label: 'TradingView · Pine Script 실습', icon: 'fa-solid fa-circle-check' },
       { href: '/trade/pine-guide.html', label: 'Pine 개념 · 자동매매 구조', icon: 'fa-solid fa-code' },
@@ -97,6 +96,9 @@ function renderHeader(user) {
     <div class="oc-divider"></div>
     <a href="javascript:void(0)" class="oc-nav-item" onclick="closeOffcanvas();openAiPanel()">
       <i class="fa-solid fa-trophy" aria-hidden="true" style="width:16px;text-align:center;"></i> 투자 랭킹
+    </a>
+    <a href="/analysis.html" class="oc-nav-item">
+      <i class="fa-solid fa-graduation-cap" aria-hidden="true" style="width:16px;text-align:center;"></i> 투자 분석 학습
     </a>`;
 
   const ocNavGuest = `
