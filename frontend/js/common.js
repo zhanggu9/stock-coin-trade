@@ -48,6 +48,7 @@ function renderHeader(user) {
       { href: '/trade/avg-down.html', label: '물타기 계산기', icon: 'fa-solid fa-calculator' },
     ]},
     { type: 'group', label: '학습', items: [
+      { href: '/learning/day3-kb-paper-trading.html', label: '3일차 · KB증권 모의투자 수동 테스트', icon: 'fa-solid fa-clipboard-check' },
       { href: '/learning/day5-quant-modeling.html', label: '5일차 · 데이터 활용 퀀트 모델링', icon: 'fa-solid fa-chart-column' },
       { href: '/learning/tradingview-card-payment-guide.html', label: 'TradingView 결제 등록 안내', icon: 'fa-solid fa-credit-card' },
       { href: '/learning/tradingview-post-payment-guide.html', label: 'TradingView · Pine Script 실습', icon: 'fa-solid fa-circle-check' },
