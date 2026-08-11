@@ -40,8 +40,6 @@ function renderHeader(user) {
     { type: 'group', label: '거래', items: [
       { href: '/trade/order.html', label: '코인',          icon: 'fa-solid fa-coins' },
       { href: '/trade/stock.html', label: '주식',          icon: 'fa-solid fa-chart-line' },
-      { href: '/trade/pine.html',  label: 'Pine 전략 거래', icon: 'fa-solid fa-code' },
-      { href: '/trade/pine-guide.html', label: 'Pine Script 안내', icon: 'fa-solid fa-circle-info' },
       { href: '/trade/alternatives.html', label: '파생·금속·부동산', icon: 'fa-solid fa-landmark' },
     ]},
     { type: 'group', label: '자산관리', items: [
@@ -49,8 +47,15 @@ function renderHeader(user) {
       { href: '/trade/history.html', label: '내 거래이력',   icon: 'fa-solid fa-clock-rotate-left' },
       { href: '/trade/avg-down.html', label: '물타기 계산기', icon: 'fa-solid fa-calculator' },
     ]},
-    { type: 'group', label: '분석 · 도구', items: [
+    { type: 'group', label: '학습', items: [
+      { href: '/learning/day5-quant-modeling.html', label: '5일차 · 데이터 활용 퀀트 모델링', icon: 'fa-solid fa-chart-column' },
       { href: '/analysis.html', label: '투자 분석 학습', icon: 'fa-solid fa-graduation-cap' },
+      { href: '/learning/tradingview-card-payment-guide.html', label: 'TradingView 결제 등록 안내', icon: 'fa-solid fa-credit-card' },
+      { href: '/learning/tradingview-post-payment-guide.html', label: 'TradingView · Pine Script 실습', icon: 'fa-solid fa-circle-check' },
+      { href: '/trade/pine-guide.html', label: 'Pine 개념 · 자동매매 구조', icon: 'fa-solid fa-code' },
+      { href: '/trade/pine.html', label: 'Pine 전략 모의주문', icon: 'fa-solid fa-flask' },
+    ]},
+    { type: 'group', label: '분석 · 도구', items: [
       { href: '/ai-sheet.html', label: 'AI Sheet',       icon: 'fa-solid fa-table-cells-large' },
       { href: '/openapi.html',  label: 'Open API',       icon: 'fa-solid fa-key' },
     ]},
