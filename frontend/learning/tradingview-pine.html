@@ -56,7 +56,14 @@
     </section>
 
     <section class="learn-card">
-      <div class="kicker">STEP 3 · 첫 Pine Script</div><h2 class="lesson-title">종가 선 하나를 차트에 그려 보기</h2>
+      <div class="kicker">STEP 3 · 선택: VS CODE 확장</div><h2 class="lesson-title">VS Code에 Pine Script 확장을 설치하기</h2>
+      <p class="desc">Pine Script를 로컬에서 미리 작성하거나 관리하고 싶다면 VS Code 확장을 설치할 수 있습니다. 왼쪽 <strong>Extensions</strong>(확장) 메뉴에서 <code>pine script</code>를 검색하고, 화면처럼 <strong>JeylaniB의 “Pine Script”</strong> 확장을 선택해 <strong>설치</strong>를 누르세요.</p>
+      <figure class="tv-guide-figure"><img src="/images/vscode-pine-script-extension-guide.svg" alt="VS Code 확장 마켓플레이스에서 Pine Script를 검색하고 설치하는 예시" width="1600" height="760"><figcaption>VS Code 확장은 코드 색상 강조와 스니펫 작성을 돕는 선택 도구입니다. 게시자와 설명을 확인한 뒤 설치하세요.</figcaption></figure>
+      <div class="tip">중요: 이 확장은 Pine Script를 VS Code에서 실행하거나 백테스트하게 해 주지는 않습니다. 실제 차트 적용·실행·전략 테스터는 <strong>TradingView의 Pine Editor</strong>에서 합니다. TradingView만 사용할 경우 확장을 설치하지 않아도 됩니다.</div>
+    </section>
+
+    <section class="learn-card">
+      <div class="kicker">STEP 4 · 첫 Pine Script</div><h2 class="lesson-title">종가 선 하나를 차트에 그려 보기</h2>
       <p class="desc">처음부터 매수·매도 전략을 만들지 않습니다. 아래 세 줄을 Pine Editor에 붙여넣고 <strong>차트에 넣기</strong>를 누릅니다. 차트에 파란 선이 보이면 스크립트 작성과 적용을 성공한 것입니다.</p>
       <figure class="tv-guide-figure"><img src="/images/tradingview-pine-editor-basic-test-guide.svg" alt="Pine Editor에 기본 지표를 입력하고 차트에 적용하는 예시" width="1600" height="780"><figcaption>Pine Editor를 열고 코드를 붙여넣은 뒤 차트에 넣기를 누릅니다.</figcaption></figure>
       <pre class="code"><span class="key">//@version=6</span>
@@ -83,7 +90,7 @@ plot(close, color=color.blue, linewidth=2)</pre>
     </section>
 
     <section class="learn-card">
-      <div class="kicker">STEP 4 · TRADINGVIEW 전략 검증</div><h2 class="lesson-title">TradingView에서 전략을 검증하는 순서</h2>
+      <div class="kicker">STEP 5 · TRADINGVIEW 전략 검증</div><h2 class="lesson-title">TradingView에서 전략을 검증하는 순서</h2>
       <p class="desc">숫자를 읽는 데서 끝내지 않고, TradingView 차트에서 가설을 직접 검증합니다. 아래 순서를 따라 종목·시간봉·전략 조건을 한 번에 하나씩 바꿔 보세요.</p>
       <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:16px;" class="tv-practice-steps"><div class="result-item"><span>STEP 01</span><strong style="font-size:14px">차트 열기</strong><p style="font-size:12px;margin:5px 0 0;color:var(--fg-2)">연습할 종목과 1시간·일봉 중 하나를 고릅니다.</p></div><div class="result-item"><span>STEP 02</span><strong style="font-size:14px">Pine Editor</strong><p style="font-size:12px;margin:5px 0 0;color:var(--fg-2)">화면 하단 Editor에 예제 코드를 붙여넣습니다.</p></div><div class="result-item"><span>STEP 03</span><strong style="font-size:14px">차트 적용</strong><p style="font-size:12px;margin:5px 0 0;color:var(--fg-2)">Add to chart로 진입·청산 표식을 확인합니다.</p></div><div class="result-item"><span>STEP 04</span><strong style="font-size:14px">전략 테스터</strong><p style="font-size:12px;margin:5px 0 0;color:var(--fg-2)">순이익보다 MDD·승률·거래 수를 함께 기록합니다.</p></div></div>
       <div class="tip">실습 규칙: 한 번에 <strong>하나의 변수만</strong> 바꾸세요. 예를 들어 이동평균 기간을 20/60에서 10/30으로 변경한 뒤, 같은 종목·같은 기간에서 결과를 비교합니다. 종목과 시간봉까지 함께 바꾸면 무엇이 결과를 바꿨는지 알기 어렵습니다.</div>
@@ -91,7 +98,7 @@ plot(close, color=color.blue, linewidth=2)</pre>
     </section>
 
     <section class="learn-card">
-      <div class="kicker">STEP 5 · PINE SCRIPT 전략</div><h2 class="lesson-title">이동평균 전략을 직접 수정하기</h2><p class="desc">첫 종가 선을 적용한 뒤에만 진행하세요. 다음 예제는 단기·장기 이동평균 교차에 손절과 익절 규칙을 더한 Pine Script v5 전략입니다. TradingView의 Pine Editor에 붙여넣고 <em>Strategy Tester</em>에서 결과를 확인해 보세요.</p>
+      <div class="kicker">STEP 6 · PINE SCRIPT 전략</div><h2 class="lesson-title">이동평균 전략을 직접 수정하기</h2><p class="desc">첫 종가 선을 적용한 뒤에만 진행하세요. 다음 예제는 단기·장기 이동평균 교차에 손절과 익절 규칙을 더한 Pine Script v5 전략입니다. TradingView의 Pine Editor에 붙여넣고 <em>Strategy Tester</em>에서 결과를 확인해 보세요.</p>
       <pre class="code"><span class="comment">// 이동평균 교차 + 리스크 관리 예제</span>
 <span class="key">//@version=5</span>
 strategy(<span class="key">"MA Risk Strategy"</span>, overlay=true, initial_capital=10000000)

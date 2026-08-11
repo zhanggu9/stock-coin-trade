@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="760" viewBox="0 0 1600 760" role="img" aria-labelledby="title desc">
+  <title id="title">VS Code에서 Pine Script 확장을 설치하는 화면</title>
+  <desc id="desc">확장 마켓플레이스에서 pine script를 검색하고 JeylaniB의 Pine Script 확장을 설치하는 방법을 보여주는 교육용 안내 이미지</desc>
+  <rect width="1600" height="760" fill="#1e1e1e"/>
+  <rect width="48" height="760" fill="#181818"/>
+  <g fill="none" stroke="#b8b8b8" stroke-width="2"><rect x="12" y="17" width="23" height="23" rx="3"/><path d="M15 76h18M15 83h18M15 90h12"/><path d="M15 137l9 10 10-20"/><circle cx="24" cy="205" r="11"/><path d="M16 268l16 16m0-16-16 16"/></g>
+  <rect x="48" width="510" height="760" fill="#252526"/>
+  <text x="76" y="45" fill="#e7e7e7" font-family="Arial, sans-serif" font-size="19" font-weight="700">확장: 마켓플레이스</text>
+  <rect x="76" y="67" width="454" height="42" rx="4" fill="#3c3c3c"/>
+  <text x="91" y="94" fill="#d4d4d4" font-family="Arial, sans-serif" font-size="18">pine script</text>
+  <text x="494" y="94" fill="#b8b8b8" font-family="Arial, sans-serif" font-size="19">☰  ⌕</text>
+  <rect x="48" y="124" width="510" height="113" fill="#39393f"/>
+  <path d="M93 191l33-55 35 55z" fill="#00b84f"/><path d="M105 181l12-15 11 11 14-12" fill="none" stroke="#1e1e1e" stroke-width="7" stroke-linecap="round"/>
+  <text x="145" y="156" fill="#fff" font-family="Arial, sans-serif" font-size="18" font-weight="700">Pine Script</text><text x="145" y="181" fill="#ddd" font-family="Arial, sans-serif" font-size="16">Pine Script V5 Syntax Highlighting &amp; Snippets</text><text x="145" y="209" fill="#d1d1d1" font-family="Arial, sans-serif" font-size="14">JeylaniB</text>
+  <rect x="479" y="188" width="48" height="27" rx="3" fill="#007acc"/><text x="488" y="207" fill="#fff" font-family="Arial, sans-serif" font-size="14" font-weight="700">설치</text>
+  <g font-family="Arial, sans-serif"><text x="145" y="274" fill="#fff" font-size="17" font-weight="700">Pine Script Syntax Highlighter</text><text x="145" y="298" fill="#c7c7c7" font-size="15">Write awesome indicators or strategies with me!</text><text x="145" y="326" fill="#c7c7c7" font-size="14">ex-codes</text><text x="145" y="382" fill="#fff" font-size="17" font-weight="700">Pine Script Syntax Highlighting</text><text x="145" y="406" fill="#c7c7c7" font-size="15">Syntax Highlighting for Pine Script</text></g>
+  <path d="M94 344l33-55 35 55zM94 452l33-55 35 55z" fill="#00b84f"/>
+  <rect x="558" width="1042" height="760" fill="#1e1e1e"/>
+  <rect x="558" y="0" width="1042" height="54" fill="#181818"/><text x="588" y="34" fill="#fff" font-family="Arial, sans-serif" font-size="19">▦  확장: Pine Script</text><text x="860" y="36" fill="#c5c5c5" font-family="Arial, sans-serif" font-size="22">×</text>
+  <path d="M715 247l91-150 97 150z" fill="#00c653"/><path d="M748 225l31-32 31 25 40-35" fill="none" stroke="#1e1e1e" stroke-width="19" stroke-linecap="round"/>
+  <text x="860" y="122" fill="#e7e7e7" font-family="Arial, sans-serif" font-size="37" font-weight="700">Pine Script</text><text x="860" y="158" fill="#d7d7d7" font-family="Arial, sans-serif" font-size="18">JeylaniB　 |　 ☁ 50,181　 |　 ★★★★★ (3)</text><text x="860" y="209" fill="#e7e7e7" font-family="Arial, sans-serif" font-size="19">Pine Script V5 Syntax Highlighting &amp; Snippets</text>
+  <rect x="861" y="230" width="52" height="31" rx="3" fill="#007acc"/><text x="872" y="252" fill="#fff" font-family="Arial, sans-serif" font-size="15" font-weight="700">설치</text><text x="929" y="252" fill="#d7d7d7" font-family="Arial, sans-serif" font-size="17">☑ 자동 업데이트　⚙</text>
+  <path d="M725 352 C735 317 779 286 852 266" fill="none" stroke="#ffb000" stroke-width="7" stroke-linecap="round"/><path d="M843 257l19 7-13 15z" fill="#ffb000"/>
+  <rect x="622" y="337" width="255" height="63" rx="9" fill="#fff4d6" stroke="#ffb000" stroke-width="2"/><text x="642" y="363" fill="#815400" font-family="Arial, sans-serif" font-size="17" font-weight="700">1. 검색 결과의 Pine Script 선택</text><text x="642" y="386" fill="#815400" font-family="Arial, sans-serif" font-size="14">JeylaniB · V5 문법 강조 확장</text>
+  <path d="M994 341 C983 313 966 285 899 264" fill="none" stroke="#ffb000" stroke-width="7" stroke-linecap="round"/><path d="M891 256l19 8-13 14z" fill="#ffb000"/>
+  <rect x="967" y="337" width="225" height="63" rx="9" fill="#fff4d6" stroke="#ffb000" stroke-width="2"/><text x="987" y="363" fill="#815400" font-family="Arial, sans-serif" font-size="17" font-weight="700">2. 설치 버튼 클릭</text><text x="987" y="386" fill="#815400" font-family="Arial, sans-serif" font-size="14">설치 후 VS Code 재시작</text>
+  <path d="M591 460h970" stroke="#3e3e42"/><text x="625" y="510" fill="#d7d7d7" font-family="Arial, sans-serif" font-size="17">세부 정보　　기능　　변경 로그</text><text x="625" y="568" fill="#aaa" font-family="Arial, sans-serif" font-size="16">이 확장은 VS Code에서 Pine Script 코드의 색상 강조와 스니펫 입력을 돕습니다.</text><text x="625" y="601" fill="#aaa" font-family="Arial, sans-serif" font-size="16">실행·백테스트는 TradingView의 Pine Editor에서 진행합니다.</text>
+</svg>
