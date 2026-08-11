@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img" aria-labelledby="title desc">
+  <title id="title">KB증권 PC 웹사이트 ID 로그인 화면 예시</title>
+  <desc id="desc">KB증권 앱에서 계좌와 ID를 등록한 뒤 PC 웹사이트에서 ID와 비밀번호로 로그인하는 창을 보여주는 안내 이미지</desc>
+  <rect width="1200" height="680" fill="#f0f0f0"/>
+  <rect x="0" y="0" width="1200" height="78" fill="#fff"/>
+  <text x="76" y="48" fill="#8b6100" font-family="Arial, sans-serif" font-size="31" font-weight="700">KB</text>
+  <text x="128" y="48" fill="#2b2b2b" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="25" font-weight="700">증권</text>
+  <text x="340" y="49" fill="#222" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="21">금융상품　 뱅킹/대출　 주식/선물　 투자정보　 자산관리　 연금자산　 고객서비스</text>
+  <line x1="0" y1="77" x2="1200" y2="77" stroke="#b78a00" stroke-width="2"/>
+  <rect x="266" y="62" width="670" height="550" fill="#fff" stroke="#6b6254" stroke-width="3"/>
+  <text x="888" y="108" fill="#333" font-family="Arial, sans-serif" font-size="42">×</text>
+  <rect x="318" y="112" width="150" height="58" fill="#f8f8f8" stroke="#bdb6aa"/><rect x="468" y="112" width="150" height="58" fill="#f8f8f8" stroke="#bdb6aa"/><rect x="618" y="112" width="150" height="58" fill="#f8f8f8" stroke="#bdb6aa"/><rect x="768" y="112" width="116" height="58" fill="#fff" stroke="#6b6254" stroke-width="2"/>
+  <text x="348" y="145" fill="#333" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="16">공동인증서</text><text x="369" y="164" fill="#333" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="16">로그인</text>
+  <text x="496" y="145" fill="#333" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="16">클라우드인증서</text><text x="519" y="164" fill="#333" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="16">로그인</text>
+  <text x="647" y="145" fill="#333" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="16">브라우저인증서</text><text x="669" y="164" fill="#333" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="16">로그인</text>
+  <text x="810" y="151" fill="#6b5431" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="17" font-weight="700">ID 로그인</text>
+  <rect x="468" y="280" width="220" height="38" fill="#fff" stroke="#9b9b9b"/><text x="484" y="306" fill="#333" font-family="Arial, sans-serif" font-size="19">••••••••••</text>
+  <rect x="468" y="326" width="220" height="38" fill="#fff" stroke="#9b9b9b"/><text x="484" y="352" fill="#333" font-family="Arial, sans-serif" font-size="19">••••••••••</text>
+  <rect x="704" y="287" width="17" height="17" rx="2" fill="#147bd1"/><path d="M708 295l4 4 7-9" fill="none" stroke="#fff" stroke-width="2"/><text x="730" y="302" fill="#345" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="16">ID 저장</text>
+  <rect x="704" y="333" width="17" height="17" rx="2" fill="#147bd1"/><path d="M708 341l4 4 7-9" fill="none" stroke="#fff" stroke-width="2"/><text x="730" y="348" fill="#345" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="16">조회전용</text>
+  <rect x="468" y="382" width="352" height="62" fill="#ffba16"/><text x="584" y="422" fill="#111" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="24" font-weight="700">ID 로그인</text>
+  <rect x="468" y="466" width="170" height="36" fill="#f6f6f6" stroke="#9b9b9b"/><rect x="650" y="466" width="170" height="36" fill="#f6f6f6" stroke="#9b9b9b"/><text x="525" y="490" fill="#444" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="15">ID 찾기</text><text x="686" y="490" fill="#444" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="15">ID/비밀번호 등록</text>
+  <line x1="318" y1="550" x2="884" y2="550" stroke="#e2e2e2"/>
+  <text x="352" y="580" fill="#6b6254" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="15">앱에서 계좌 개설·ID 등록 완료 → PC 웹사이트에서 로그인</text>
+  <rect x="392" y="626" width="416" height="34" rx="7" fill="#fff4d6" stroke="#d3a832"/>
+  <text x="419" y="649" fill="#765400" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="15" font-weight="700">비밀번호·인증 정보는 타인과 공유하지 마세요.</text>
+</svg>
