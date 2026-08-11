@@ -147,7 +147,13 @@ body.alternatives-layout :is(p, span, a, button, input, select, textarea, label,
 }
 .oc-close-btn:hover { background: rgba(41,98,255,0.18); }
 
-.oc-nav { padding: 0.6rem 0; flex: 1; }
+.oc-nav {
+    padding: 0.6rem 0;
+    flex: 1;
+    min-width: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
 .oc-nav-item {
     display: flex; align-items: center; gap: 0.7rem;
     padding: 0.75rem 1.4rem;
@@ -171,12 +177,19 @@ body.alternatives-layout :is(p, span, a, button, input, select, textarea, label,
 .oc-group-toggle {
     display: flex; align-items: center; justify-content: space-between;
     width: 100%;
+    min-width: 0;
+    margin: 0;
     padding: 0.75rem 1.4rem;
     font-size: 15px; font-weight: 600; color: var(--fg-2);
     background: transparent; border: none; border-left: 3px solid transparent;
-    cursor: pointer; text-align: left;
+    appearance: none; -webkit-appearance: none;
+    cursor: pointer; text-align: left; text-indent: 0;
     transition: background 0.12s, border-color 0.12s, color 0.12s;
 }
+.oc-group-toggle > span { display: block; flex: 1 1 auto; min-width: 0; }
+
+/* Preserve guide card spacing across the shared stylesheet. */
+.guide .card { margin: 18px 0 0; }
 .oc-group-toggle:hover {
     background: var(--accent-light);
     border-left-color: var(--accent);
