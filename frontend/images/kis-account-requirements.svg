@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="470" viewBox="0 0 1200 470" role="img" aria-labelledby="title desc">
+  <title id="title">KIS 모의투자와 실전투자 계좌 준비 구분</title>
+  <desc id="desc">모의투자는 모의투자 신청과 모의 계좌 및 모의 API 키가 필요하고, 실전투자는 별도 실전 계좌와 실전 API 키가 필요함을 보여주는 안내도</desc>
+  <rect width="1200" height="470" fill="#f8fafc"/>
+  <text x="60" y="58" fill="#172033" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="28" font-weight="700">거래 목적에 맞는 계좌와 API 키를 분리하세요</text>
+  <text x="60" y="90" fill="#64748b" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="17">모의 환경의 계좌·키·거래 ID는 실전 환경에 사용하지 않습니다.</text>
+  <rect x="60" y="126" width="510" height="282" rx="18" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+  <rect x="630" y="126" width="510" height="282" rx="18" fill="#fff7ed" stroke="#fdba74" stroke-width="2"/>
+  <circle cx="108" cy="174" r="24" fill="#2563eb"/>
+  <text x="99" y="182" fill="#fff" font-family="Arial, sans-serif" font-size="25" font-weight="700">M</text>
+  <text x="148" y="180" fill="#172033" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="23" font-weight="700">모의투자 · 학습/검증용</text>
+  <text x="92" y="232" fill="#334155" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="18">1. 한국투자증권 회원 로그인 후 모의투자 참가 신청</text>
+  <text x="92" y="274" fill="#334155" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="18">2. 모의투자용 ID·계좌번호(CANO) 확인</text>
+  <text x="92" y="316" fill="#334155" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="18">3. KIS Developers에서 모의 App Key·Secret 발급</text>
+  <rect x="92" y="342" width="438" height="42" rx="9" fill="#dbeafe"/>
+  <text x="112" y="370" fill="#1d4ed8" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="17" font-weight="700">Testbed · openapivts · VTTC 거래 ID</text>
+  <circle cx="678" cy="174" r="24" fill="#ea580c"/>
+  <text x="669" y="182" fill="#fff" font-family="Arial, sans-serif" font-size="25" font-weight="700">R</text>
+  <text x="718" y="180" fill="#172033" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="23" font-weight="700">실전투자 · 실제 주문용</text>
+  <text x="662" y="232" fill="#334155" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="18">1. 주식 거래가 가능한 한국투자증권 실전 계좌</text>
+  <text x="662" y="274" fill="#334155" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="18">2. 실전 서비스 신청 및 실전 계좌번호(CANO) 확인</text>
+  <text x="662" y="316" fill="#334155" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="18">3. KIS Developers에서 실전 App Key·Secret 발급</text>
+  <rect x="662" y="342" width="438" height="42" rx="9" fill="#ffedd5"/>
+  <text x="682" y="370" fill="#c2410c" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="17" font-weight="700">Production · openapi · TTTC 거래 ID</text>
+</svg>

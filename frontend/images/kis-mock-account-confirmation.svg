@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">모의투자 전용 계좌 생성 및 확인 화면 예시</title>
+  <desc id="desc">모의투자 안내의 나의계좌 탭에서 계좌정보를 선택하고, 생성된 모의투자 계좌번호와 투자기간을 확인하는 화면을 요약한 안내 이미지</desc>
+  <rect width="1200" height="620" fill="#fff"/>
+  <rect x="1" y="1" width="1198" height="618" fill="none" stroke="#d8e0e5"/>
+  <text x="50" y="64" fill="#172033" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="30" font-weight="700">모의투자 전용 계좌 생성 및 확인</text>
+  <text x="50" y="98" fill="#64748b" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="17">참가 신청이 완료되면 ‘나의계좌’에서 모의투자 전용 계좌번호를 확인합니다.</text>
+  <line x1="50" y1="126" x2="1150" y2="126" stroke="#d8e0e5"/>
+  <rect x="176" y="150" width="150" height="50" rx="10" fill="#fff" stroke="#94a3b8"/>
+  <text x="218" y="182" fill="#334155" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="18">이용안내</text>
+  <rect x="326" y="150" width="150" height="50" rx="10" fill="#fff" stroke="#94a3b8"/>
+  <text x="359" y="182" fill="#334155" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="18">신청/재도전</text>
+  <path d="M476 150h130a10 10 0 0 1 10 10v40h-140z" fill="#fff" stroke="#0b82c5" stroke-width="2"/>
+  <text x="516" y="182" fill="#0b82c5" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="18" font-weight="700">나의계좌</text>
+  <rect x="616" y="150" width="150" height="50" rx="10" fill="#fff" stroke="#94a3b8"/>
+  <text x="656" y="182" fill="#334155" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="18">문의/공지</text>
+  <line x1="176" y1="201" x2="1024" y2="201" stroke="#0b82c5" stroke-width="2"/>
+  <text x="612" y="262" fill="#172033" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="18" font-weight="700">계좌정보</text>
+  <line x1="612" y1="281" x2="687" y2="281" stroke="#0b82c5" stroke-width="2"/>
+  <text x="728" y="262" fill="#475569" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="17">나의수익률</text>
+  <text x="872" y="262" fill="#475569" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="17">잔고/거래내역</text>
+  <text x="1030" y="262" fill="#475569" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="17">참가기록</text>
+  <rect x="176" y="324" width="848" height="60" fill="#f3f8fb" stroke="#cbd5e1"/>
+  <rect x="176" y="384" width="848" height="68" fill="#fff" stroke="#cbd5e1"/>
+  <line x1="386" y1="324" x2="386" y2="452" stroke="#cbd5e1"/>
+  <line x1="606" y1="324" x2="606" y2="452" stroke="#cbd5e1"/>
+  <line x1="826" y1="324" x2="826" y2="452" stroke="#cbd5e1"/>
+  <text x="249" y="362" fill="#334155" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="17">대회구분</text>
+  <text x="458" y="362" fill="#334155" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="17">계좌번호</text>
+  <text x="672" y="362" fill="#334155" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="17">투자기간</text>
+  <text x="903" y="362" fill="#334155" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="17">수익률</text>
+  <text x="232" y="426" fill="#334155" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="17">상시대회 국내주식</text>
+  <rect x="453" y="404" width="88" height="25" rx="13" fill="#172033"/>
+  <text x="654" y="426" fill="#475569" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="16">신청 화면에서 확인</text>
+  <text x="905" y="426" fill="#475569" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="16">0.00%</text>
+  <rect x="176" y="494" width="848" height="70" rx="8" fill="#eff6ff" stroke="#93c5fd"/>
+  <circle cx="211" cy="529" r="14" fill="#0b82c5"/>
+  <text x="206" y="535" fill="#fff" font-family="Arial, sans-serif" font-size="17" font-weight="700">i</text>
+  <text x="240" y="535" fill="#1e3a8a" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="17" font-weight="700">여기서 확인한 모의 계좌번호만 KIS_ACCOUNT_NO에 설정합니다. 실전 계좌번호와 섞어 쓰지 마세요.</text>
+</svg>

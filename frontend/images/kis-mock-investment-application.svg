@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700" role="img" aria-labelledby="title desc">
+  <title id="title">한국투자증권 모의투자 신청 화면 예시</title>
+  <desc id="desc">모의투자 비밀번호 설정, 리그 구분과 투자기간 선택, 개인정보 활용 동의 후 신청하는 화면을 요약한 안내 이미지</desc>
+  <rect width="1200" height="700" fill="#ffffff"/>
+  <rect x="1" y="1" width="1198" height="698" fill="none" stroke="#d8e0e5"/>
+  <text x="48" y="62" fill="#172033" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="29" font-weight="700">모의투자 참가 신청 화면 예시</text>
+  <text x="48" y="96" fill="#64748b" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="17">실제 신청 항목과 이용 조건은 한국투자증권 화면에서 확인하세요.</text>
+  <line x1="48" y1="122" x2="1152" y2="122" stroke="#cbd5e1"/>
+  <rect x="48" y="122" width="210" height="132" fill="#f3f8fb" stroke="#cbd5e1"/>
+  <text x="93" y="180" fill="#334155" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="19">모의투자</text>
+  <text x="93" y="210" fill="#334155" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="19">비밀번호</text>
+  <rect x="258" y="122" width="894" height="132" fill="#fff" stroke="#cbd5e1"/>
+  <rect x="278" y="146" width="292" height="44" fill="#fff" stroke="#94a3b8"/>
+  <text x="298" y="175" fill="#334155" font-family="Arial, sans-serif" font-size="20">••••••••••••</text>
+  <text x="582" y="175" fill="#15803d" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="17">사용가능</text>
+  <text x="278" y="217" fill="#dc2626" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="16">8~12자리 이하 · 영문/숫자/특수문자 조합 등 실제 규칙을 확인하세요.</text>
+  <rect x="48" y="254" width="210" height="212" fill="#f3f8fb" stroke="#cbd5e1"/>
+  <text x="112" y="366" fill="#334155" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="19">리그구분</text>
+  <rect x="258" y="254" width="894" height="212" fill="#fff" stroke="#cbd5e1"/>
+  <line x1="258" y1="324" x2="1152" y2="324" stroke="#cbd5e1"/>
+  <line x1="258" y1="395" x2="1152" y2="395" stroke="#cbd5e1"/>
+  <line x1="780" y1="254" x2="780" y2="466" stroke="#cbd5e1"/>
+  <rect x="280" y="278" width="18" height="18" rx="2" fill="#0b82c5"/>
+  <path d="M284 287l4 4 7-9" fill="none" stroke="#fff" stroke-width="2"/>
+  <text x="308" y="294" fill="#334155" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="18">국내주식</text>
+  <rect x="410" y="270" width="126" height="38" fill="#fff" stroke="#94a3b8"/>
+  <text x="429" y="295" fill="#334155" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="17">1억원 ▾</text>
+  <text x="800" y="294" fill="#475569" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="17">투자기간</text>
+  <rect x="885" y="270" width="128" height="38" fill="#fff" stroke="#94a3b8"/>
+  <text x="905" y="295" fill="#334155" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="17">3개월 ▾</text>
+  <rect x="280" y="349" width="18" height="18" rx="2" fill="#fff" stroke="#64748b"/>
+  <text x="308" y="365" fill="#334155" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="18">국내주식 + 해외주식</text>
+  <rect x="800" y="341" width="128" height="38" fill="#fff" stroke="#94a3b8"/>
+  <text x="820" y="366" fill="#334155" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="17">3개월 ▾</text>
+  <rect x="280" y="420" width="18" height="18" rx="2" fill="#fff" stroke="#64748b"/>
+  <text x="308" y="436" fill="#334155" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="18">선물옵션</text>
+  <rect x="800" y="412" width="128" height="38" fill="#fff" stroke="#94a3b8"/>
+  <text x="820" y="437" fill="#334155" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="17">3개월 ▾</text>
+  <text x="48" y="512" fill="#475569" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="17">주문 시 계좌비밀번호 입력란에는 임의의 네 자리 숫자를 입력하는 등, 실제 화면의 안내를 따릅니다.</text>
+  <line x1="48" y1="542" x2="1152" y2="542" stroke="#334155"/>
+  <rect x="48" y="570" width="1104" height="70" fill="#f3f8fb" stroke="#d8e0e5"/>
+  <rect x="518" y="596" width="18" height="18" rx="2" fill="#0b82c5"/>
+  <path d="M522 605l4 4 7-9" fill="none" stroke="#fff" stroke-width="2"/>
+  <text x="546" y="612" fill="#172033" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="18" font-weight="700">개인정보활용 동의</text>
+  <rect x="500" y="656" width="114" height="34" rx="7" fill="#eef2f5"/>
+  <text x="541" y="679" fill="#334155" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="17" font-weight="700">취소</text>
+  <rect x="626" y="656" width="114" height="34" rx="7" fill="#0b82c5"/>
+  <text x="666" y="679" fill="#fff" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="17" font-weight="700">신청</text>
+</svg>

@@ -34,11 +34,22 @@
         <div class="step"><span class="num">2</span><div><h3>KIS Developers에서 모의투자 API 신청</h3><p>KIS Developers에 로그인해 서비스 신청 절차에서 모의투자용 App Key와 App Secret을 발급받습니다. 발급 화면의 값은 안전한 비밀 관리 도구에 보관합니다.</p></div></div>
         <div class="step"><span class="num">3</span><div><h3>서버 환경변수에만 저장</h3><p>개발 PC에서는 <code>.env</code>, 운영에서는 배포 플랫폼의 Secret/환경변수에 설정합니다. <code>.env</code>는 버전 관리에서 제외하고, 예제 파일에는 빈 값만 둡니다.</p></div></div>
       </div>
-      <a class="btn" href="https://apiportal.koreainvestment.com" target="_blank" rel="noopener noreferrer">KIS Developers 열기 ↗</a>
+      <a class="btn" href="https://apiportal.koreainvestment.com" target="_blank" rel="noopener noreferrer">KIS Developers 열기 ↗</a><a class="btn-alt" href="https://github.com/koreainvestment" target="_blank" rel="noopener noreferrer">한국투자증권 GitHub 보기 ↗</a>
     </section>
 
     <section class="card">
-      <div class="kicker">PART 2 · 모의/실전 분리</div><h2 class="title">테스트에서는 모의 서버와 VTTC 거래 ID만 사용합니다</h2>
+      <div class="kicker">PART 2 · 계좌 준비</div><h2 class="title">모의투자와 실전투자는 계좌와 API 키가 서로 다릅니다</h2>
+      <p class="desc">모의투자는 한국투자증권 회원으로 로그인한 뒤 모의투자 참가를 신청하고, 발급된 <strong>모의투자용 ID·계좌번호</strong>와 <strong>모의 App Key·Secret</strong>을 사용합니다. 실제 자금 주문을 하려면 주식 거래가 가능한 <strong>별도의 실전 계좌</strong>, 실전 서비스 신청, <strong>실전 App Key·Secret</strong>이 필요합니다.</p>
+      <figure style="margin:16px 0 0;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surface-2)"><img src="/images/kis-mock-investment-application.svg" alt="모의투자 비밀번호, 리그와 투자기간을 선택하고 개인정보 활용 동의 후 신청하는 화면 예시" width="1200" height="700" style="display:block;width:100%;height:auto"><figcaption style="padding:9px 12px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)">모의투자 신청 화면 예시 · 비밀번호 규칙, 리그 종류, 투자기간 및 동의 항목은 신청 시점의 공식 화면을 따르세요.</figcaption></figure>
+      <p class="desc" style="margin-top:14px"><strong>신청 완료 후:</strong> 모의투자 안내의 <strong>나의계좌 → 계좌정보</strong>에서 새로 생성된 모의투자 전용 계좌번호를 확인합니다. 이 값만 <code>KIS_ACCOUNT_NO</code>에 설정하고, 주문 전에는 모의 계좌·<code>KIS_MODE=mock</code>·<code>VTTC</code> 거래 ID가 모두 선택됐는지 다시 확인하세요.</p>
+      <figure style="margin:16px 0 0;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surface-2)"><img src="/images/kis-mock-account-confirmation.svg" alt="나의계좌의 계좌정보에서 모의투자 전용 계좌번호를 확인하는 화면 예시" width="1200" height="620" style="display:block;width:100%;height:auto"><figcaption style="padding:9px 12px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)">모의투자 전용 계좌 생성 및 확인 화면 예시 · 실제 계좌번호와 투자기간은 개인정보이므로 화면·로그·Git에 기록하지 마세요.</figcaption></figure>
+      <figure style="margin:16px 0 0;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surface-2)"><img src="/images/kis-account-requirements.svg" alt="KIS 모의투자와 실전투자에 필요한 계좌, API 키, 서버와 거래 ID의 구분" width="1200" height="470" style="display:block;width:100%;height:auto"><figcaption style="padding:9px 12px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)">모의투자 참가 신청 경로와 실전 계좌·API 권한은 변경될 수 있으므로, 신청 전 한국투자증권의 최신 안내와 KIS Developers 서비스 신청 화면을 확인하세요.</figcaption></figure>
+      <div class="notice"><strong>학습 환경의 원칙:</strong> 이 페이지에서는 모의투자 계좌와 모의 API 키만 사용합니다. 실전 계좌번호·실전 App Key·Secret·TTTC 거래 ID를 <code>.env</code> 또는 코드에 넣지 마세요. 모의투자 신청에는 실전 거래용 계좌가 항상 필요한 것은 아니며, 가입·이용 조건은 공식 모의투자 안내를 따릅니다.</div>
+      <a class="btn-alt" href="https://www.truefriend.com/main/research/virtual/_static/TF07da010000.jsp" target="_blank" rel="noopener noreferrer">한국투자증권 모의투자 안내 ↗</a>
+    </section>
+
+    <section class="card">
+      <div class="kicker">PART 3 · 모의/실전 분리</div><h2 class="title">테스트에서는 모의 서버와 VTTC 거래 ID만 사용합니다</h2>
       <div class="table-wrap"><table class="table"><thead><tr><th>구분</th><th>모의투자 (Testbed)</th><th>실전투자 (Production)</th></tr></thead><tbody>
         <tr><td><strong>REST 도메인</strong></td><td><code>https://openapivts.koreainvestment.com:29443</code></td><td><code>https://openapi.koreainvestment.com:9443</code></td></tr>
         <tr><td><strong>현금 매수 tr_id (현재 공식 샘플)</strong></td><td><code>VTTC0012U</code></td><td><code>TTTC0012U</code></td></tr>
@@ -49,14 +60,21 @@
     </section>
 
     <section class="card">
-      <div class="kicker">PART 3 · 서버 환경 설정</div><h2 class="title">값을 코드에서 분리해 안전하게 구성합니다</h2>
-      <p class="desc">아래 값은 이 프로젝트의 <code>.env</code>에만 입력합니다. 실제 값을 채운 파일은 공유하거나 커밋하지 않습니다.</p>
+      <div class="kicker">PART 4 · 서버 환경 설정</div><h2 class="title">값을 코드에서 분리해 안전하게 구성합니다</h2>
+      <p class="desc">KIS Developers의 신청현황에서 <strong>본인 계좌 유형에 맞는</strong> App Key와 App Secret을 확인합니다. 이 학습 페이지에서는 <strong>모의투자계좌 행의 키</strong>만 사용하고, 아래 값은 이 프로젝트의 <code>.env</code>에만 입력합니다.</p>
+      <figure style="margin:16px 0 0;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surface-2)"><img src="/images/kis-app-key-security.svg" alt="신청현황에서 모의투자계좌의 App Key와 App Secret을 확인하고 환경변수 파일에만 저장하는 보안 안내" width="1200" height="640" style="display:block;width:100%;height:auto"><figcaption style="padding:9px 12px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)">신청현황 화면 예시 · 본인 키만 복사하고, 키 문자열이나 계좌번호가 포함된 화면을 공유하지 마세요.</figcaption></figure>
       <pre class="code"># KIS 모의투자 전용 — .env (Git에 커밋하지 않음)
 KIS_MODE=mock
 KIS_APP_KEY=발급받은_모의_APP_KEY
 KIS_APP_SECRET=발급받은_모의_APP_SECRET
 KIS_ACCOUNT_NO=모의계좌_앞_8자리
 KIS_ACCOUNT_PRODUCT_CODE=01</pre>
+      <p class="desc" style="margin-top:14px">이 프로젝트의 <code>.gitignore</code>에는 이미 <code>.env</code>, <code>.env.*</code> 제외 규칙이 설정되어 있습니다. 새 비밀값 파일을 만들었다면 같은 규칙에 포함되는지 확인하고, 공유용 예시는 값이 비어 있는 <code>.env.example</code>만 사용하세요.</p>
+      <pre class="code"># .gitignore — 실제 비밀값 파일은 Git에서 제외
+.env
+.env.*
+!.env.example</pre>
+      <div class="danger"><strong>공유 금지:</strong> App Key·App Secret·접근 토큰·계좌번호가 포함된 <code>.env</code>, 캡처 이미지, 로그를 Git·메신저·이메일·브라우저 코드에 올리지 마세요. 이미 노출됐다면 해당 키를 폐기하거나 재발급하고, 노출된 저장소 이력도 즉시 점검하세요.</div>
       <p class="desc" style="margin-top:14px">Python 서버에서는 환경변수로부터만 읽고, 요청마다 모의 설정을 검증합니다. 토큰은 응답 본문이나 애플리케이션 로그에 남기지 않습니다.</p>
       <pre class="code">import os
 
@@ -72,7 +90,7 @@ KIS_ACCOUNT_PRODUCT_CODE = os.environ.get("KIS_ACCOUNT_PRODUCT_CODE", "01")</pre
     </section>
 
     <section class="card">
-      <div class="kicker">PART 4 · 인증과 주문 구현</div><h2 class="title">토큰 → 조회 → 최소 주문 순서로 검증합니다</h2>
+      <div class="kicker">PART 5 · 인증과 주문 구현</div><h2 class="title">토큰 → 조회 → 최소 주문 순서로 검증합니다</h2>
       <p class="desc">개인·일반법인 API는 Client Credentials 방식으로 접근 토큰을 발급받습니다. KIS 공식 문서상 토큰 유효기간은 24시간이므로, 응답의 만료시각을 저장해 불필요한 재발급을 피하세요.</p>
       <figure style="margin:16px 0 0;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surface-2)"><img src="/images/kis-api-request-flow.svg" alt="KIS 모의투자 API의 서버 측 인증과 주문 검증 흐름" width="1200" height="390" style="display:block;width:100%;height:auto"><figcaption style="padding:9px 12px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)">KIS Developers API 문서와 공식 샘플 코드의 구조를 바탕으로 만든 교육용 서버 처리 흐름도입니다.</figcaption></figure>
       <pre class="code">import requests
@@ -111,7 +129,7 @@ def get_access_token():
     </section>
 
     <section class="card">
-      <div class="kicker">PART 5 · 모의투자 테스트 시나리오</div><h2 class="title">처음에는 주문보다 조회와 검증을 우선합니다</h2>
+      <div class="kicker">PART 6 · 모의투자 테스트 시나리오</div><h2 class="title">처음에는 주문보다 조회와 검증을 우선합니다</h2>
       <div class="table-wrap"><table class="table"><thead><tr><th>순서</th><th>작업</th><th>성공 기준</th><th>실패 시 확인</th></tr></thead><tbody>
         <tr><td><strong>T01</strong></td><td>환경변수와 <code>KIS_MODE=mock</code>을 확인</td><td>모의 URL만 선택됨</td><td>실전 URL·TTTC ID가 설정에 없는지 확인</td></tr>
         <tr><td><strong>T02</strong></td><td>접근 토큰 1회 발급</td><td>HTTP 200과 만료시각 수신</td><td>모의 App Key/Secret, 서버 시각, 요청 제한 확인</td></tr>
@@ -124,7 +142,23 @@ def get_access_token():
       <label class="check"><input type="checkbox"> 읽기 전용 조회를 통과한 뒤에만 1주·1건 모의 주문을 진행한다.</label>
       <label class="check"><input type="checkbox"> 주문 결과를 체결·미체결·잔고 API로 다시 대조한다.</label>
       <div class="notice">모의 REST API는 호출량 제한이 더 낮을 수 있습니다. 요청을 짧은 간격으로 반복하지 말고, 재시도에는 지수 백오프와 중복 주문 방지 키를 적용하세요. 모의 환경도 장 운영 시간에는 체결 조건의 영향을 받습니다.</div>
-      <a class="btn" href="https://github.com/koreainvestment/open-trading-api" target="_blank" rel="noopener noreferrer">공식 샘플 코드 보기 ↗</a><a class="btn-alt" href="https://apiportal.koreainvestment.com/apiservice" target="_blank" rel="noopener noreferrer">KIS API 문서 보기 ↗</a>
+      <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border)"><div class="kicker">연결 테스트 기록 · 읽기 전용</div><h3 class="title" style="font-size:18px">모의투자 키로 국내주식 현재가를 확인하는 절차</h3>
+        <p class="desc">이 프로젝트에서는 <code>python-stock-backend/kis_quote_test.py</code>로 삼성전자(<code>005930</code>) 현재가를 테스트했습니다. 이 스크립트는 <code>kis.key</code> 또는 서버 환경변수의 App Key·Secret을 읽되, 키·토큰·계좌번호를 출력하거나 저장하지 않습니다.</p>
+        <div class="table-wrap"><table class="table"><thead><tr><th>순서</th><th>테스트 내용</th><th>결과 및 조치</th></tr></thead><tbody>
+          <tr><td><strong>1</strong></td><td>키 유형 확인</td><td>실전 도메인 호출은 모의투자 App Key로 허용되지 않아 <code>EGW02004</code>로 거부됐습니다. 이 결과로 현재 키가 <strong>모의투자용</strong>임을 확인했고, 이후 실전 도메인을 사용하지 않습니다.</td></tr>
+          <tr><td><strong>2</strong></td><td>모의 Testbed 선택</td><td><code>https://openapivts.koreainvestment.com:29443</code>에서 <code>/oauth2/tokenP</code> 토큰을 발급한 뒤, <code>/uapi/domestic-stock/v1/quotations/inquire-price</code>에 <code>tr_id=FHKST01010100</code>, <code>FID_COND_MRKT_DIV_CODE=J</code>, 종목코드를 전달합니다.</td></tr>
+          <tr><td><strong>3</strong></td><td>토큰 발급 제한 확인</td><td><strong>모의투자 토큰은 1분당 1회만 발급할 수 있습니다.</strong> 제한 시간 안에 다시 발급하면 <code>EGW00133</code>과 함께 잠시 후 재시도하라는 응답이 돌아옵니다. 토큰은 만료시각까지 서버에 캐시하고, 테스트 때도 1분 이상 간격을 둡니다.</td></tr>
+          <tr><td><strong>4</strong></td><td>시세 응답 확인</td><td>최종 Testbed 요청에서는 네트워크 읽기 시간 초과가 발생해 가격 응답을 받지 못했습니다. 토큰을 반복 발급하지 말고 1분 제한이 지난 뒤 한 번만 재시도하며, <code>timeout=15</code>·지수 백오프를 적용합니다.</td></tr>
+        </tbody></table></div>
+        <pre class="code"># 프로젝트 루트에서 실행 — 모의투자 Testbed 읽기 전용 시세 조회
+python3 python-stock-backend/kis_quote_test.py --symbol 005930
+
+# KIS_MODE=mock, 모의 App Key·Secret, 모의 계좌 설정을 다시 확인한 뒤 실행
+# 토큰 발급 실패(EGW00133) 시 즉시 재시도하지 말고 1분 이상 기다립니다.</pre>
+        <div class="danger"><strong>중요:</strong> 현재가 조회에는 계좌번호가 필요하지 않습니다. 테스트를 위해 실전 계좌나 실전 API 키로 전환하지 마세요. 오류 메시지·로그·화면 캡처에도 App Key, App Secret, 접근 토큰, 계좌번호가 포함되지 않도록 마스킹합니다.</div>
+      </div>
+      <p class="desc" style="margin-top:14px">한국투자증권의 <a href="https://github.com/koreainvestment" target="_blank" rel="noopener noreferrer">공식 GitHub 조직</a>에서 Open API 관련 저장소와 예제를 함께 확인할 수 있습니다.</p>
+      <a class="btn" href="https://github.com/koreainvestment/open-trading-api" target="_blank" rel="noopener noreferrer">공식 샘플 코드 보기 ↗</a><a class="btn-alt" href="https://apiportal.koreainvestment.com/apiservice" target="_blank" rel="noopener noreferrer">KIS API 문서 보기 ↗</a><a class="btn-alt" href="https://github.com/koreainvestment" target="_blank" rel="noopener noreferrer">한국투자증권 GitHub 보기 ↗</a>
     </section>
   </main>
   <footer class="footer"><div>EDUMGT · 한국투자증권 Open API 모의투자 · 교육용 콘텐츠</div></footer>
