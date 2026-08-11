@@ -50,6 +50,7 @@ function renderHeader(user) {
     { type: 'group', label: '실전연습', items: [
       { href: '/learning/tradingview-pine.html', label: 'TradingView(Pine)', icon: 'fa-solid fa-chart-column' },
       { href: '/learning/kb-securities.html', label: 'KB 증권', icon: 'fa-solid fa-clipboard-check' },
+      { href: '/learning/kis-developers.html', label: '한국투자증권 API', icon: 'fa-solid fa-code' },
     ]},
     { type: 'group', label: '분석 · 도구', items: [
       { href: '/ai-sheet.html', label: 'AI Sheet',       icon: 'fa-solid fa-table-cells-large' },

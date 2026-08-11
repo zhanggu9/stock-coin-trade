@@ -63,6 +63,14 @@
     </section>
 
     <section class="learn-card">
+      <div class="kicker">PRACTICE MAP · 공식 도움말 기반</div><h2 class="lesson-title">전략 검증과 주문 연습을 분리하기</h2>
+      <p class="desc">Pine Editor는 전략·지표·라이브러리를 작성하고 시험하는 도구입니다. 먼저 차트에서 전략의 동작과 가정을 검증한 뒤, 알림과 이 서비스의 모의주문은 별도 단계로 다룹니다. 차트 위의 표식만 보고 곧바로 주문하지 않는 흐름을 습관으로 만드세요.</p>
+      <figure class="tv-guide-figure"><img src="/images/trading-practice-workflow.svg" alt="TradingView 차트 설정부터 전략 보고서와 모의 주문까지의 검증 흐름" width="1200" height="360"><figcaption>TradingView Pine Editor 및 Strategy Report 공식 도움말을 바탕으로 만든 교육용 흐름도입니다.</figcaption></figure>
+      <ul class="checklist"><li><strong>indicator()</strong>는 차트에 값·신호를 표시하지만, Strategy Report의 주문 백테스트에는 <strong>strategy()</strong> 선언과 주문 명령이 필요합니다.</li><li>전략을 적용한 뒤에는 <strong>Strategy Report</strong>의 요약 수치뿐 아니라 <strong>List of Trades</strong>에서 진입·청산 시각과 거래 수를 함께 확인합니다.</li><li>새로고침 뒤 결과가 달라지는 재도색 가능성을 확인하고, 실시간 봉이 마감되기 전의 신호는 확정 신호와 구분해 기록합니다.</li></ul>
+      <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:14px"><a class="btn" href="https://www.tradingview.com/support/solutions/43000763320-how-to-work-with-pine-editor/" target="_blank" rel="noopener noreferrer" style="text-decoration:none">Pine Editor 공식 안내 ↗</a><a href="https://www.tradingview.com/support/solutions/43000764138-tradingview-strategy-report-how-to-start/" target="_blank" rel="noopener noreferrer" style="padding:9px 13px;border:1px solid var(--border);border-radius:7px;text-decoration:none;color:var(--fg);font-size:13px;font-weight:800;background:#fff">Strategy Report 공식 안내 ↗</a></div>
+    </section>
+
+    <section class="learn-card">
       <div class="kicker">STEP 4 · 첫 Pine Script</div><h2 class="lesson-title">종가 선 하나를 차트에 그려 보기</h2>
       <p class="desc">처음부터 매수·매도 전략을 만들지 않습니다. 아래 세 줄을 Pine Editor에 붙여넣고 <strong>차트에 넣기</strong>를 누릅니다. 차트에 파란 선이 보이면 스크립트 작성과 적용을 성공한 것입니다.</p>
       <figure class="tv-guide-figure"><img src="/images/tradingview-pine-editor-basic-test-guide.svg" alt="Pine Editor에 기본 지표를 입력하고 차트에 적용하는 예시" width="1600" height="780"><figcaption>Pine Editor를 열고 코드를 붙여넣은 뒤 차트에 넣기를 누릅니다.</figcaption></figure>
@@ -121,7 +129,7 @@ plot(fast, color=color.blue)
 plot(slow, color=color.orange)</pre>
       <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px;" class="pine-challenges"><div class="result-item"><span>미션 A</span><strong style="font-size:14px">기간 바꾸기</strong><p style="font-size:12px;margin:5px 0 0;color:var(--fg-2)">20·60을 10·30으로 바꾸고 거래 수와 MDD를 비교합니다.</p></div><div class="result-item"><span>미션 B</span><strong style="font-size:14px">손절 조정</strong><p style="font-size:12px;margin:5px 0 0;color:var(--fg-2)">0.95를 0.97 또는 0.93으로 바꿔 손실 폭을 관찰합니다.</p></div><div class="result-item"><span>미션 C</span><strong style="font-size:14px">익절 조정</strong><p style="font-size:12px;margin:5px 0 0;color:var(--fg-2)">1.10을 1.05·1.15로 바꾸고 수익과 승률을 기록합니다.</p></div></div>
       <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:14px"><a class="btn" href="https://www.tradingview.com" target="_blank" rel="noopener noreferrer" style="text-decoration:none">TradingView에서 실습하기 ↗</a><a href="/trade/pine-guide.html" style="padding:9px 13px;border:1px solid var(--border);border-radius:7px;text-decoration:none;color:var(--fg);font-size:13px;font-weight:800;background:#fff">Pine Script 안내 보기</a></div>
-      <div class="tip">완료 기준: 전략 테스터에서 순이익, 최대 낙폭(MDD), 승률, 거래 횟수를 기록하고 왜 결과가 달라졌는지 한 문장으로 적어 보세요. 자동매매 연결 전에는 신호 중복 방지, 주문 실패 처리, API 키 보안, 일일 손실 한도, 알림·로그를 반드시 설계해야 합니다. 이 페이지와 앱의 전략 거래는 교육·모의 실습용입니다.</div>
+      <div class="tip"><strong>현실적인 백테스트 설정:</strong> Strategy 속성에서 초기자본, 주문 크기, 수수료, 슬리피지, 피라미딩을 실제로 가정한 값으로 설정한 뒤 비교하세요. 순이익만 보지 말고 최대 낙폭(MDD), 승률, 거래 횟수와 개별 거래 목록을 기록합니다. 자동매매 연결 전에는 신호 중복 방지, 주문 실패 처리, API 키 보안, 일일 손실 한도, 알림·로그를 반드시 설계해야 합니다. 이 페이지와 앱의 전략 거래는 교육·모의 실습용입니다.</div>
     </section>
   </main>
   <footer class="footer"><div>EDUMGT · TradingView(Pine) 학습 · 투자 교육용 콘텐츠</div></footer>
