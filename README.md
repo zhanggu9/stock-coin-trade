@@ -1,7 +1,7 @@
-# 한국 코인·주식·대체자산 모의투자 Web App
+# 한국 주식·코인·대체자산 모의투자 Web App
 
-Flask REST API + Vanilla JS 기반의 코인·주식 통합 모의투자 웹 애플리케이션입니다.  
-업비트/빗썸/코인원/코빗 시세 비교와 KOSPI·KOSDAQ 주식, 선물·옵션·파생상품·금·은·부동산 지분 실습을 한 화면 흐름으로 제공합니다.
+Flask REST API + Vanilla JS 기반의 주식·코인 통합 모의투자 웹 애플리케이션입니다.  
+KOSPI·KOSDAQ 주식을 실전처럼 매수/매도해보는 거래 연습 화면을 중심으로, 업비트/빗썸/코인원/코빗 코인 시세 비교와 선물·옵션·파생상품·금·은·부동산 지분 실습까지 한 화면 흐름으로 제공합니다.
 
 ---
 
@@ -68,10 +68,10 @@ Nginx (Frontend · :3000)
 
 - Tailwind 기반 반응형 UI (Vanilla JS · 서버 렌더링 없음)
 - 회원가입/로그인 (세션 + BCrypt) — REST API + 쿠키 세션
-- KRW 마켓 기준 코인 모의 매수/매도
-- 주식 거래 실습 화면 (Python 백엔드 연동)
-- 1억 원 모의투자금 기준의 선물·옵션·파생 ETN·금·은·부동산 지분 거래 실습
+- **주식 거래 실습 화면** — KOSPI·KOSDAQ 종목을 실제 시세로 매수/매도해보는 모의투자 연습 (Python 백엔드 연동)
 - 보유자산(평가금액/수익률) 실시간 계산
+- 1억 원 모의투자금 기준의 선물·옵션·파생 ETN·금·은·부동산 지분 거래 실습
+- KRW 마켓 기준 코인 모의 매수/매도
 - 업비트 WebSocket 실시간 시세
 - 국내 4대 거래소 시세 비교 (`GET /api/crypto/{code}/domestic-prices`)
 - Docker Compose 3-컨테이너 구성 (Nginx + Python + MariaDB)
@@ -177,23 +177,6 @@ stock-coin-trade/
 | `POST` | `/api/member/register` | 회원가입 + 자동 로그인 | - |
 | `POST` | `/api/member/logout`   | 로그아웃 | - |
 
-### 코인
-
-| Method | Path | 설명 |
-|---|---|---|
-| `GET` | `/api/crypto/rankings`                     | 시가총액 Top 100 (CoinMarketCap) |
-| `GET` | `/api/crypto/market-list`                  | 업비트 KRW 마켓 목록 |
-| `GET` | `/api/crypto/{code}`                       | 개별 코인 정보 + 보유 수량 |
-| `GET` | `/api/crypto/{code}/domestic-prices`       | 국내 4대 거래소 시세 비교 |
-
-### 거래 (로그인 필요)
-
-| Method | Path | 설명 |
-|---|---|---|
-| `GET`  | `/api/trade/hold`       | 보유 코인 목록 + 자산 현황 |
-| `POST` | `/api/trade/order/buy`  | 코인 매수 |
-| `POST` | `/api/trade/order/sell` | 코인 매도 |
-
 ### 주식
 
 | Method | Path | 설명 | 인증 |
@@ -211,6 +194,23 @@ stock-coin-trade/
 | `POST` | `/api/stocks/account/reset`  | 계좌 초기화 | 로그인 필요 |
 
 > 주식 계좌는 코인 계좌와 동일하게 `member.asset`(예수금)을 공유합니다. 과거에는 서버 전역 메모리에만 존재해 로그인 없이도 거래가 가능했지만, 현재는 `stock_position`/`stock_order` 테이블에 회원별로 영속화되어 로그인이 필요합니다.
+
+### 코인
+
+| Method | Path | 설명 |
+|---|---|---|
+| `GET` | `/api/crypto/rankings`                     | 시가총액 Top 100 (CoinMarketCap) |
+| `GET` | `/api/crypto/market-list`                  | 업비트 KRW 마켓 목록 |
+| `GET` | `/api/crypto/{code}`                       | 개별 코인 정보 + 보유 수량 |
+| `GET` | `/api/crypto/{code}/domestic-prices`       | 국내 4대 거래소 시세 비교 |
+
+### 코인 거래 (로그인 필요)
+
+| Method | Path | 설명 |
+|---|---|---|
+| `GET`  | `/api/trade/hold`       | 보유 코인 목록 + 자산 현황 |
+| `POST` | `/api/trade/order/buy`  | 코인 매수 |
+| `POST` | `/api/trade/order/sell` | 코인 매도 |
 
 ### Open API 키 관리 (로그인 필요)
 

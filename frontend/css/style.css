@@ -161,7 +161,79 @@ body.alternatives-layout :is(p, span, a, button, input, select, textarea, label,
     border-left-color: var(--accent);
     color: var(--accent-dark);
 }
+.oc-nav-item--sub {
+    padding-left: 2.3rem;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* ── Offcanvas accordion 그룹 ───────────────────────────────────────────── */
+.oc-group-toggle {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%;
+    padding: 0.75rem 1.4rem;
+    font-size: 15px; font-weight: 600; color: var(--fg-2);
+    background: transparent; border: none; border-left: 3px solid transparent;
+    cursor: pointer; text-align: left;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.oc-group-toggle:hover {
+    background: var(--accent-light);
+    border-left-color: var(--accent);
+    color: var(--accent-dark);
+}
+.oc-group-chevron { font-size: 12px; transition: transform 0.18s; }
+.oc-group.open .oc-group-chevron { transform: rotate(180deg); }
+
+.oc-group-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.22s ease;
+}
+.oc-group.open .oc-group-body { max-height: 320px; }
+
 .oc-divider { height: 1px; background: var(--border); margin: 0.35rem 1.2rem; }
+
+/* ── Offcanvas 비로그인 잠금 화면 ───────────────────────────────────────── */
+.oc-guest-lock {
+    display: flex; flex-direction: column; align-items: center;
+    text-align: center;
+    padding: 3rem 1.6rem;
+    color: var(--muted);
+}
+.oc-guest-lock > i {
+    font-size: 26px;
+    color: var(--muted);
+    margin-bottom: 0.9rem;
+}
+.oc-guest-lock > p {
+    font-size: 13.5px;
+    font-weight: 600;
+    line-height: 1.5;
+    margin-bottom: 1.2rem;
+}
+.oc-guest-actions { display: flex; gap: 0.6rem; width: 100%; }
+.oc-guest-actions button {
+    flex: 1;
+    padding: 0.55rem 0;
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: var(--radius-xs);
+    cursor: pointer;
+    transition: opacity 0.15s, background 0.15s;
+}
+.oc-guest-actions button:first-child {
+    background: transparent;
+    color: var(--fg-2);
+    border: 1.5px solid var(--border);
+}
+.oc-guest-actions button:first-child:hover { background: var(--accent-light); }
+.oc-guest-actions button:last-child {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+}
+.oc-guest-actions button:last-child:hover { opacity: 0.85; }
 .oc-footer { padding: 1rem 1.2rem; border-top: 1px solid var(--border); }
 
 /* ── Header ─────────────────────────────────────────────────────────────── */

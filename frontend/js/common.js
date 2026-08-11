@@ -35,19 +35,25 @@ async function logout() {
 
 /* ── Header render ───────────────────────────────────────────────────────── */
 function renderHeader(user) {
-  const navLinks = [
-    { href: '/index.html',       label: '대시보드',      icon: 'fa-solid fa-gauge-high' },
-    { href: '/trade/order.html', label: '코인',          icon: 'fa-solid fa-coins' },
-    { href: '/trade/stock.html', label: '주식',          icon: 'fa-solid fa-chart-line' },
-    { href: '/trade/pine.html',  label: 'Pine 전략 거래', icon: 'fa-solid fa-code' },
-    { href: '/trade/pine-guide.html', label: 'Pine Script 안내', icon: 'fa-solid fa-circle-info' },
-    { href: '/trade/alternatives.html', label: '파생·금속·부동산', icon: 'fa-solid fa-landmark' },
-    { href: '/trade/hold.html',  label: '보유자산',       icon: 'fa-solid fa-wallet' },
-    { href: '/trade/history.html', label: '내 거래이력',   icon: 'fa-solid fa-clock-rotate-left' },
-    { href: '/trade/avg-down.html', label: '물타기 계산기', icon: 'fa-solid fa-calculator' },
-    { href: '/analysis.html',        label: '투자 분석 학습', icon: 'fa-solid fa-graduation-cap' },
-    { href: '/ai-sheet.html',        label: 'AI Sheet', icon: 'fa-solid fa-table-cells-large' },
-    { href: '/openapi.html',        label: 'Open API',   icon: 'fa-solid fa-key' },
+  const navGroups = [
+    { type: 'single', href: '/index.html', label: '대시보드', icon: 'fa-solid fa-gauge-high' },
+    { type: 'group', label: '거래', items: [
+      { href: '/trade/order.html', label: '코인',          icon: 'fa-solid fa-coins' },
+      { href: '/trade/stock.html', label: '주식',          icon: 'fa-solid fa-chart-line' },
+      { href: '/trade/pine.html',  label: 'Pine 전략 거래', icon: 'fa-solid fa-code' },
+      { href: '/trade/pine-guide.html', label: 'Pine Script 안내', icon: 'fa-solid fa-circle-info' },
+      { href: '/trade/alternatives.html', label: '파생·금속·부동산', icon: 'fa-solid fa-landmark' },
+    ]},
+    { type: 'group', label: '자산관리', items: [
+      { href: '/trade/hold.html',  label: '보유자산',       icon: 'fa-solid fa-wallet' },
+      { href: '/trade/history.html', label: '내 거래이력',   icon: 'fa-solid fa-clock-rotate-left' },
+      { href: '/trade/avg-down.html', label: '물타기 계산기', icon: 'fa-solid fa-calculator' },
+    ]},
+    { type: 'group', label: '분석 · 도구', items: [
+      { href: '/analysis.html', label: '투자 분석 학습', icon: 'fa-solid fa-graduation-cap' },
+      { href: '/ai-sheet.html', label: 'AI Sheet',       icon: 'fa-solid fa-table-cells-large' },
+      { href: '/openapi.html',  label: 'Open API',       icon: 'fa-solid fa-key' },
+    ]},
   ];
 
   const userSection = user?.loggedIn
@@ -60,8 +66,43 @@ function renderHeader(user) {
          <button onclick="location.href='/member/register.html'" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:0.3rem 0.9rem;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">회원가입</button>
        </div>`;
 
-  const ocNavItems = navLinks.map(n =>
-    `<a href="${n.href}" class="oc-nav-item"><i class="${n.icon}" aria-hidden="true" style="width:16px;text-align:center;"></i> ${n.label}</a>`).join('');
+  const isLoggedIn = !!user?.loggedIn;
+
+  const ocNavItem = (n, sub) =>
+    `<a href="${n.href}" class="oc-nav-item${sub ? ' oc-nav-item--sub' : ''}"><i class="${n.icon}" aria-hidden="true" style="width:16px;text-align:center;"></i> ${n.label}</a>`;
+
+  let ocGroupIdx = -1;
+  const ocNavItems = navGroups.map(g => {
+    if (g.type === 'single') return ocNavItem(g);
+    ocGroupIdx++;
+    return `
+      <div class="oc-group">
+        <button type="button" class="oc-group-toggle" onclick="toggleOcGroup(${ocGroupIdx})" aria-expanded="false">
+          <span>${g.label}</span>
+          <i class="fa-solid fa-chevron-down oc-group-chevron" aria-hidden="true"></i>
+        </button>
+        <div class="oc-group-body">
+          ${g.items.map(n => ocNavItem(n, true)).join('')}
+        </div>
+      </div>`;
+  }).join('');
+
+  const ocNavAuthed = `
+    ${ocNavItems}
+    <div class="oc-divider"></div>
+    <a href="javascript:void(0)" class="oc-nav-item" onclick="closeOffcanvas();openAiPanel()">
+      <i class="fa-solid fa-trophy" aria-hidden="true" style="width:16px;text-align:center;"></i> 투자 랭킹
+    </a>`;
+
+  const ocNavGuest = `
+    <div class="oc-guest-lock">
+      <i class="fa-solid fa-lock" aria-hidden="true"></i>
+      <p>로그인 후 이용할 수 있는 메뉴입니다.</p>
+      <div class="oc-guest-actions">
+        <button onclick="closeOffcanvas();location.href='/member/login.html'">로그인</button>
+        <button onclick="closeOffcanvas();location.href='/member/register.html'">회원가입</button>
+      </div>
+    </div>`;
 
   const html = `
     <!-- 왼쪽 오프캔버스 오버레이 -->
@@ -74,11 +115,7 @@ function renderHeader(user) {
         <button class="oc-close-btn" onclick="closeOffcanvas()">✕</button>
       </div>
       <nav class="oc-nav">
-        ${ocNavItems}
-        <div class="oc-divider"></div>
-        <a href="javascript:void(0)" class="oc-nav-item" onclick="closeOffcanvas();openAiPanel()">
-          <i class="fa-solid fa-trophy" aria-hidden="true" style="width:16px;text-align:center;"></i> 투자 랭킹
-        </a>
+        ${isLoggedIn ? ocNavAuthed : ocNavGuest}
       </nav>
       <div class="oc-footer" style="font-size:11px;color:var(--muted);">
         <div>(주)에듀엠지티</div>
@@ -279,6 +316,14 @@ function closeOffcanvas() {
   document.body.style.overflow = '';
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeOffcanvas(); closeAiPanel(); } });
+
+function toggleOcGroup(idx) {
+  document.querySelectorAll('.oc-group').forEach((el, i) => {
+    const open = i === idx ? !el.classList.contains('open') : false;
+    el.classList.toggle('open', open);
+    el.querySelector('.oc-group-toggle')?.setAttribute('aria-expanded', String(open));
+  });
+}
 
 /* ── AI 사이드패널 ───────────────────────────────────────────────────────── */
 function openAiPanel() {
