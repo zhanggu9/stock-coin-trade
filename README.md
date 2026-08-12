@@ -1,629 +1,251 @@
-# 프로젝트 전 최종 실습
+# 모의투자 · OpenAPI 실습 플랫폼
 
-## 데이터 활용 퀀트 모델링	
-- 백테스트로 나오는 성과 지표 분석(MDD, Sharp ratio 등) 및 개선방향 논의 
-- 주식 시장의 계절성 분석(연말 랠리, 월별 효과, 요일 효과) 
-- 알고리즘 트레이딩 &amp; 자동매매 기초(트레이딩뷰 PineScript)	
+Flask REST API와 Vanilla JavaScript로 만든 주식·암호화폐 모의투자 및 OpenAPI 학습 플랫폼입니다. 국내 주식·코인 모의 주문, 대체자산 실습, 외부 연동용 Open API, 증권사·Alpaca Paper API의 읽기 전용 연결 테스트를 제공합니다.
 
-### 위의 연습을 팀단위로 KB 증권, 트레이딩뷰 를 이용함
+> 교육·연습용 프로젝트입니다. 증권사 및 Alpaca 연결 테스트는 키 검증과 읽기 전용 조회만 다루며, 실제 주문 자동화 기능을 제공하지 않습니다.
 
+## 주요 기능
 
-# 한국 주식·코인·대체자산 모의투자 Web App
-
-Flask REST API + Vanilla JS 기반의 주식·코인 통합 모의투자 웹 애플리케이션입니다.  
-KOSPI·KOSDAQ 주식을 실전처럼 매수/매도해보는 거래 연습 화면을 중심으로, 업비트/빗썸/코인원/코빗 코인 시세 비교와 선물·옵션·파생상품·금·은·부동산 지분 실습까지 한 화면 흐름으로 제공합니다.
-
----
-
-![alt text](./captures/image.png)
-
-![alt text](./captures/image-01.png)
-
----
+- 회원가입·로그인 기반 모의 주식·코인 거래와 보유자산·거래이력 조회
+- KRX 주식 시세·차트·검색, 코인 시세·국내 거래소 가격 비교
+- 대체자산(선물·옵션·금속·부동산 지분) 모의 주문
+- AI Sheet, 투자 분석 학습, Qdrant 기반 지식 검색 및 AI 분석 기능
+- 외부 시스템용 Open API 키 발급 및 가상 주식계좌 연동 API
+- 실전연습 학습 페이지
+  - TradingView(Pine)
+  - KB증권 Open API
+  - 한국투자증권(KIS) API
+  - Alpaca Paper Trading 및 Trading CLI
+- 분석·도구의 읽기 전용 연결 테스트
+  - `증권사 시세 테스트`: KIS Testbed 현재가, KB증권 인증 상태
+  - `Alpaca Test`: Alpaca Paper 계정 상태
 
 ## 아키텍처
 
-```
+```text
 Browser
   │
   ▼
-Nginx (Frontend · :3000)
-  ├── /          → 정적 HTML/JS/CSS 서빙
-  └── /api/      → Python Backend 프록시
-        │
-        └── Python Backend (Flask REST API · :8200 내부)
-              └── MariaDB (로컬 개발: Docker / 운영: 외부 DB 서버)
+Nginx Frontend (:3000)
+  ├─ 정적 HTML / JavaScript / CSS
+  ├─ /api/*      → Flask Backend
+  └─ /openapi/*  → Flask Backend
+                     │
+                     ├─ MariaDB
+                     ├─ 국내·해외 시세 제공처
+                     └─ KIS / KB증권 / Alpaca Paper API (선택, 읽기 전용 테스트)
 ```
 
-| 레이어 | 기술 | 역할 |
+| 영역 | 구성 | 역할 |
 |---|---|---|
-| **Frontend** | Vanilla JS + Tailwind CSS + Nginx | 정적 HTML 페이지, fetch API 호출 |
-| **Python BE** | Flask · SQLAlchemy · bcrypt · yfinance · APScheduler | 회원 인증, 코인 매수/매도, 시세 API, 주식 시세/주문, AI 분석 스트리밍 |
-| **DB** | MariaDB | 회원, 보유 코인, 업비트 마켓 |
+| Frontend | Nginx, HTML, Vanilla JS, Tailwind CDN | 화면·오프캔버스 메뉴·API 호출 |
+| Backend | Flask, SQLAlchemy, Requests | 회원·모의 주문·시세·Open API·외부 API 테스트 |
+| Data | MariaDB, Qdrant(선택) | 사용자·주문 데이터와 AI 지식 검색 |
+| 운영 | Docker Compose | frontend, python-backend, mariadb(local profile) |
 
----
+## 빠른 시작
 
-## 1) 참고 앱 기능 분석 및 적용
+### 요구사항
 
-6개 주요 주식·코인 거래 앱을 분석하여 아래 기능을 이 프로젝트에 반영하였습니다.
+- Docker Engine 및 Docker Compose v2
+- 외부 시세·AI 기능은 인터넷 연결 및 해당 서비스 키가 필요할 수 있습니다.
 
-### 1-1. 분석 앱 및 주요 기능
-
-| 앱 | 특징 | 핵심 참고 기능 |
-|---|---|---|
-| **토스증권** (KR) | 심플·초보 친화 UX, 모바일 퍼스트 | 관심종목(⭐) 등록·해제, 손익분기가(매입단가) 표시, 간편 %비율 주문 버튼 |
-| **키움증권** (KR) | 전문 트레이더 특화, 최다 사용자 | 호가창(매도/매수 호가 레벨), 거래 내역(체결 내역), 상승·하락 TOP 종목 랭킹 |
-| **삼성증권 POP** (KR) | 자산 분석 중심, 포트폴리오 뷰 | 포트폴리오 파이 차트(종목별 보유 비중 도넛 차트), 보유자산 시각화 |
-| **Robinhood** (US) | 수수료 0원, 감성 피드 UX | 관심종목(Watchlist), 주문 성공/실패 즉시 피드백 메시지, 깔끔한 손익 표시 |
-| **eToro** (EU) | 소셜 트레이딩, 멀티 마켓 | 시장 탭 필터(KOSPI / KOSDAQ / 관심종목), 종목명·코드 통합 검색 |
-| **Trading 212** (EU) | 모의투자 연습 특화, 파이 포트폴리오 | 계좌 초기화(모의투자 전체 리셋), 종목 검색, 직관적 포지션 관리 |
-
-### 1-2. 이 프로젝트에 적용된 기능
-
-| 기능 | 참고 앱 | 위치 |
-|---|---|---|
-| ⭐ 관심종목 (Watchlist) | 토스증권·Robinhood | 주식 거래 / 코인 거래 마켓 리스트 |
-| 📋 호가창 (Order Book) | 키움증권 | 주식 거래 · 매도/매수 호가 5단계 |
-| 📈 상승/하락 TOP 3 (Market Movers) | 키움증권 | 주식 거래 페이지 상단 |
-| 🗒️ 거래 내역 (Trade History) | 키움증권·Robinhood | 주식 거래 페이지 하단 |
-| 🥧 포트폴리오 파이 차트 | 삼성증권 POP | 주식 계좌 현황 카드 내 도넛 차트 |
-| 🔄 계좌 초기화 | Trading 212 | 주식 계좌 현황 카드 초기화 버튼 |
-| 🔍 종목 검색 | eToro·Trading 212 | 주식 거래 차트 섹션 검색창 |
-| 🗂️ 시장 탭 필터 | eToro | 전체 / KOSPI / KOSDAQ / ⭐관심 탭 |
-| 💡 손익분기가 표시 | 토스증권 | 주식 현재 시세 카드 (매입단가 표시) |
-
----
-
-## 2) 주요 기능
-
-- Tailwind 기반 반응형 UI (Vanilla JS · 서버 렌더링 없음)
-- 회원가입/로그인 (세션 + BCrypt) — REST API + 쿠키 세션
-- **주식 거래 실습 화면** — KOSPI·KOSDAQ 종목을 실제 시세로 매수/매도해보는 모의투자 연습 (Python 백엔드 연동)
-- 보유자산(평가금액/수익률) 실시간 계산
-- 1억 원 모의투자금 기준의 선물·옵션·파생 ETN·금·은·부동산 지분 거래 실습
-- KRW 마켓 기준 코인 모의 매수/매도
-- 업비트 WebSocket 실시간 시세
-- 국내 4대 거래소 시세 비교 (`GET /api/crypto/{code}/domestic-prices`)
-- Docker Compose 3-컨테이너 구성 (Nginx + Python + MariaDB)
-- 단일 EC2 VM의 Docker Compose 배포 구성
-
----
-
-## 3) 테스트 로그인 계정
-
-앱 시작 시 아래 계정이 없으면 자동 생성됩니다.
-
-- `test1@test.com / 123456`
-- `test2@test.com / 123456`
-
-또한 서버 기동 시 샘플 투자자 30명과 각 2개 주식·2개 코인 포트폴리오가 자동으로 추가됩니다.
-기존 계정과 자산은 변경하지 않으며, 이미 생성된 샘플 계정도 다시 만들지 않습니다. 모든 샘플
-계정의 비밀번호는 `123456`이고 이메일 형식은 `sample-investor-01@sample-investor.local`입니다.
-자동 생성을 끄려면 배포 환경 변수에 `DEMO_SEED_ENABLED=false`를 설정합니다.
-
----
-
-## 4) 기술 스택
-
-| 분류 | 기술 |
-|---|---|
-| **Frontend** | HTML5, Vanilla JavaScript, Tailwind CSS CDN, 자체 CSS 디자인 시스템 |
-| **UI / 시각화** | Font Awesome 6, Lightweight Charts 4, Highcharts 11, Pretendard 웹폰트 |
-| **Backend** | Python 3.11, Flask 3, Flask-CORS, SQLAlchemy 2, PyMySQL, Requests |
-| **인증 / 보안** | bcrypt 비밀번호 해싱, Flask 서명 쿠키 세션, Open API Bearer API Key |
-| **데이터 / 스케줄링** | MariaDB 11.4, APScheduler, yfinance, Qdrant Client + FastEmbed |
-| **AI / 검색** | Anthropic Claude 스트리밍 API(선택 구성), Qdrant 벡터 검색(RAG) |
-| **시장 데이터** | Upbit REST/WebSocket, Bithumb REST, Coinone REST, Korbit REST, CoinMarketCap REST, KRX 공시 |
-| **운영 인프라** | 단일 AWS EC2 VM, Docker, Docker Compose, Nginx 리버스 프록시, Let's Encrypt/Certbot TLS |
-| **배포 자동화** | GitHub Actions(`investment-analysis` 저장소의 `Deploy stock-coin-trade` 워크플로), SSH 기반 소스 전송 및 Compose 재기동 |
-
----
-
-## 5) 저장소 구조
-
-```
-stock-coin-trade/
-├── frontend/                    # Vanilla JS 정적 프론트엔드
-│   ├── index.html               # 홈 (시가총액 Top 100)
-│   ├── trade/
-│   │   ├── order.html           # 코인 거래
-│   │   ├── hold.html            # 보유자산
-│   │   └── stock.html           # 주식 실습
-│   ├── member/
-│   │   ├── login.html
-│   │   ├── register.html
-│   │   └── api-keys.html        # Open API 키 발급/조회/폐기 (로그인 필요)
-│   ├── openapi.html             # Open API 공개 명세 페이지
-│   ├── js/
-│   │   ├── config.js            # API base URL 설정
-│   │   ├── common.js            # 헤더 렌더, 인증 유틸
-│   │   ├── order.js             # 코인 거래 로직
-│   │   ├── hold_crypto.js       # 보유자산 로직
-│   │   ├── stock.js             # 주식 거래 로직
-│   │   └── api-keys.js          # Open API 키 관리 로직
-│   ├── css/style.css
-│   ├── fonts/
-│   └── img/
-│
-├── python-stock-backend/        # Flask REST API (회원/코인/주식/관리자/AI/Open API 전부)
-│   ├── app.py                   # 앱 진입점, 블루프린트 등록, 주식 시세/RAG/뉴스 라우트
-│   ├── members.py                # /api/member/* — 회원가입/로그인/세션
-│   ├── crypto.py                 # /api/crypto/*, /api/trade/* — 시세/매수/매도
-│   ├── admin.py                  # /api/admin/* — 관리자 전용
-│   ├── ai.py                     # /api/ai/analyze — Claude 스트리밍 분석
-│   ├── stock_market.py            # 주식 시세/차트/지수 조회 + 캐시 (종목 마스터 데이터 포함)
-│   ├── stock_trading.py           # 주식 매수/매도 실행 공용 로직 (웹 세션 + Open API 공유)
-│   ├── stocks.py                  # /api/stocks/{account,positions,orders/*} — 세션 인증, DB 영속화
-│   ├── api_keys.py                # /api/member/api-keys/* — Open API 키 발급/조회/폐기
-│   ├── openapi.py                 # /openapi/v1/* — API Key(Bearer) 인증 외부 연동 API
-│   ├── scheduler.py              # CoinMarketCap/Upbit 주기 동기화
-│   ├── db.py / models.py         # SQLAlchemy 세션 / 테이블 매핑
-│   ├── qdrant_service.py         # Qdrant RAG 연동
-│   └── requirements.txt
-│
-├── database/
-│   └── db.sql                   # 초기 스키마
-│
-├── docker/
-│   ├── frontend.Dockerfile
-│   ├── python-backend.Dockerfile
-│   └── nginx.conf
-│
-├── docker-compose.yml
-├── scripts/ec2/deploy.sh        # 단일 EC2 VM Docker Compose 배포 스크립트
-└── .github/workflows/           # GitHub Actions EC2 배포 워크플로
-```
-
----
-
-## 6) REST API 엔드포인트
-
-### 회원
-
-| Method | Path | 설명 | 인증 |
-|---|---|---|---|
-| `GET`  | `/api/member/me`       | 현재 로그인 사용자 정보 | 불필요 |
-| `POST` | `/api/member/login`    | 로그인 (세션 발급) | - |
-| `POST` | `/api/member/register` | 회원가입 + 자동 로그인 | - |
-| `POST` | `/api/member/logout`   | 로그아웃 | - |
-
-### 주식
-
-| Method | Path | 설명 | 인증 |
-|---|---|---|---|
-| `GET`  | `/api/stocks/list`           | 종목 목록 | 불필요 |
-| `GET`  | `/api/stocks/market`         | KOSPI/KOSDAQ 지수 | 불필요 |
-| `GET`  | `/api/stocks/quote`          | 개별 종목 시세 | 불필요 |
-| `GET`  | `/api/stocks/chart`          | 캔들 차트 데이터 | 불필요 |
-| `GET`  | `/api/stocks/movers`         | 상승/하락 TOP 3 | 불필요 |
-| `GET`  | `/api/stocks/account`        | 계좌 현황 (예수금은 `member.asset` 공유) | 로그인 필요 |
-| `GET`  | `/api/stocks/positions`      | 보유 포지션 (`stock_position` 테이블) | 로그인 필요 |
-| `GET`  | `/api/stocks/orders/history` | 거래 내역 (`stock_order` 테이블) | 로그인 필요 |
-| `POST` | `/api/stocks/orders/buy`     | 주식 매수 | 로그인 필요 |
-| `POST` | `/api/stocks/orders/sell`    | 주식 매도 | 로그인 필요 |
-| `POST` | `/api/stocks/account/reset`  | 계좌 초기화 | 로그인 필요 |
-
-> 주식 계좌는 코인 계좌와 동일하게 `member.asset`(예수금)을 공유합니다. 과거에는 서버 전역 메모리에만 존재해 로그인 없이도 거래가 가능했지만, 현재는 `stock_position`/`stock_order` 테이블에 회원별로 영속화되어 로그인이 필요합니다.
-
-### 코인
-
-| Method | Path | 설명 |
-|---|---|---|
-| `GET` | `/api/crypto/rankings`                     | 시가총액 Top 100 (CoinMarketCap) |
-| `GET` | `/api/crypto/market-list`                  | 업비트 KRW 마켓 목록 |
-| `GET` | `/api/crypto/{code}`                       | 개별 코인 정보 + 보유 수량 |
-| `GET` | `/api/crypto/{code}/domestic-prices`       | 국내 4대 거래소 시세 비교 |
-
-### 코인 거래 (로그인 필요)
-
-| Method | Path | 설명 |
-|---|---|---|
-| `GET`  | `/api/trade/hold`       | 보유 코인 목록 + 자산 현황 |
-| `POST` | `/api/trade/order/buy`  | 코인 매수 |
-| `POST` | `/api/trade/order/sell` | 코인 매도 |
-
-### Open API 키 관리 (로그인 필요)
-
-| Method | Path | 설명 |
-|---|---|---|
-| `GET`    | `/api/member/api-keys`      | 내 API 키 목록 (마스킹) |
-| `POST`   | `/api/member/api-keys`      | 새 API 키 발급 (원문은 응답에 1회만 포함) |
-| `DELETE` | `/api/member/api-keys/{id}` | API 키 폐기 |
-
----
-
-## 6-1) Open API (외부 연동)
-
-외부 시스템(트레이딩 봇 등)이 API Key로 이 플랫폼의 가상 주식 계좌를 조회·매매할 수 있도록 `/openapi/v1/*` 를 제공합니다. 웹 UI에서 `/member/api-keys.html` 페이지로 키를 발급받고, 전체 명세는 `/openapi.html` 페이지(내비게이션의 "Open API" 메뉴)에서 확인할 수 있습니다.
-
-- **인증**: `Authorization: Bearer <api_key>` 헤더. 키는 발급 시 원문이 1회만 노출되며 서버에는 SHA-256 해시만 저장됩니다.
-- **요청 제한**: API 키당 분당 60회 (초과 시 `429 RATE_LIMITED`).
-- **지갑 공유**: Open API로 실행한 매매도 웹에서 로그인해 매매한 것과 동일한 `member.asset`(예수금)·`stock_position`(보유종목)을 사용합니다.
-
-| Method | Path | 설명 |
-|---|---|---|
-| `GET`  | `/openapi/v1/stocks`        | 매매 가능 종목 목록 |
-| `GET`  | `/openapi/v1/quote/{symbol}` | 개별 종목 시세 |
-| `GET`  | `/openapi/v1/account`       | 예수금(cash) / 총자산 / 손익률 |
-| `GET`  | `/openapi/v1/positions`     | 보유 종목 목록 및 평가손익 |
-| `POST` | `/openapi/v1/orders`        | 시장가 매수/매도 (`{"symbol","side":"BUY|SELL","quantity"}`) |
-| `GET`  | `/openapi/v1/orders?limit=` | 주문/체결 내역 |
-
-```bash
-# 계좌 조회
-curl https://<서비스 도메인>/openapi/v1/account \
-  -H "Authorization: Bearer eduapi_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-
-# 삼성전자(005930) 1주 시장가 매수
-curl -X POST https://<서비스 도메인>/openapi/v1/orders \
-  -H "Authorization: Bearer eduapi_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" \
-  -H "Content-Type: application/json" \
-  -d '{"symbol": "005930", "side": "BUY", "quantity": 1}'
-```
-
-> **DB 마이그레이션 안내**: `stock_position`/`stock_order`/`api_key` 테이블은 `database/db.sql`에 추가되었습니다. Alembic 등 마이그레이션 도구가 없는 프로젝트 구조상, 이미 데이터가 있는 기존 MariaDB 볼륨에는 자동 반영되지 않습니다. 새로 컨테이너를 띄우는 경우(`docker-entrypoint-initdb.d`)는 자동 적용되며, 기존 볼륨을 계속 쓰는 경우 `database/db.sql`의 신규 `CREATE TABLE` 3개를 해당 DB에 직접 실행해야 합니다.
-
----
-
-## 7) Docker 실행
-
-### 7-1. 사전 요구사항
-
-`docker-compose.yml`에 로컬 개발용 `mariadb` 컨테이너가 포함되어 있어 별도 준비 없이 바로 기동할 수 있습니다.
-최초 기동 시 `database/db.sql`이 `/docker-entrypoint-initdb.d/`로 마운트되어 스키마와 시드 데이터가 자동 적용됩니다.
-
-### 7-2. 앱 실행
-
-```bash
-docker compose up -d --build
-```
-
-### 7-3. 접속
-
-| 서비스 | URL |
-|---|---|
-| 웹 서비스 (Nginx) | `http://localhost:3000` |
-| Python BE (내부용) | `http://localhost:3000/api/...` (nginx 프록시) |
-
-### 7-4. 종료
-
-```bash
-docker compose down
-
-# 볼륨까지 삭제
-docker compose down -v
-```
-
-### 7-5. 컨테이너 구성
-
-```
-crypto-mock-frontend  (Nginx)         :3000 → :80
-crypto-mock-mariadb   (MariaDB)       expose 3306 (내부만)
-crypto-mock-python    (Flask)         expose 8200 (내부만)
-```
-
-Python BE는 외부 포트를 노출하지 않으며, Nginx가 `/api/` 요청을 내부 네트워크를 통해 `python-backend:8200`으로 프록시합니다.
-
----
-
-## 8) 로컬 개발 (Docker 없이)
-
-Frontend와 Backend를 분리 실행할 경우:
-
-```bash
-# 1. Python BE 실행 (DB_HOST 등은 로컬 MariaDB에 맞게 조정)
-cd python-stock-backend
-pip install -r requirements.txt
-DB_HOST=localhost DB_USER=mockinv DB_PASSWORD=12345678!! python app.py
-
-# 2. Frontend 서빙 (python 예시, 포트 임의)
-cd frontend
-python -m http.server 3000
-```
-
-로컬 개발 시 CORS 이슈가 있으므로 [frontend/js/config.js](frontend/js/config.js)의 `apiBase`를 수정합니다:
-
-```js
-// frontend/js/config.js
-window.APP_CONFIG = {
-  apiBase: 'http://localhost:8200',  // Python BE 주소
-};
-```
-
----
-
-## 9) 단일 EC2 VM 배포
-
-EC2 한 대에서 Nginx 프론트엔드, Flask 백엔드, MariaDB 컨테이너를 Docker Compose로 함께 실행합니다.
+### 1. 환경 파일 준비
 
 ```bash
 cp .env.example .env
-# .env의 비밀번호와 API 키를 실제 값으로 변경
+```
+
+`.env`에는 DB 비밀번호, 세션 키, 선택적 API 키만 설정합니다. 실제 값은 Git에 커밋하지 않습니다.
+
+### 2. 선택적 증권사 테스트 키 파일 준비
+
+Docker Compose는 키 파일을 이미지에 복사하지 않고 `/run/secrets`에 읽기 전용으로 마운트합니다. 해당 테스트를 사용하려면 저장소 루트에 파일을 둡니다. 파일은 `*.key` 규칙으로 Git에서 제외됩니다.
+
+```text
+al.key   # Alpaca: Key=..., Secret=...
+kb.key   # KB증권: AppKey=..., Secret=...
+kis.key  # KIS: App-KEY=..., Secret=...
+```
+
+테스트를 사용하지 않더라도 Compose 실행을 위해 빈 파일을 만들 수 있습니다. 빈 파일에서는 해당 테스트가 설정 오류를 반환하며 주문은 실행되지 않습니다.
+
+```bash
+touch al.key kb.key kis.key
+```
+
+### 3. 실행
+
+```bash
 docker compose up -d --build
 docker compose ps
 ```
 
-VM 배포는 `edumgt/investment-analysis` 저장소의 **Deploy stock-coin-trade** 워크플로에서 수행합니다. 해당 워크플로에 이미 등록된 `SSH_KEY`, `SSH_HOST`, `SSH_USER` Secret을 사용해 이 저장소의 `main` 소스를 `/opt/stock-coin-trade`로 전송하고 Docker Compose를 재기동합니다.
+`.env`의 `COMPOSE_PROFILES=local-db` 설정을 사용하면 로컬 MariaDB 프로필이 함께 기동됩니다.
 
-따라서 이 저장소에는 SSH 개인 키 Secret을 별도로 등록하지 않습니다. 변경을 GitHub의 `main` 브랜치에 push한 뒤, `investment-analysis` 저장소의 Actions에서 **Deploy stock-coin-trade → Run workflow**를 실행합니다.
+### 4. 접속
 
----
-
-## 10) 배포 흐름
-
-```mermaid
-flowchart LR
-    DEV[Developer] -->|push main| GH[GitHub Actions]
-    GH -->|SSH| EC2[Single EC2 VM]
-    EC2 --> DC[Docker Compose]
-    DC --> FE[Nginx Frontend]
-    DC --> BE[Flask Backend]
-    DC --> DB[MariaDB]
-```
-
-### 13-2. Docker 런타임 구조
-
-```mermaid
-flowchart TD
-    USER[Browser :3000]
-    NGINX[Nginx Frontend]
-    PY[Python BE :8200]
-    DB[(MariaDB<br/>shared-net)]
-
-    USER -->|정적 파일| NGINX
-    USER -->|/api/ 요청| NGINX
-    NGINX -->|proxy_pass| PY
-    PY -->|SQLAlchemy| DB
-```
-
-### 13-3. 매수 처리 시퀀스
-
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant FE as Browser (JS)
-    participant API as crypto.py (trade_bp)
-    participant UAPI as Upbit REST API
-    participant DB as MariaDB
-
-    U->>FE: 매수 금액 입력 후 클릭
-    FE->>API: POST /api/trade/order/buy (JSON)
-    API->>API: 세션 회원 조회 및 입력 검증
-    API->>UAPI: GET /v1/ticker?markets=KRW-BTC
-    UAPI-->>API: 현재가 응답
-    API->>DB: HoldCrypto insert/update
-    API->>DB: Member.asset 차감
-    API-->>FE: { success: true, asset: 잔여금액 }
-    FE-->>U: 보유자산 표시 업데이트
-```
-
-### 13-4. 국내 거래소 시세 비교 시퀀스
-
-```mermaid
-sequenceDiagram
-    participant B as Browser
-    participant API as crypto.py (market_bp)
-    participant U as Upbit
-    participant BH as Bithumb
-    participant C as Coinone
-    participant K as Korbit
-
-    B->>API: GET /api/crypto/{code}/domestic-prices
-    API->>U: 현재가 조회
-    API->>BH: 현재가 조회
-    API->>C: 현재가 조회
-    API->>K: 현재가 조회
-    U-->>API: KRW price
-    BH-->>API: KRW price
-    C-->>API: KRW price
-    K-->>API: KRW price
-    API-->>B: JSON 응답 (5초 주기 polling)
-```
-
----
-
-## 14) 운영 아키텍처
-
-단일 EC2 VM에서 Docker Compose로 Nginx, Flask, MariaDB 컨테이너를 함께 실행합니다. Kubernetes, EKS, ECR은 사용하지 않습니다.
-
----
-
-## 15) MariaDB EC2 배포 플로우
-
-### 환경 정보
-
-| 항목 | 값 |
+| 주소 | 설명 |
 |---|---|
-| **EC2 IP** | `13.125.166.5` |
-| **도메인** | `dbms.edumgt.co.kr` |
-| **OS** | Amazon Linux 2023 |
-| **MariaDB** | 11.4.x (LTS) |
-| **포트** | 3306 |
-| **접속 계정** | `root / 12345678!!` |
+| <http://localhost:3000> | 웹 애플리케이션 |
+| <http://localhost:3000/broker-api-test.html> | 증권사 시세 테스트 |
+| <http://localhost:3000/alpaca-test.html> | Alpaca Paper API 테스트 |
+| <http://localhost:3000/openapi.html> | 외부 연동 Open API 명세 |
 
-### 배포 플로우
+Nginx는 `/api/*`, `/openapi/*`를 Flask로 프록시합니다. 브라우저에서는 API 호출을 같은 origin으로 처리합니다.
 
-```mermaid
-flowchart TD
-    A(["로컬 개발 머신"])
-    B["AWS IAM 인증"]
-    C["EC2 13.125.166.5\nAmazon Linux 2023 / t3.medium"]
-    D["MariaDB 11.4 repo 등록\ndlm.mariadb.com"]
-    E["MariaDB 11.4.12 설치 완료"]
-    F["systemctl enable --now mariadb"]
-    G["root 계정 설정\nALTER USER + GRANT ALL"]
-    H["EC2 Security Group\nTCP 3306 오픈 확인"]
-    I["Docker MariaDB Client\nmariadb -h dbms.edumgt.co.kr\n-u root -p"]
-    J(["MariaDB 11.4.12\ndbms.edumgt.co.kr:3306"])
-
-    A -->|"1. aws configure\nAccess Key + Secret Key"| B
-    B -->|"2. EC2 인스턴스 조회"| C
-    A -->|"3. SSH 접속 ai-agent.pem"| C
-    C -->|"4. yum repo 파일 생성"| D
-    D -->|"5. dnf install MariaDB-server"| E
-    E -->|"6. 서비스 활성화"| F
-    F -->|"7. root 비밀번호 설정"| G
-    G -->|"8. 0.0.0.0:3306 리스닝 확인"| H
-    H -->|"9. 연결 테스트"| I
-    I -->|"✅ Connection OK"| J
-
-    style A fill:#4A90D9,color:#fff
-    style J fill:#27AE60,color:#fff
-    style I fill:#8E44AD,color:#fff
-    style H fill:#E67E22,color:#fff
-```
-
-### 단계별 명령어 요약
+### 5. 종료
 
 ```bash
-# 1. AWS CLI 구성 (access key 기반)
-aws configure set aws_access_key_id     <ACCESS_KEY_ID>
-aws configure set aws_secret_access_key <SECRET_ACCESS_KEY>
-aws configure set region                ap-northeast-2
-
-# 2. EC2 인스턴스 확인
-aws ec2 describe-instances \
-  --filters "Name=ip-address,Values=13.125.166.5" \
-  --query 'Reservations[*].Instances[*].{ID:InstanceId,State:State.Name}'
-
-# 3. SSH 접속
-chmod 400 ai-agent.pem
-ssh -i ai-agent.pem ec2-user@13.125.166.5
-
-# 4. MariaDB 11.4 repo 등록 (EC2 내부)
-sudo tee /etc/yum.repos.d/mariadb.repo << 'EOF'
-[mariadb]
-name = MariaDB 11.4
-baseurl = https://dlm.mariadb.com/repo/mariadb-server/11.4/yum/rhel/9/x86_64
-gpgkey = https://downloads.mariadb.com/MariaDB/RPM-GPG-KEY-MariaDB
-gpgcheck = 1
-enabled = 1
-EOF
-
-# 5. 설치 및 서비스 시작
-sudo dnf install -y MariaDB-server MariaDB-client
-sudo systemctl enable --now mariadb
-
-# 6. root 계정 설정
-sudo mariadb -u root << 'SQL'
-ALTER USER 'root'@'localhost' IDENTIFIED BY '12345678!!';
-CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY '12345678!!';
-GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
-FLUSH PRIVILEGES;
-SQL
-
-# 7. Docker MariaDB 클라이언트로 접속 테스트 (로컬에서)
-docker run --rm mariadb:11.4 \
-  mariadb -h dbms.edumgt.co.kr -u root -p'12345678!!' \
-  -e "SELECT VERSION(), NOW(), 'Connection OK' AS status;"
+docker compose down
 ```
 
----
+로컬 DB 볼륨까지 제거하려면 다음 명령을 사용합니다. 데이터가 삭제되므로 주의하세요.
 
-## 16) 주요 경로
+```bash
+docker compose down -v
+```
 
-| 분류 | 경로 |
+## 기본 계정과 메뉴
+
+기동 시 테스트 계정과 예제 투자자 데이터가 준비됩니다. 기본 테스트 계정은 다음과 같습니다.
+
+```text
+test1@test.com / 123456
+test2@test.com / 123456
+```
+
+좌측 공통 offcanvas 메뉴는 모든 페이지가 같은 `frontend/js/common.js`를 사용합니다.
+
+| 메뉴 | 주요 화면 |
 |---|---|
-| **프론트엔드** | `frontend/` |
-| **백엔드 (Python)** | `python-stock-backend/` |
-| **DB 스키마** | `database/db.sql` |
-| **Docker** | `docker-compose.yml`, `docker/` |
-| **EC2 배포 스크립트** | `scripts/ec2/deploy.sh` |
-| **VM 배포 워크플로** | `edumgt/investment-analysis/.github/workflows/deploy-stock-trade.yml` |
+| 거래 | 코인, 주식, 대체자산 |
+| 자산관리 | 보유자산, 거래이력, 물타기 계산기 |
+| 실전연습 | TradingView(Pine), KB증권, 한국투자증권 API, Alpaca API |
+| 분석 · 도구 | AI Sheet, Open API, 증권사 시세 테스트, Alpaca Test |
 
----
+## API 요약
 
-# 벡터 데이터베이스(Vector DB) vs 관계형 데이터베이스(RDBMS) 핵심 비교 가이드
+### 세션 API
 
-본 문서는 전통적인 관계형 데이터베이스(MariaDB)와 AI 기반 서비스의 핵심 인프라인 벡터 데이터베이스(Qdrant)의 패러다임 차이, 작동 방식, 그리고 인덱싱 및 데이터 적재 과정에 대한 핵심 내용을 정리한 가이드입니다.
+| 영역 | 대표 경로 | 인증 |
+|---|---|---|
+| 회원 | `POST /api/member/login`, `POST /api/member/register`, `POST /api/member/logout`, `GET /api/member/me` | 일부 불필요 |
+| 국내 주식 시세 | `GET /api/stocks/list`, `/quote?symbol=`, `/chart?symbol=`, `/market` | 불필요 |
+| 주식 모의 주문 | `GET /api/stocks/account`, `/positions`, `POST /api/stocks/orders/buy`, `/sell` | 로그인 필요 |
+| 코인 | `GET /api/crypto/rankings`, `/market-list`, `/{code}`, `/{code}/domestic-prices` | 불필요 |
+| 코인 모의 주문 | `GET /api/trade/hold`, `POST /api/trade/order/buy`, `/sell` | 로그인 필요 |
+| 대체자산 | `GET /api/alternatives/markets`, `/positions`, `POST /api/alternatives/orders` | 로그인 필요 |
+| AI | `POST /api/ai/analyze`, `POST /api/ai-sheet/crawl` | 기능별 설정 필요 |
 
----
+### 외부 연동 Open API
 
-## 1. 핵심 차이점 비교 (Overview)
+`/openapi/v1/*`는 이 플랫폼의 가상 주식계좌를 외부 모듈에서 조회·주문할 때 사용합니다. 웹에서 발급한 API 키를 `Authorization: Bearer <api_key>` 헤더에 넣습니다.
 
-| 비교 항목 | Qdrant (Vector DB) | MariaDB (RDBMS) |
-| :--- | :--- | :--- |
-| **주요 데이터 형태** | 고차원 벡터 데이터 (Embedding Vector) | 정형 데이터 (텍스트, 숫자, 날짜 등) |
-| **데이터 구조** | 컬렉션(Collection), 포인트(Point), 페이로드(Payload) | 데이터베이스(Database), 테이블(Table), 행/열(Row/Column) |
-| **검색 방식** | **유사도 기반 검색 (ANN)**<br>"이 데이터와 맥락이 가장 비슷한 것 5개 찾아줘" | **조건 일치 검색 (SQL)**<br>"이름이 '홍길동'이고 나이가 20세인 사람 찾아줘" |
-| **핵심 인덱스** | HNSW (Hierarchical Navigable Small World) 등 | B-Tree, B+Tree |
-| **데이터 정합성** | 확률적 결과 (유사도 거리에 따른 근사치) | 철저한 일관성 (**ACID 트랜잭션** 보장) |
-| **주요 활용처** | AI 기반 검색, RAG(검색 증강 생성), 추천 시스템 | 회원 관리, 결제/금융 시스템, 전통 웹 백엔드 |
+| Method | Path | 설명 |
+|---|---|---|
+| `GET` | `/openapi/v1/stocks` | 지원 종목 목록 |
+| `GET` | `/openapi/v1/quote/{symbol}` | 종목 시세 |
+| `GET` | `/openapi/v1/account` | 가상 계좌 요약 |
+| `GET` | `/openapi/v1/positions` | 보유 포지션 |
+| `GET` | `/openapi/v1/orders` | 주문 이력 |
+| `POST` | `/openapi/v1/orders` | 가상 주식 주문 |
 
----
+API 키당 분당 60회 제한이 적용됩니다. 키 원문은 발급 시 한 번만 표시되고 서버에는 SHA-256 해시만 저장됩니다.
 
-## 2. 데이터 적재(Data Pipeline) 용어의 이해
+## 증권사·Alpaca 연결 테스트
 
-흔히 AI 현업에서 **"참고용 문서를 먹인다"**라고 표현하는 과정은 데이터베이스의 전통적인 데이터 흐름 및 가공 단계와 완벽히 매칭됩니다.
+테스트 화면은 서버에서만 키를 읽습니다. 브라우저 응답·로그에 API Key, Secret, 접근 토큰, 계좌번호를 포함하지 않습니다.
 
+| 화면 | 경로 | 호출 범위 |
+|---|---|---|
+| 증권사 시세 테스트 | `/broker-api-test.html` | KIS Testbed 현재가, KB증권 토큰 인증·시세 설정 점검 |
+| Alpaca Test | `/alpaca-test.html` | Alpaca Paper `GET /v2/account` 상태 조회 |
+
+백엔드 엔드포인트는 다음과 같습니다.
+
+```text
+GET /api/broker-test/kis/quote?symbol=005930
+GET /api/broker-test/kb/quote?symbol=005930
+GET /api/alpaca-test/paper/account
 ```
-[원본 문서 (PDF/Web)] ──(Ingest)──> [텍스트 분할 & 임베딩] ──(Insert/Upsert)──> [Qdrant 저장]
+
+KIS Testbed에는 호출 제한이 있으므로 토큰과 짧은 시세 결과를 서버에서 캐시합니다. KB증권 키가 인증 단계에서 거부되면 검증되지 않은 시세 URI를 추측해 호출하지 않습니다. Alpaca Test는 Paper 환경만 사용하고 주문·잔고·계좌번호를 반환하지 않습니다.
+
+## Alpaca Paper Trading
+
+`실전연습 → Alpaca API`에는 계정 생성, Paper API Key 발급 위치, `alpaca-py`, Trading CLI, WebSocket 및 주의사항을 정리했습니다.
+
+- Paper와 Live는 키와 도메인이 다릅니다.
+- Paper 키는 `al.key` 또는 `ALPACA_API_KEY`/`ALPACA_SECRET_KEY` 환경변수로만 관리합니다.
+- Trading CLI는 Alpha Preview 상태이므로 명령과 출력 형식이 바뀔 수 있습니다.
+- 이 프로젝트에서 “Alpaca”는 금융 API 플랫폼인 **Alpaca Markets**를 의미합니다. Stanford Alpaca, Alpacon/AlpacaX와는 별도 프로젝트입니다.
+
+공식 자료: [Paper Trading](https://docs.alpaca.markets/us/docs/paper-trading) · [Trading CLI](https://docs.alpaca.markets/us/docs/alpacas-cli) · [alpaca-py](https://alpaca.markets/sdks/python/trading.html)
+
+## 환경 변수
+
+전체 예시는 [.env.example](.env.example)를 참조합니다.
+
+| 변수 | 용도 |
+|---|---|
+| `MARIADB_DATABASE`, `MARIADB_USER`, `MARIADB_PASSWORD` | 로컬 MariaDB 설정 |
+| `SECRET_KEY` | Flask 세션 서명 키 |
+| `CMC_API_KEY`, `ANTHROPIC_API_KEY` | 선택적 코인 데이터·AI 기능 |
+| `KIS_*`, `KB_*` | 증권사 테스트 환경 변수 대안 |
+| `ALPACA_API_KEY`, `ALPACA_SECRET_KEY` | Alpaca Paper API 키 대안 |
+
+`.env`, `*.key`, 토큰, 계좌번호, 비밀번호, 실제 주문 응답을 Git·문서·화면 캡처·브라우저 코드에 넣지 마세요.
+
+## 저장소 구조
+
+```text
+.
+├── frontend/                         # 정적 웹 애플리케이션
+│   ├── index.html                     # 대시보드
+│   ├── trade/                         # 코인·주식·대체자산 모의거래
+│   ├── learning/                      # TradingView, KB, KIS, Alpaca 실전연습
+│   ├── alpaca-test.html               # Alpaca Paper 연결 테스트
+│   ├── broker-api-test.html           # KIS·KB 연결 테스트
+│   ├── member/                        # 로그인·회원가입·플랫폼 API 키
+│   ├── js/common.js                   # 모든 페이지 공통 offcanvas 메뉴
+│   └── images/                        # 학습용 이미지·안내도
+├── python-stock-backend/              # Flask API
+│   ├── app.py                         # 앱 진입점과 Blueprint 등록
+│   ├── members.py / stocks.py          # 회원·주식 모의거래
+│   ├── crypto.py / alternatives.py     # 코인·대체자산
+│   ├── openapi.py / api_keys.py        # 외부 연동 API와 키 관리
+│   ├── broker_test*.py                 # KIS·KB 읽기 전용 테스트
+│   ├── alpaca_test*.py                 # Alpaca Paper 읽기 전용 테스트
+│   └── stock_market.py                 # 국내 주식 시세·차트
+├── database/db.sql                    # MariaDB 초기 스키마·예제 데이터
+├── docker/                            # Frontend·Backend 이미지와 Nginx 설정
+├── docker-compose.yml                 # 로컬 실행 구성
+├── scripts/ec2/deploy.sh              # 배포 전 문법 검사·Compose 재기동
+└── .env.example                       # 공유 가능한 환경 변수 예시
 ```
 
-* **데이터 인제스트 (Data Ingestion / 수집·유입):** 외부에 있는 원본 문서(PDF, Word, 웹페이지 등)를 시스템 내부로 가져와 가공(Chunking 등)하는 **전체적인 초기 프로세스**를 의미합니다.
-* **데이터 인서트 (Data Insertion / 삽입):** 가공 및 변환이 완료된 고차원 벡터 값을 데이터베이스에 **처음으로 새롭게 저장**하는 명확한 동작입니다.
-* **데이터 업서트 (Data Upsert / 갱신 및 삽입):** `Update + Insert` 장점을 합친 방식입니다. 데이터가 **기존에 없으면 새로 저장(Insert)하고, 이미 같은 식별자가 존재하면 최신 데이터로 덮어쓰기(Update)**를 수행합니다. 중복 적재를 막기 위해 벡터 DB 파이프라인에서 가장 애용되는 방식입니다.
+## 개발·검증
 
----
+### Python 문법 검사
 
-## 3. 인덱스(Index) 메커니즘의 차이
+```bash
+python3 -m py_compile python-stock-backend/*.py
+```
 
-### MariaDB: B-Tree 인덱스
-* **개념:** 데이터를 '특정 기준(값)으로 정렬'하여 계층형 구조로 배치하는 방식입니다.
-* **특징:** 책 뒷면의 색인(찾아보기)과 같습니다. 조건을 엄격하게 비교하여 (`id = 5` 또는 `age > 20`) 조건에 부합하는 데이터를 **100% 정확하게** 찾아냅니다.
+### Compose 재빌드와 상태 확인
 
-### Qdrant: HNSW 그래프 인덱스
-* **개념:** 고차원 공간에 점으로 표현된 벡터들을 **서로 가까운(유사한) 것끼리 선으로 연결하여 다층(Layered) 구조의 네트워크 지도**를 만드는 방식입니다.
-* **특징:** 모든 데이터와의 거리를 계산하면 속도가 너무 느려지므로, 그래프 지도를 활용해 최단 거리에 있을 확률이 높은 데이터를 초고속으로 찾아내는 **ANN(근사 최근접 이웃)** 검색을 수행합니다. 결과는 수학적 확률과 유사도 점수로 표현됩니다.
+```bash
+docker compose up -d --build
+docker compose ps
+curl http://localhost:3000/api/alpaca-test/paper/account
+```
 
----
+`scripts/ec2/deploy.sh`는 Python 문법 검사 후 `docker compose up -d --build --remove-orphans`를 실행합니다.
 
-## 4. 주요 벡터 데이터베이스(Vector DB) 종류 및 특징
+## 운영 시 유의사항
 
-시장에는 Qdrant 외에도 다양한 요구사항에 맞춘 벡터 데이터베이스들이 존재하며, 크게 **전용(Native) DB**와 **기존 DB의 확장형(Extension)**으로 구분됩니다.
-
-### ① 전용(Native) 벡터 DB
-* **Qdrant (큐드란트):** Rust 언어로 개발되어 가볍고 빠르며, 강력한 필터링 기능과 오픈소스/자체 구축 환경에 최적화되어 있습니다.
-* **Pinecone (파인콘):** 완전 관리형(SaaS) 클라우드 서비스로, 인프라 관리 없이 API 연동만으로 빠르게 AI 서비스를 고도화할 수 있습니다. (서버리스/제옵스)
-* **Milvus (밀버스):** 쿠버네티스 기반의 분산 아키텍처를 지원하여 수억에서 수십억 건 규모의 초대형 엔터프라이즈 데이터 처리에 적합합니다.
-* **Weaviate (위비에이트):** 키워드 검색(BM25)과 벡터 유사도 검색을 결합한 하이브리드 검색 역량이 뛰어나며 객체 지향 데이터 모델을 지원합니다.
-* **Chroma (크로마):** 파이썬 환경에서 메모리/로컬 기반으로 빠르게 동작하여 프로토타입(MVP) 빌드나 AI 실험 시 선호됩니다.
-
-### ② 확장형(Extension) 벡터 DB
-* **PostgreSQL + pgvector:** 전통적인 RDBMS 환경 위에서 관계형 데이터와 벡터 데이터를 `SQL JOIN`으로 함께 쿼리할 수 있어 단일 DB 아키텍처 유지에 유리합니다.
-* **Elasticsearch / OpenSearch:** 뛰어난 키워드 검색 역량에 벡터 검색 기능을 추가하여, 하이브리드 검색 기반의 대규모 텍스트 검색엔진 구현 시 유수 기업들이 사용합니다.
-
-# 국내 증권사별 Open API 제공 현황 및 특징
-
-**네, 국내 주요 증권사들은 개인 투자자와 개발자를 위한 Open API를 적극적으로 제공하고 있습니다.** 과거에는 윈도우 환경(COM/OCX 방식)에서만 작동하는 제한적인 API가 많았으나, 최근에는 웹이나 모바일 앱 개발에 친숙한 **REST API** 및 실시간 데이터 전송을 위한 **WebSocket** 방식을 도입하는 증권사가 크게 늘었습니다.
-
----
-
-### 1. 주요 증권사별 Open API 현황
-
-| 증권사 | 서비스 명칭 | 주요 특징 |
-| :--- | :--- | :--- |
-| **한국투자증권** | KIS Developers | * 국내 최초로 본격적인 **REST API / WebSocket** 도입<br>* 파이썬(Python) 등 다양한 언어 지원, 개발자 커뮤니티 활성화<br>* 해외 주식 및 알고리즘 백테스트 기능 강점 |
-| **키움증권** | Open API+ / Next OpenAPI | * 국내 주식 개인 점유율 1위답게 가장 많은 사용자가 이용<br>* 기존 `Open API+`는 윈도우 32비트(OCX) 환경 중심<br>* 최근 REST/WebSocket 기반의 차세대 OpenAPI도 확장 중 |
-| **LS증권** *(구 이베스트)* | LS증권 Open API | * 과거 이베스트 시절부터 개발자 친화적인 API 제공<br>* REST API와 WebSocket을 모두 지원하여 시스템 매매에 유용 |
-| **미래에셋증권** | Open API | * 자산가 및 다수의 이용자를 위한 주식/파생상품 데이터 및 주문 API 제공 |
-| **대신증권** | CYBOS Plus | * 전통의 시스템 트레이딩 강자<br>* 방대한 과거(Historical) 데이터 조회가 가능해 백테스트에 매우 유리<br>* 단, 윈도우 COM 방식 중심이라 파이썬 연결 시 32비트 환경 설정 필요 |
-
----
-
-### 2. 최근 Open API의 트렌드 변화
-
-* **REST API & WebSocket의 대중화**
-  * 과거에는 HTS(Home Trading System)를 켜놓아야만 작동하는 윈도우 전용 API가 대부분이었으나, 현재는 서버 대 서버(Server-to-Server) 통신이 가능한 REST API 방식으로 전환되는 추세입니다. 덕분에 리눅스 서버나 클라우드(AWS 등) 환경에서도 자동매매 프로그램을 구동하기 쉬워졌습니다.
-* **해외 주식 거래 지원**
-  * 국내 주식뿐만 아니라 미국 주식 등 해외 주식 시세 조회 및 자동 주문을 지원하는 API가 대폭 늘어났습니다.
-* **수수료 혜택 및 샘플 코드 제공**
-  * 증권사들이 개발자 유치를 위해 깃허브(GitHub) 등을 통해 파이썬, 자바스크립트 샘플 코드를 무료로 공유하고 있습니다.
-
----
-
-### 💡 이용 시 참고사항
-
-Open API를 이용하려면 **해당 증권사의 계좌를 보유**하고 있어야 하며, 증권사 홈페이지나 개발자 센터에서 **API 사용 신청 및 인증키(App Key / Secret Key)를 발급**받아야 합니다. 
-
-일반적으로 API 이용 자체에 대한 추가 비용은 없으며, 매매 시 발생하는 수수료는 일반 HTS/MTS 수수료와 유사하거나 이벤트 조건에 따라 다르게 적용됩니다.
+- 이 저장소의 모의 주문과 증권사·Alpaca 테스트는 목적과 권한이 다릅니다. 외부 증권사 주문 연동은 별도 승인·리스크 한도·중복 주문 방지·감사 로그를 갖춘 작업으로 분리하세요.
+- Paper Trading은 실제 시장 충격, 슬리피지, 호가 대기 순서 등을 완전히 재현하지 않습니다.
+- 외부 API의 URL·인증 방식·호출 제한·이용 가능 국가와 상품은 변경될 수 있으므로 실제 연동 전 공식 문서를 확인하세요.
+- 배포 환경에서는 개발용 기본 비밀번호를 사용하지 말고, 비밀 관리 도구 또는 안전한 환경 변수 주입 방식을 사용하세요.

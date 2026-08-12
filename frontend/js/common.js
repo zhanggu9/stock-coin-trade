@@ -51,10 +51,13 @@ function renderHeader(user) {
       { href: '/learning/tradingview-pine.html', label: 'TradingView(Pine)', icon: 'fa-solid fa-chart-column' },
       { href: '/learning/kb-securities.html', label: 'KB 증권', icon: 'fa-solid fa-clipboard-check' },
       { href: '/learning/kis-developers.html', label: '한국투자증권 API', icon: 'fa-solid fa-code' },
+      { href: '/learning/alpaca-api.html', label: 'Alpaca API', icon: 'fa-solid fa-robot' },
     ]},
     { type: 'group', label: '분석 · 도구', items: [
       { href: '/ai-sheet.html', label: 'AI Sheet',       icon: 'fa-solid fa-table-cells-large' },
       { href: '/openapi.html',  label: 'Open API',       icon: 'fa-solid fa-key' },
+      { href: '/broker-api-test.html', label: '증권사 시세 테스트', icon: 'fa-solid fa-plug-circle-check' },
+      { href: '/alpaca-test.html', label: 'Alpaca Test', icon: 'fa-solid fa-flask-vial' },
     ]},
   ];
 
@@ -72,6 +75,10 @@ function renderHeader(user) {
 
   const ocNavItem = (n, sub) =>
     `<a href="${n.href}" class="oc-nav-item${sub ? ' oc-nav-item--sub' : ''}"><i class="${n.icon}" aria-hidden="true" style="width:16px;text-align:center;"></i> ${n.label}</a>`;
+
+  // 로그인 여부와 관계없이 실전연습은 같은 메뉴 정의를 사용한다.
+  // 새 학습 메뉴는 navGroups 한 곳에만 추가하면 된다.
+  const practiceItems = navGroups.find(group => group.label === '실전연습')?.items || [];
 
   let ocGroupIdx = -1;
   const ocNavItems = navGroups.map(g => {
@@ -97,9 +104,18 @@ function renderHeader(user) {
     </a>`;
 
   const ocNavGuest = `
+    <div class="oc-group open">
+      <button type="button" class="oc-group-toggle" onclick="toggleOcGroup(0)" aria-expanded="true">
+        <span>실전연습</span>
+        <i class="fa-solid fa-chevron-down oc-group-chevron" aria-hidden="true"></i>
+      </button>
+      <div class="oc-group-body">
+        ${practiceItems.map(item => ocNavItem(item, true)).join('')}
+      </div>
+    </div>
     <div class="oc-guest-lock">
       <i class="fa-solid fa-lock" aria-hidden="true"></i>
-      <p>로그인 후 이용할 수 있는 메뉴입니다.</p>
+      <p>거래·자산관리·분석 도구는 로그인 후 이용할 수 있습니다.</p>
       <div class="oc-guest-actions">
         <button onclick="closeOffcanvas();location.href='/member/login.html'">로그인</button>
         <button onclick="closeOffcanvas();location.href='/member/register.html'">회원가입</button>

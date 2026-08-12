@@ -11,7 +11,9 @@ from admin import admin_bp
 from alternatives import alternative_bp, ensure_tables
 from ai import ai_bp
 from ai_sheet import ai_sheet_bp
+from alpaca_test_api import alpaca_test_bp
 from api_keys import api_key_bp
+from broker_test_api import broker_test_bp
 from crypto import market_bp, trade_bp
 from demo_seed import seed_demo_investors
 from members import member_bp
@@ -42,8 +44,10 @@ app.register_blueprint(trade_bp)
 app.register_blueprint(admin_bp)
 app.register_blueprint(ai_bp)
 app.register_blueprint(ai_sheet_bp)
+app.register_blueprint(alpaca_test_bp)
 app.register_blueprint(stock_bp)
 app.register_blueprint(api_key_bp)
+app.register_blueprint(broker_test_bp)
 app.register_blueprint(open_api_bp)
 app.register_blueprint(alternative_bp)
 
