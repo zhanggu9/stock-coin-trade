@@ -1,5 +1,8 @@
 # 모의투자 · OpenAPI 실습 플랫폼
 
+## AWS 에 Lambda 구성, API GW 구성, 해당 repo FE EC2 구성
+## 개인별 ML/DL 대체 AI resource 연동
+
 Flask REST API와 Vanilla JavaScript로 만든 주식·암호화폐 모의투자 및 OpenAPI 학습 플랫폼입니다. 국내 주식·코인 모의 주문, 대체자산 실습, 외부 연동용 Open API, 증권사·Alpaca Paper API의 읽기 전용 연결 테스트를 제공합니다.
 
 > 교육·연습용 프로젝트입니다. 증권사 및 Alpaca 연결 테스트는 키 검증과 읽기 전용 조회만 다루며, 실제 주문 자동화 기능을 제공하지 않습니다.
