@@ -18,6 +18,7 @@ from crypto import market_bp, trade_bp
 from demo_seed import seed_demo_investors
 from members import member_bp
 from openapi import open_api_bp
+from quant import quant_bp
 from scheduler import start_scheduler
 from stock_market import (
     BASE_PRICES, STOCKS, get_chart_cached, get_dashboard_stock_quotes, get_index_cached, get_market_cap_rankings,
@@ -49,6 +50,7 @@ app.register_blueprint(stock_bp)
 app.register_blueprint(api_key_bp)
 app.register_blueprint(broker_test_bp)
 app.register_blueprint(open_api_bp)
+app.register_blueprint(quant_bp)
 app.register_blueprint(alternative_bp)
 
 ensure_tables()

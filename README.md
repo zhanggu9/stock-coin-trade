@@ -34,7 +34,8 @@ Nginx Frontend (:3000)
   ├─ /api/*      → Flask Backend
   └─ /openapi/*  → Flask Backend
                      │
-                     ├─ MariaDB
+                     ├─ MariaDB (회원·모의 주문)
+                     ├─ PostgreSQL (퀀트 OHLCV·전략·체결·성과)
                      ├─ 국내·해외 시세 제공처
                      └─ KIS / KB증권 / Alpaca Paper API (선택, 읽기 전용 테스트)
 ```
@@ -43,7 +44,7 @@ Nginx Frontend (:3000)
 |---|---|---|
 | Frontend | Nginx, HTML, Vanilla JS, Tailwind CDN | 화면·오프캔버스 메뉴·API 호출 |
 | Backend | Flask, SQLAlchemy, Requests | 회원·모의 주문·시세·Open API·외부 API 테스트 |
-| Data | MariaDB, Qdrant(선택) | 사용자·주문 데이터와 AI 지식 검색 |
+| Data | MariaDB, PostgreSQL, Qdrant(선택) | 사용자·주문, 퀀트 시계열/백테스트, AI 지식 검색 |
 | 운영 | Docker Compose | frontend, python-backend, mariadb(local profile) |
 
 ## 빠른 시작
@@ -94,6 +95,7 @@ docker compose ps
 | <http://localhost:3000/broker-api-test.html> | 증권사 시세 테스트 |
 | <http://localhost:3000/alpaca-test.html> | Alpaca Paper API 테스트 |
 | <http://localhost:3000/openapi.html> | 외부 연동 Open API 명세 |
+| <http://localhost:3000/quant.html> | PostgreSQL 퀀트 랩 |
 
 Nginx는 `/api/*`, `/openapi/*`를 Flask로 프록시합니다. 브라우저에서는 API 호출을 같은 origin으로 처리합니다.
 
@@ -128,6 +130,75 @@ test2@test.com / 123456
 | 분석 · 도구 | AI Sheet, Open API, 증권사 시세 테스트, Alpaca Test |
 
 ## API 요약
+
+### PostgreSQL 퀀트 API
+
+로컬 `local-db` 프로필은 PostgreSQL도 함께 실행하며, 첫 기동 시 `database/quant-postgres.sql`이 월별 시계열 분석용 스키마와 명시적인 샘플 OHLCV를 준비합니다. 운영 환경에서는 `QUANT_DATABASE_URL`로 별도의 PostgreSQL을 지정합니다.
+
+| Method | Path | 설명 |
+|---|---|---|
+| `GET` | `/api/quant/overview` | 적재 건수·사용 가능 심볼 |
+| `GET` | `/api/quant/market-data?symbol=005930` | 파티션된 OHLCV 조회 |
+| `GET` | `/api/quant/signals?symbol=005930&fast=20&slow=50` | 윈도우 함수 기반 MA 시그널 |
+| `POST` | `/api/quant/backtests` | 전략·체결 로그·성과 지표 저장 |
+| `GET` | `/api/quant/results` | 저장된 전략과 거래 로그 |
+
+웹 화면은 임의 SQL을 실행하지 않고, 파라미터 바인딩된 읽기 전용 SQL 템플릿만 보여주고 실행합니다. 이는 데이터 조회 편의성과 운영 DB 보호를 함께 고려한 방식입니다.
+
+### PostgreSQL Quant on AWS VM
+
+퀀트 기능은 기존 회원·모의 주문 MariaDB와 분리된 PostgreSQL 16을 사용합니다. 웹 브라우저는 PostgreSQL에 직접 접근하지 않으며, Nginx → Flask API → PostgreSQL 순서로 내부 Docker 네트워크에서만 통신합니다.
+
+| 계층 | 기술 | 역할 |
+|---|---|---|
+| Web | Nginx, Vanilla JS | `/quant.html` 제공 및 `/api/quant/*` 프록시 |
+| API | Python 3.11, Flask, SQLAlchemy, psycopg | 백테스트·팩터 회귀·파라미터 바인딩 |
+| Quant DB | PostgreSQL 16 Alpine | OHLCV 파티션, BRIN, JSONB, 체결·성과·팩터 데이터 |
+| Runtime | Docker Compose v2, EC2/VM | 내부 네트워크, 볼륨, 헬스체크, 재기동 |
+
+#### VM 기동
+
+AWS EC2 또는 다른 Linux VM에는 Docker Engine과 Docker Compose v2를 설치한 뒤, 저장소에서 다음을 실행합니다.
+
+```bash
+cp .env.example .env
+docker compose --profile local-db up -d --build
+docker compose ps
+```
+
+`postgres` 컨테이너는 `internal` Docker 네트워크에만 연결되며 호스트 포트 `5432`를 공개하지 않습니다. Flask 컨테이너는 기본적으로 다음 연결 문자열을 사용합니다.
+
+```text
+postgresql+psycopg://<QUANT_DB_USER>:<QUANT_DB_PASSWORD>@postgres:5432/<QUANT_DB_NAME>
+```
+
+운영 VM의 `.env`에는 최소한 아래 값을 실제 비밀번호로 변경합니다. `QUANT_DATABASE_URL`을 설정하면 외부 관리형 PostgreSQL(RDS 등)도 사용할 수 있습니다.
+
+```text
+QUANT_DB_NAME=quant_research
+QUANT_DB_USER=quant
+QUANT_DB_PASSWORD=<long-random-password>
+SECRET_KEY=<long-random-secret>
+```
+
+#### 운영 확인·백업
+
+```bash
+# PostgreSQL 준비 상태
+docker compose --profile local-db exec postgres pg_isready -U quant -d quant_research
+
+# 퀀트 스키마 확인
+docker compose --profile local-db exec postgres psql -U quant -d quant_research -c '\dt'
+
+# 백업: VM의 backups 디렉터리를 먼저 만들고 실행
+mkdir -p backups
+docker compose --profile local-db exec -T postgres pg_dump -U quant -d quant_research > backups/quant_research.sql
+
+# 복구: 대상 DB가 비어 있는지 확인한 뒤 실행
+docker compose --profile local-db exec -T postgres psql -U quant -d quant_research < backups/quant_research.sql
+```
+
+AWS 보안 그룹에는 PostgreSQL `5432` 인바운드 규칙을 추가하지 않습니다. 운영자 접속이 필요하면 VM의 Docker 명령, SSM Session Manager 또는 VPN/사설망을 사용합니다. Docker 볼륨 `postgres-quant-data`는 `docker compose down`으로 유지되지만 `down -v`에서는 삭제되므로, 실행 전 백업 여부를 확인하세요.
 
 ### 세션 API
 

@@ -58,7 +58,8 @@ function learningProgress(id=activeLesson) {
 }
 function globalLearningProgress() { const completed=Object.keys(learningState.completed).length; return { completed, total:globalProgressTarget, percent:Math.min(100, Math.round(completed / globalProgressTarget * 100)) }; }
 function updateLearningProgress() { const progress=globalLearningProgress(); const bar=document.querySelector('[data-learning-progress-bar]'); const label=document.querySelector('[data-learning-progress-label]'); if (!bar || !label) return; bar.style.width=`${progress.percent}%`; bar.classList.toggle('complete', progress.percent >= 80); label.textContent=`전체 저장 데이터 ${progress.percent}% (${progress.completed}/${progress.total})`; }
-let activeLesson = lessonMap[learningState.activeLesson] ? learningState.activeLesson : 'macro-indicator';
+const requestedLesson = new URLSearchParams(window.location.search).get('lesson');
+let activeLesson = lessonMap[requestedLesson] ? requestedLesson : lessonMap[learningState.activeLesson] ? learningState.activeLesson : 'macro-indicator';
 const fullMetricNames = {
   'CPI YoY':'Consumer Price Index Year-over-Year (소비자물가 전년동월비)',
   'WTI':'West Texas Intermediate (서부텍사스산 원유)',
@@ -536,6 +537,47 @@ function renderQuantDay5() {
   restoreTrackedFields('quant-day5');
   document.querySelector('[data-quant-backtest]').addEventListener('click', renderQuantBacktest); document.querySelector('[data-quant-seasonality]').addEventListener('click', renderSeasonality); document.querySelector('[data-pine-check]').addEventListener('click', checkPineScript);
   document.querySelector('[data-pine-template]').addEventListener('change', event => { const editor=document.querySelector('[data-quant-field="pine-code"]'); editor.value=pineTemplates[event.target.value]; editor.dispatchEvent(new Event('input')); });
+}
+function quantEscape(value) { return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[char]); }
+function quantTable(rows, columns) {
+  if (!rows?.length) return '<p class="quant-db-empty">조회 결과가 없습니다.</p>';
+  return `<div class="quant-db-table-wrap"><table class="quant-db-table"><thead><tr>${columns.map(([key,label]) => `<th>${label}</th>`).join('')}</tr></thead><tbody>${rows.map(row => `<tr>${columns.map(([key]) => `<td>${quantEscape(typeof row[key] === 'number' ? row[key].toLocaleString(undefined,{maximumFractionDigits:4}) : row[key])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+function quantSql(kind) {
+  const queries={
+    market:`SELECT symbol, trade_time, open, high, low, close, volume, adjusted_close\nFROM market_data WHERE symbol = :symbol\nORDER BY trade_time DESC LIMIT :limit;`,
+    signal:`WITH ma AS (SELECT trade_time, adjusted_close,\n AVG(adjusted_close) OVER (ORDER BY trade_time ROWS BETWEEN 19 PRECEDING AND CURRENT ROW) fast_ma,\n AVG(adjusted_close) OVER (ORDER BY trade_time ROWS BETWEEN 49 PRECEDING AND CURRENT ROW) slow_ma FROM market_data WHERE symbol = :symbol)\nSELECT *, CASE WHEN fast_ma > slow_ma THEN 'BUY' ELSE 'SELL' END signal FROM ma;`,
+    trades:`SELECT trade_id, strategy_id, symbol, trade_time, side, price, quantity, fee, slippage, pnl\nFROM trade_logs ORDER BY trade_id DESC LIMIT 50;`
+  }; return queries[kind];
+}
+async function loadQuantData(kind='market') {
+  const symbol=document.querySelector('[data-quant-db-symbol]').value.trim().toUpperCase() || '005930';
+  const result=document.querySelector('[data-quant-db-result]'); const sql=document.querySelector('[data-quant-db-sql]');
+  result.innerHTML='PostgreSQL에서 조회 중…'; sql.textContent=quantSql(kind);
+  try {
+    const url=kind === 'market' ? `/api/quant/market-data?symbol=${encodeURIComponent(symbol)}&limit=40` : kind === 'signal' ? `/api/quant/signals?symbol=${encodeURIComponent(symbol)}&fast=20&slow=50&limit=80` : '/api/quant/results';
+    const response=await fetch(url); const payload=await response.json(); if (!response.ok) throw new Error(payload.message || '조회 실패');
+    if (kind === 'market') result.innerHTML=quantTable(payload.rows,[['symbol','종목'],['trade_time','시간'],['open','시가'],['high','고가'],['low','저가'],['close','종가'],['volume','거래량']]);
+    else if (kind === 'signal') result.innerHTML=quantTable(payload.rows,[['trade_time','시간'],['adjusted_close','수정종가'],['fast_ma','MA20'],['slow_ma','MA50'],['signal','신호']]);
+    else result.innerHTML=quantTable(payload.trades,[['trade_id','ID'],['strategy_id','전략'],['symbol','종목'],['trade_time','시간'],['side','구분'],['price','체결가'],['quantity','수량'],['pnl','손익']]);
+  } catch (error) { result.innerHTML=`<p class="quant-db-error">${quantEscape(error.message)}. PostgreSQL 컨테이너와 QUANT_DATABASE_URL을 확인하세요.</p>`; }
+}
+async function runDatabaseBacktest() {
+  const symbol=document.querySelector('[data-quant-db-symbol]').value.trim().toUpperCase() || '005930';
+  const output=document.querySelector('[data-quant-db-backtest]'); output.textContent='백테스트 실행 및 거래 로그 저장 중…';
+  try {
+    const response=await fetch('/api/quant/backtests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbol,fast:20,slow:50,quantity:10,feeRate:.00015,slippage:.0005})});
+    const data=await response.json(); if (!response.ok) throw new Error(data.message || '실행 실패');
+    output.innerHTML=`<strong>전략 #${data.strategyId} 저장 완료</strong> · 체결 ${data.tradeCount}건 · 실현 손익 ${Number(data.realizedPnl).toLocaleString()} · 수익률 ${data.totalReturn}%<br><small>${data.message}</small>`;
+  } catch (error) { output.innerHTML=`<span class="quant-db-error">${quantEscape(error.message)}</span>`; }
+}
+async function renderQuantDatabase() {
+  document.getElementById('analysis-breadcrumb').innerHTML='<span>분석 도구</span><i class="fa-solid fa-chevron-right"></i><strong>PostgreSQL 퀀트 랩</strong>';
+  document.getElementById('analysis-hero').innerHTML='<div class="academy-hero-content"><span class="academy-hero-tag"><i class="fa-solid fa-database"></i> POSTGRESQL QUANT</span><h2>시계열 데이터 · SQL · 백테스트</h2><p>파티션된 OHLCV 데이터에서 이동평균 시그널을 계산하고, 거래 로그와 성과 결과를 PostgreSQL에 남깁니다.</p></div>';
+  document.getElementById('analysis-panels').innerHTML=`<article class="academy-panel full quant-db-panel"><div class="academy-panel-head"><span class="academy-panel-num">01</span><h3>데이터 탐색 및 SQL</h3></div><div class="academy-panel-body"><div class="quant-db-controls"><label>종목 코드<input class="sim-select" data-quant-db-symbol value="005930" maxlength="20"></label><button class="sim-action" type="button" data-quant-db-load="market">OHLCV 조회</button><button class="sim-action" type="button" data-quant-db-load="signal">MA 시그널</button><button class="sim-action" type="button" data-quant-db-load="trades">거래 로그</button></div><p class="quant-db-note">허용된 읽기 전용 템플릿만 실행합니다. 값은 바인딩하므로 화면에서 임의 SQL을 실행하지 않습니다.</p><pre class="quant-db-sql" data-quant-db-sql></pre><div class="quant-db-result" data-quant-db-result>종목과 조회 유형을 선택하세요.</div></div></article><article class="academy-panel full quant-db-panel"><div class="academy-panel-head"><span class="academy-panel-num">02</span><h3>DB 기록형 이동평균 백테스트</h3></div><div class="academy-panel-body"><p class="academy-summary">MA 20/50 교차를 신호로 사용하고 수수료 0.015%, 슬리피지 0.05%, 10주 기준으로 실행합니다. 결과는 <code>strategies</code>, <code>trade_logs</code>, <code>performance_metrics</code>에 저장됩니다.</p><button class="sim-action quant-db-run" type="button" data-quant-db-run>백테스트 실행 후 결과 저장</button><div class="quant-db-backtest" data-quant-db-backtest>아직 실행하지 않았습니다.</div></div></article>`;
+  document.querySelectorAll('[data-quant-db-load]').forEach(button => button.addEventListener('click', () => loadQuantData(button.dataset.quantDbLoad)));
+  document.querySelector('[data-quant-db-run]').addEventListener('click', runDatabaseBacktest);
+  try { const response=await fetch('/api/quant/overview'); const data=await response.json(); if (response.ok) document.querySelector('[data-quant-db-result]').innerHTML=`<p class="quant-db-overview">연결됨 · OHLCV <b>${Number(data.market_rows).toLocaleString()}</b>건 · 전략 <b>${data.strategy_count}</b>개 · 거래 로그 <b>${data.trade_count}</b>건 · ${quantEscape((data.symbols || []).join(', '))}</p>`; } catch (_) {}
 }
 function renderLesson() {
   if (activeLesson === 'quant-day5') { renderQuantDay5(); return; }

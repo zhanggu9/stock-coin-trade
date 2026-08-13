@@ -53,6 +53,11 @@ function renderHeader(user) {
       { href: '/learning/kis-developers.html', label: '한국투자증권 API', icon: 'fa-solid fa-code' },
       { href: '/learning/alpaca-api.html', label: 'Alpaca API', icon: 'fa-solid fa-robot' },
     ]},
+    { type: 'group', label: 'POSTGRESQL QUANT', items: [
+      { href: '/quant.html?tab=schema', label: 'DB 스키마', icon: 'fa-solid fa-sitemap' },
+      { href: '/quant.html?tab=algorithm', label: '알고리즘', icon: 'fa-solid fa-code-branch' },
+      { href: '/quant.html?tab=simulation', label: '시뮬레이션', icon: 'fa-solid fa-flask-vial' },
+    ]},
     { type: 'group', label: '분석 · 도구', items: [
       { href: '/ai-sheet.html', label: 'AI Sheet',       icon: 'fa-solid fa-table-cells-large' },
       { href: '/openapi.html',  label: 'Open API',       icon: 'fa-solid fa-key' },

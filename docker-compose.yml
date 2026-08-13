@@ -40,6 +40,27 @@ services:
       retries: 10
     restart: unless-stopped
 
+  # PostgreSQL is dedicated to quant OHLCV, strategies, fills and metrics.
+  postgres:
+    image: postgres:16-alpine
+    container_name: crypto-mock-postgres
+    profiles: ["local-db"]
+    networks:
+      - internal
+    environment:
+      POSTGRES_DB: ${QUANT_DB_NAME:-quant_research}
+      POSTGRES_USER: ${QUANT_DB_USER:-quant}
+      POSTGRES_PASSWORD: ${QUANT_DB_PASSWORD:-quant}
+    volumes:
+      - postgres-quant-data:/var/lib/postgresql/data
+      - ./database/quant-postgres.sql:/docker-entrypoint-initdb.d/10-quant-postgres.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
   # ── Python 백엔드 (Flask REST API — 코인/주식/회원/관리자/AI 전부 처리) ──
   python-backend:
     build:
@@ -56,6 +77,7 @@ services:
       DB_NAME: ${MARIADB_DATABASE:-mockinv}
       DB_USER: ${MARIADB_USER:-mockinv}
       DB_PASSWORD: ${MARIADB_PASSWORD:-12345678!!}
+      QUANT_DATABASE_URL: ${QUANT_DATABASE_URL:-postgresql+psycopg://${QUANT_DB_USER:-quant}:${QUANT_DB_PASSWORD:-quant}@postgres:5432/${QUANT_DB_NAME:-quant_research}}
       SECRET_KEY: ${SECRET_KEY:-dev-secret-change-me}
       CMC_API_KEY: ${CMC_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
@@ -70,3 +92,4 @@ services:
 
 volumes:
   mariadb-data:
+  postgres-quant-data:
