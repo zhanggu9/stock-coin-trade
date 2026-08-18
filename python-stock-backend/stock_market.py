@@ -115,7 +115,18 @@ def get_krx_stocks() -> list[dict]:
             # 이미 받은 목록이 있으면 네트워크 일시 실패에도 검색 기능을 계속 제공한다.
             if cached:
                 return cached
-            raise
+            # KIND 다운로드가 차단된 새 컨테이너도 기본 실습 종목과 모의투자 기능을
+            # 계속 제공할 수 있도록, 내장된 기준 종목을 최후의 대체 목록으로 쓴다.
+            fallback_stocks = [
+                {"symbol": symbol, **info}
+                for symbol, info in STOCKS.items()
+            ]
+            fallback_stocks.sort(key=lambda stock: (
+                {"KOSPI": 0, "KOSDAQ": 1, "KONEX": 2}.get(stock["market"], 9),
+                stock["symbol"],
+            ))
+            _krx_stock_cache.update({"ts": now, "data": fallback_stocks})
+            return fallback_stocks
 
 
 def list_krx_stocks(limit: int = 30, market: str = "") -> list[dict]:
