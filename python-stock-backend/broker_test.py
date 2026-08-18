@@ -61,7 +61,7 @@ def _json(response: requests.Response, broker: str) -> dict[str, Any]:
         raise BrokerApiError(f"{broker} 서버가 JSON 응답을 반환하지 않았습니다. (HTTP {response.status_code})") from exc
 
 
-def _kb_token() -> str:
+def _kb_token_response() -> dict[str, Any]:
     app_key, app_secret = _credentials("KB", "kb.key", ("appkey", "app_key"), ("secret", "appsecret", "app_secret"))
     response = requests.post(
         f"{KB_API_BASE_URL}/oauth2/token",
@@ -72,26 +72,24 @@ def _kb_token() -> str:
     body = _json(response, "KB증권")
     token = body.get("access_token") or body.get("dataBody", {}).get("access_token")
     if token:
-        return token
+        return body
     header = body.get("dataHeader", {})
     code = header.get("processCode") or body.get("error") or body.get("code") or "unknown"
     message = header.get("processMessage") or body.get("error_description") or body.get("message") or "토큰 발급 실패"
     raise BrokerApiError(f"KB증권 인증 실패 (HTTP {response.status_code}, {code}): {message}")
 
 
-def get_kb_quote(symbol: str) -> dict[str, Any]:
-    """Validate the KB key before using its quote API.
+def check_kb_token() -> dict[str, Any]:
+    """Verify KB Open API OAuth token issuance only.
 
-    KB's quote URI and required API group are issued per approved service. The
-    current project key is rejected by KB at OAuth, so no unverified quote URI is
-    guessed or called. When approved, the route reports the missing configuration
-    rather than risking a call to an unrelated endpoint.
+    KB's quote API requires a portal-approved API group that this project does
+    not currently have, so the connection test is limited to confirming that
+    AppKey/AppSecret correctly issue an access token — mirroring kb_token_test.py.
     """
-    _kb_token()
-    raise BrokerApiError(
-        "KB증권 인증은 성공했지만 이 프로젝트에는 포털에서 승인된 시세 API 경로/API 그룹 설정이 없습니다. "
-        "최신 KB Open API 문서의 현재가 조회 API를 설정한 뒤 연결하세요."
-    )
+    body = _kb_token_response()
+    token_type = body.get("token_type") or body.get("dataBody", {}).get("token_type") or "Bearer"
+    expires_in = body.get("expires_in") or body.get("dataBody", {}).get("expires_in") or 0
+    return {"broker": "KB증권 Open API", "tokenType": token_type, "expiresIn": int(expires_in)}
 
 
 def get_kis_quote(symbol: str) -> dict[str, Any]:

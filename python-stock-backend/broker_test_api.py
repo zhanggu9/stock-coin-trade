@@ -2,7 +2,7 @@ import requests
 
 from flask import Blueprint, jsonify, request
 
-from broker_test import BrokerApiError, get_kb_quote, get_kis_quote
+from broker_test import BrokerApiError, check_kb_token, get_kis_quote
 
 
 broker_test_bp = Blueprint("broker_test", __name__, url_prefix="/api/broker-test")
@@ -27,10 +27,10 @@ def kis_quote():
         return jsonify({"ok": False, "broker": "한국투자증권 Testbed", "message": "한국투자증권 서버 연결에 실패했습니다. 잠시 후 다시 시도하세요."}), 503
 
 
-@broker_test_bp.get("/kb/quote")
-def kb_quote():
+@broker_test_bp.get("/kb/token")
+def kb_token():
     try:
-        return jsonify({"ok": True, "quote": get_kb_quote(_symbol())})
+        return jsonify({"ok": True, "check": check_kb_token()})
     except BrokerApiError as exc:
         return jsonify({"ok": False, "broker": "KB증권", "message": str(exc)})
     except requests.RequestException:
