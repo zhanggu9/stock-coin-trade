@@ -4,8 +4,10 @@ import threading
 import time
 from flask import Blueprint, jsonify, request, session
 
-from db import session_scope
-from models import HoldCrypto, Member, StockPosition, UpbitMarket
+from sqlalchemy import text
+
+from db import engine, session_scope
+from models import HoldCrypto, HtsWatchMemo, Member, StockPosition, UpbitMarket
 from alternatives import get_positions as get_alternative_positions, position_value
 from stock_market import cached_price
 
@@ -38,6 +40,64 @@ def me():
         if not member:
             return jsonify({"loggedIn": False})
         return jsonify({"loggedIn": True, "username": member.username, "asset": member.asset})
+
+
+@member_bp.get("/hts-memos")
+def get_hts_memos():
+    member_id = session.get("member_id")
+    if not member_id:
+        return jsonify({"error": "UNAUTHORIZED", "message": "로그인이 필요합니다."}), 401
+    with session_scope() as db:
+        rows = (db.query(HtsWatchMemo)
+                .filter(HtsWatchMemo.member_id == member_id)
+                .order_by(HtsWatchMemo.updated_at.desc()).all())
+        return jsonify({"memos": [{"symbol": row.symbol, "memo": row.memo,
+                                   "updatedAt": row.updated_at.isoformat() if row.updated_at else None}
+                                  for row in rows]})
+
+
+@member_bp.put("/hts-memos/<symbol>")
+def save_hts_memo(symbol):
+    member_id = session.get("member_id")
+    if not member_id:
+        return jsonify({"error": "UNAUTHORIZED", "message": "로그인이 필요합니다."}), 401
+    symbol = symbol.strip().upper()
+    if not symbol or len(symbol) > 20:
+        return jsonify({"error": "올바른 종목코드가 아닙니다."}), 400
+    memo = str((request.get_json(silent=True) or {}).get("memo", "")).strip()
+    if len(memo) > 500:
+        return jsonify({"error": "메모는 500자까지 입력할 수 있습니다."}), 400
+    with session_scope() as db:
+        row = db.query(HtsWatchMemo).filter(
+            HtsWatchMemo.member_id == member_id, HtsWatchMemo.symbol == symbol
+        ).first()
+        if not memo:
+            if row:
+                db.delete(row)
+            return jsonify({"symbol": symbol, "memo": "", "deleted": True})
+        if row:
+            row.memo = memo
+        else:
+            row = HtsWatchMemo(member_id=member_id, symbol=symbol, memo=memo)
+            db.add(row)
+        db.flush()
+        return jsonify({"symbol": row.symbol, "memo": row.memo,
+                        "updatedAt": row.updated_at.isoformat() if row.updated_at else None})
+
+
+def ensure_member_tables() -> None:
+    """기존 DB에도 배포 시 HTS 개인 메모 기능을 안전하게 추가한다."""
+    statement = """CREATE TABLE IF NOT EXISTS hts_watch_memo (
+      hts_watch_memo_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+      member_id BIGINT NOT NULL,
+      symbol VARCHAR(20) NOT NULL,
+      memo TEXT NOT NULL,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_hts_watch_memo_member_symbol (member_id, symbol),
+      CONSTRAINT fk_hts_watch_memo_member FOREIGN KEY (member_id) REFERENCES member(member_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"""
+    with engine.begin() as conn:
+        conn.execute(text(statement))
 
 
 @member_bp.get("/portfolio-analysis")

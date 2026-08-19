@@ -173,6 +173,18 @@ INSERT INTO `member` (`member_id`, `asset`, `email`, `password`, `username`) VAL
 	(1, 98190003, 'jj@jj.com', '$2a$10$NdyqwR1CQUhS79ZkL3LtfeZ70ZMR88VgYK2JGuzflPs6Kl.N24YlC', '이코인');
 /*!40000 ALTER TABLE `member` ENABLE KEYS */;
 
+-- HTS 관심종목 개인 메모 (회원별로 분리 저장)
+CREATE TABLE IF NOT EXISTS `hts_watch_memo` (
+  `hts_watch_memo_id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `member_id` bigint(20) NOT NULL,
+  `symbol` varchar(20) NOT NULL,
+  `memo` text NOT NULL,
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`hts_watch_memo_id`),
+  UNIQUE KEY `uq_hts_watch_memo_member_symbol` (`member_id`,`symbol`),
+  CONSTRAINT `fk_hts_watch_memo_member` FOREIGN KEY (`member_id`) REFERENCES `member` (`member_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- 테이블 mockinv.upbit_market 구조 내보내기
 CREATE TABLE IF NOT EXISTS `upbit_market` (
   `upbit_market_id` bigint(20) NOT NULL AUTO_INCREMENT,

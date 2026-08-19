@@ -9,6 +9,7 @@ from sqlalchemy import (
     Integer,
     Numeric,
     String,
+    Text,
     UniqueConstraint,
     func,
 )
@@ -85,6 +86,18 @@ class StockOrder(Base):
     amount = Column(BigInteger, nullable=False)
     source = Column(String(20), nullable=False, default="WEB")  # WEB | OPENAPI
     created_at = Column(DateTime, nullable=False, server_default=func.now())
+
+
+class HtsWatchMemo(Base):
+    """로그인 회원별 HTS 관심종목 메모."""
+    __tablename__ = "hts_watch_memo"
+    __table_args__ = (UniqueConstraint("member_id", "symbol", name="uq_hts_watch_memo_member_symbol"),)
+
+    hts_watch_memo_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    member_id = Column(BigInteger, ForeignKey("member.member_id"), nullable=False)
+    symbol = Column(String(20), nullable=False)
+    memo = Column(Text, nullable=False)
+    updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
 
 class AlternativePosition(Base):

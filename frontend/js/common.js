@@ -48,6 +48,7 @@ function renderHeader(user) {
       { href: '/trade/avg-down.html', label: '물타기 계산기', icon: 'fa-solid fa-calculator' },
     ]},
     { type: 'group', label: '실전연습', items: [
+      { href: '/hts.html', label: 'HTS 시뮬레이션', icon: 'fa-solid fa-desktop' },
       { href: '/learning/tradingview-pine.html', label: 'TradingView(Pine)', icon: 'fa-solid fa-chart-column' },
       { href: '/learning/kb-securities.html', label: 'KB 증권', icon: 'fa-solid fa-clipboard-check' },
       { href: '/learning/kis-developers.html', label: '한국투자증권 API', icon: 'fa-solid fa-code' },
