@@ -59,11 +59,11 @@
     .market-col-scroll::-webkit-scrollbar-track { background:#E8EDF5; }
     .market-col-scroll::-webkit-scrollbar-thumb { border:2px solid #E8EDF5; border-radius:999px; background:#94A3B8; }
 
-    .trade-tabs { display:flex; gap:6px; padding:7px; border-bottom:1px solid var(--border); background:linear-gradient(180deg,#F8FAFD 0%,#F2F6FC 100%); }
-    .trade-tab { position:relative; flex:1; min-height:42px; padding:7px 8px; border:1px solid transparent; border-radius:8px; color:var(--muted); background:transparent; font-family:inherit; font-size:12px; font-weight:800; cursor:pointer; transition:background .15s,border-color .15s,color .15s,box-shadow .15s,transform .15s; }
+    .trade-tabs { display:flex; gap:8px; padding:10px; border-bottom:1px solid var(--border); background:linear-gradient(180deg,#F8FAFD 0%,#F2F6FC 100%); }
+    .trade-tab { position:relative; flex:1; min-height:54px; padding:9px 10px; border:1px solid transparent; border-radius:9px; color:var(--muted); background:transparent; font-family:inherit; font-size:15px; font-weight:800; cursor:pointer; transition:background .15s,border-color .15s,color .15s,box-shadow .15s,transform .15s; }
     .trade-tab:hover { color:var(--accent-dark); background:rgba(255,255,255,.76); border-color:rgba(41,98,255,.18); }
     .trade-tab.active { color:#fff; background:linear-gradient(135deg,var(--accent),var(--accent-dark)); border-color:var(--accent-dark); box-shadow:0 4px 12px rgba(41,98,255,.26); transform:translateY(-1px); }
-    .trade-tab::after { display:block; margin-top:2px; color:inherit; font-size:9px; font-weight:600; opacity:.74; }
+    .trade-tab::after { display:block; margin-top:3px; color:inherit; font-size:11px; font-weight:600; opacity:.74; }
     .trade-tab[data-tab="positions"]::after { content:'내 자산'; }
     .trade-tab[data-tab="overview"]::after { content:'시세 · 계좌'; }
     .trade-tab[data-tab="history"]::after { content:'체결 기록'; }
@@ -90,12 +90,12 @@
     .usage-guide-message { max-width:760px; margin:7px 0 0 24px; color:var(--fg-2); font-size:13px; line-height:1.65; }
     .details-modal-backdrop { position:fixed; inset:0; z-index:110; display:none; align-items:center; justify-content:center; padding:20px; background:rgba(15,23,42,.5); backdrop-filter:blur(3px); }
     .details-modal-backdrop.open { display:flex; }
-    .details-modal { width:min(1080px, 100%); max-height:calc(100dvh - 40px); overflow:hidden; border:1px solid var(--border); border-radius:14px; background:var(--surface); box-shadow:0 24px 64px rgba(15,23,42,.3); }
-    .details-modal-header { display:flex; align-items:center; justify-content:space-between; padding:13px 16px; border-bottom:1px solid var(--border); }
-    .details-modal-title { margin:0; color:var(--fg); font-size:16px; font-weight:900; }
-    .details-modal-close { width:30px; height:30px; border:0; border-radius:7px; color:var(--muted); background:var(--surface-2); font-size:20px; line-height:1; cursor:pointer; }
-    .details-modal-body { max-height:calc(100dvh - 130px); overflow:auto; }
-    .positions-overview { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; padding:12px; border-bottom:1px solid var(--border); background:var(--surface-2); }
+    .details-modal { width:min(1320px, 97vw); max-height:calc(100dvh - 24px); overflow:hidden; border:1px solid var(--border); border-radius:16px; background:var(--surface); box-shadow:0 24px 64px rgba(15,23,42,.3); }
+    .details-modal-header { display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid var(--border); }
+    .details-modal-title { margin:0; color:var(--fg); font-size:22px; font-weight:900; }
+    .details-modal-close { width:38px; height:38px; border:0; border-radius:9px; color:var(--muted); background:var(--surface-2); font-size:26px; line-height:1; cursor:pointer; }
+    .details-modal-body { max-height:calc(100dvh - 150px); overflow:auto; font-size:15px; }
+    .positions-overview { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; padding:18px; border-bottom:1px solid var(--border); background:var(--surface-2); }
     .positions-overview .glass-card { box-shadow:none; }
     .order-panel { flex-shrink:0; margin:8px 8px 0; }
     @media (max-width:640px) { .positions-overview { grid-template-columns:1fr; } }
@@ -111,7 +111,7 @@
     .stock-picker-clear:hover { color:var(--fg); background:var(--surface); }
     .stock-picker-search { flex:none; min-width:52px; height:26px; border:0; border-radius:7px; color:#fff; background:var(--accent); font-size:12px; font-weight:800; cursor:pointer; }
     .stock-picker-search:hover { background:var(--accent-dark); }
-    .order-percent-btn { min-height:25px; border:1px solid var(--border); border-radius:5px; color:var(--fg); background:var(--surface); font-size:10px; font-weight:750; cursor:pointer; }
+    .order-percent-btn { min-height:25px; padding:0 2px; border:1px solid var(--border); border-radius:5px; color:var(--fg); background:var(--surface); font-size:11px; font-weight:750; white-space:nowrap; cursor:pointer; }
     .order-percent-btn:hover { border-color:var(--accent); color:var(--accent-dark); background:rgba(37,99,235,.08); }
     .stock-picker-results { position:absolute; z-index:40; top:calc(100% + 6px); left:0; right:0; display:none; max-height:320px; overflow-y:auto; padding:6px; background:var(--surface); border:1px solid var(--border); border-radius:10px; box-shadow:0 16px 32px rgba(15,23,42,.18); }
     .stock-picker-results.open { display:block; }
@@ -209,49 +209,49 @@
       <!-- 현재 시세 + 계좌 + 주문: 화면 초기화 후 각각 모달/우측 패널로 이동 -->
       <div id="stockSummaryPanels" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px;">
         <!-- 현재 시세 -->
-        <div id="quotePanel" class="glass-card" style="padding:12px;" data-guide="선택한 종목의 전일 대비, 거래량, 시장과 손익분기가를 확인합니다.">
-          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">현재 시세</div>
+        <div id="quotePanel" class="glass-card" style="padding:18px;" data-guide="선택한 종목의 전일 대비, 거래량, 시장과 손익분기가를 확인합니다.">
+          <div style="font-size:14px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;">현재 시세</div>
           <div style="space-y:4px;">
-            <div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;">
-              <span style="font-size:11px;color:var(--muted);">전일 대비</span>
-              <span id="quoteChange" style="font-size:12px;font-weight:700;">-</span>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;">
+              <span style="font-size:14px;color:var(--muted);">전일 대비</span>
+              <span id="quoteChange" style="font-size:16px;font-weight:700;">-</span>
             </div>
-            <div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-top:1px solid var(--border);">
-              <span style="font-size:11px;color:var(--muted);">거래량</span>
-              <span id="quoteVolume" style="font-size:12px;font-weight:600;color:var(--fg);">-</span>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-top:1px solid var(--border);">
+              <span style="font-size:14px;color:var(--muted);">거래량</span>
+              <span id="quoteVolume" style="font-size:16px;font-weight:600;color:var(--fg);">-</span>
             </div>
-            <div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-top:1px solid var(--border);">
-              <span style="font-size:11px;color:var(--muted);">시장</span>
-              <span id="quoteMarket" class="badge badge-muted" style="font-size:10px;">-</span>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-top:1px solid var(--border);">
+              <span style="font-size:14px;color:var(--muted);">시장</span>
+              <span id="quoteMarket" class="badge badge-muted" style="font-size:13px;">-</span>
             </div>
-            <div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-top:1px solid var(--border);">
-              <span style="font-size:11px;color:var(--muted);">손익분기가</span>
-              <span id="quoteBreakEven" style="font-size:11px;color:var(--muted);">-</span>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-top:1px solid var(--border);">
+              <span style="font-size:14px;color:var(--muted);">손익분기가</span>
+              <span id="quoteBreakEven" style="font-size:14px;color:var(--muted);">-</span>
             </div>
           </div>
         </div>
 
         <!-- 계좌 현황 -->
-        <div id="accountPanel" class="glass-card" style="padding:12px;" data-guide="보유 현금, 총자산, 수익률과 보유 비중을 확인합니다.">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">계좌 현황</div>
-            <button id="resetBtn" type="button" style="font-size:10px;padding:2px 8px;border-radius:999px;background:rgba(248,113,113,0.1);color:#F87171;border:1px solid rgba(248,113,113,0.2);cursor:pointer;font-weight:600;">초기화</button>
+        <div id="accountPanel" class="glass-card" style="padding:18px;" data-guide="보유 현금, 총자산, 수익률과 보유 비중을 확인합니다.">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div style="font-size:14px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">계좌 현황</div>
+            <button id="resetBtn" type="button" style="font-size:13px;padding:4px 11px;border-radius:999px;background:rgba(248,113,113,0.1);color:#F87171;border:1px solid rgba(248,113,113,0.2);cursor:pointer;font-weight:600;">초기화</button>
           </div>
           <div>
-            <div style="display:flex;justify-content:space-between;padding:3px 0;">
-              <span style="font-size:11px;color:var(--muted);">보유 현금</span>
-              <span id="accountCash" style="font-size:12px;font-weight:700;color:var(--fg);">-</span>
+            <div style="display:flex;justify-content:space-between;padding:6px 0;">
+              <span style="font-size:14px;color:var(--muted);">보유 현금</span>
+              <span id="accountCash" style="font-size:16px;font-weight:700;color:var(--fg);">-</span>
             </div>
-            <div style="display:flex;justify-content:space-between;padding:3px 0;border-top:1px solid var(--border);">
-              <span style="font-size:11px;color:var(--muted);">총 자산</span>
-              <span id="accountAsset" style="font-size:12px;font-weight:700;color:var(--fg);">-</span>
+            <div style="display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--border);">
+              <span style="font-size:14px;color:var(--muted);">총 자산</span>
+              <span id="accountAsset" style="font-size:16px;font-weight:700;color:var(--fg);">-</span>
             </div>
-            <div style="display:flex;justify-content:space-between;padding:3px 0;border-top:1px solid var(--border);">
-              <span style="font-size:11px;color:var(--muted);">수익률</span>
-              <span id="accountPnlRate" style="font-size:16px;font-weight:900;">-</span>
+            <div style="display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--border);">
+              <span style="font-size:14px;color:var(--muted);">수익률</span>
+              <span id="accountPnlRate" style="font-size:20px;font-weight:900;">-</span>
             </div>
           </div>
-          <div id="portfolioChart" style="min-height:126px;margin-top:8px;"></div>
+          <div id="portfolioChart" style="min-height:126px;margin-top:12px;"></div>
         </div>
 
         <!-- 주문 -->
@@ -330,47 +330,47 @@
         </div>
 
         <div id="tab-positions" style="max-height:60dvh;overflow-y:auto;">
-          <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <table style="width:100%;border-collapse:collapse;font-size:15px;">
             <thead><tr style="background:var(--surface-2);">
-              <th style="padding:6px 10px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;">종목</th>
-              <th style="padding:6px 10px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;">섹터</th>
-              <th style="padding:6px 10px;text-align:right;color:var(--muted);font-size:10px;font-weight:700;">수량</th>
-              <th style="padding:6px 10px;text-align:right;color:var(--muted);font-size:10px;font-weight:700;">평균단가</th>
-              <th style="padding:6px 10px;text-align:right;color:var(--muted);font-size:10px;font-weight:700;">평가금액</th>
-              <th style="padding:6px 10px;text-align:right;color:var(--muted);font-size:10px;font-weight:700;">손익</th>
+              <th style="padding:10px 12px;text-align:left;color:var(--muted);font-size:12px;font-weight:700;">종목</th>
+              <th style="padding:10px 12px;text-align:left;color:var(--muted);font-size:12px;font-weight:700;">섹터</th>
+              <th style="padding:10px 12px;text-align:right;color:var(--muted);font-size:12px;font-weight:700;">수량</th>
+              <th style="padding:10px 12px;text-align:right;color:var(--muted);font-size:12px;font-weight:700;">평균단가</th>
+              <th style="padding:10px 12px;text-align:right;color:var(--muted);font-size:12px;font-weight:700;">평가금액</th>
+              <th style="padding:10px 12px;text-align:right;color:var(--muted);font-size:12px;font-weight:700;">손익</th>
             </tr></thead>
             <tbody id="positionsBody"></tbody>
           </table>
         </div>
 
         <div id="tab-history" style="max-height:60dvh;overflow-y:auto;display:none;">
-          <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <table style="width:100%;border-collapse:collapse;font-size:15px;">
             <thead><tr style="background:var(--surface-2);">
-              <th style="padding:6px 10px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;">시간</th>
-              <th style="padding:6px 10px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;">종목</th>
-              <th style="padding:6px 10px;text-align:center;color:var(--muted);font-size:10px;font-weight:700;">구분</th>
-              <th style="padding:6px 10px;text-align:right;color:var(--muted);font-size:10px;font-weight:700;">수량</th>
-              <th style="padding:6px 10px;text-align:right;color:var(--muted);font-size:10px;font-weight:700;">거래금액</th>
+              <th style="padding:10px 12px;text-align:left;color:var(--muted);font-size:12px;font-weight:700;">시간</th>
+              <th style="padding:10px 12px;text-align:left;color:var(--muted);font-size:12px;font-weight:700;">종목</th>
+              <th style="padding:10px 12px;text-align:center;color:var(--muted);font-size:12px;font-weight:700;">구분</th>
+              <th style="padding:10px 12px;text-align:right;color:var(--muted);font-size:12px;font-weight:700;">수량</th>
+              <th style="padding:10px 12px;text-align:right;color:var(--muted);font-size:12px;font-weight:700;">거래금액</th>
             </tr></thead>
-            <tbody id="historyBody"><tr><td colspan="5" style="padding:12px;text-align:center;color:var(--muted);">거래 내역이 없습니다.</td></tr></tbody>
+            <tbody id="historyBody"><tr><td colspan="5" style="padding:16px;text-align:center;color:var(--muted);">거래 내역이 없습니다.</td></tr></tbody>
           </table>
         </div>
 
         <div id="tab-orderbook" style="display:none;">
-          <div style="display:grid;grid-template-columns:1fr auto 1fr;font-size:12px;">
+          <div style="display:grid;grid-template-columns:1fr auto 1fr;font-size:15px;">
             <div>
-              <div style="padding:4px 10px;font-size:10px;font-weight:700;color:#60A5FA;border-bottom:1px solid rgba(255,255,255,0.05);">매도 호가 (Ask)</div>
-              <table style="width:100%;"><thead><tr style="background:rgba(37,99,235,0.04);"><th style="padding:4px 10px;text-align:right;font-size:10px;color:var(--muted);">가격</th><th style="padding:4px 10px;text-align:right;font-size:10px;color:var(--muted);">수량</th></tr></thead><tbody id="askBody"></tbody></table>
+              <div style="padding:7px 12px;font-size:13px;font-weight:700;color:#60A5FA;border-bottom:1px solid rgba(255,255,255,0.05);">매도 호가 (Ask)</div>
+              <table style="width:100%;"><thead><tr style="background:rgba(37,99,235,0.04);"><th style="padding:7px 12px;text-align:right;font-size:12px;color:var(--muted);">가격</th><th style="padding:7px 12px;text-align:right;font-size:12px;color:var(--muted);">수량</th></tr></thead><tbody id="askBody"></tbody></table>
             </div>
-            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 10px;border-left:1px solid rgba(255,255,255,0.05);border-right:1px solid var(--border);gap:4px;">
-              <span style="font-size:10px;color:var(--muted);">현재가</span>
-              <span id="obCurrentPrice" style="font-size:13px;font-weight:900;color:var(--accent-dark);">-</span>
-              <span style="font-size:10px;color:var(--muted);margin-top:4px;">스프레드</span>
-              <span id="obSpread" style="font-size:10px;font-weight:700;color:var(--muted);">-</span>
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 14px;border-left:1px solid rgba(255,255,255,0.05);border-right:1px solid var(--border);gap:6px;">
+              <span style="font-size:13px;color:var(--muted);">현재가</span>
+              <span id="obCurrentPrice" style="font-size:18px;font-weight:900;color:var(--accent-dark);">-</span>
+              <span style="font-size:13px;color:var(--muted);margin-top:4px;">스프레드</span>
+              <span id="obSpread" style="font-size:13px;font-weight:700;color:var(--muted);">-</span>
             </div>
             <div>
-              <div style="padding:4px 10px;font-size:10px;font-weight:700;color:#F87171;border-bottom:1px solid rgba(255,255,255,0.05);">매수 호가 (Bid)</div>
-              <table style="width:100%;"><thead><tr style="background:rgba(225,29,72,0.04);"><th style="padding:4px 10px;text-align:right;font-size:10px;color:var(--muted);">가격</th><th style="padding:4px 10px;text-align:right;font-size:10px;color:var(--muted);">수량</th></tr></thead><tbody id="bidBody"></tbody></table>
+              <div style="padding:7px 12px;font-size:13px;font-weight:700;color:#F87171;border-bottom:1px solid rgba(255,255,255,0.05);">매수 호가 (Bid)</div>
+              <table style="width:100%;"><thead><tr style="background:rgba(225,29,72,0.04);"><th style="padding:7px 12px;text-align:right;font-size:12px;color:var(--muted);">가격</th><th style="padding:7px 12px;text-align:right;font-size:12px;color:var(--muted);">수량</th></tr></thead><tbody id="bidBody"></tbody></table>
             </div>
           </div>
         </div>
@@ -408,7 +408,7 @@
   </div><!-- /trading-body -->
 
   <footer id="site-footer">
-    <div class="mx-auto w-full max-w-[1640px] px-4 py-2 flex items-center justify-between">
+    <div class="w-full px-4 py-2 flex items-center justify-between">
       <span class="brand-logo-text" style="font-size:12px;letter-spacing:1.5px;">EDUMGT</span>
       <p style="font-size:11px;color:var(--muted);">(주)에듀엠지티 &nbsp;|&nbsp; <a href="https://www.edumgt.co.kr" target="_blank" style="color:var(--accent-dark);text-decoration:none;font-weight:600;">www.edumgt.co.kr</a></p>
     </div>
@@ -487,6 +487,6 @@ switchTab('positions');
 </script>
 <script src="/js/config.js"></script>
 <script src="/js/common.js?v=20260813-common-menu-3"></script>
-<script src="/js/stock.js?v=20260808-4"></script>
+<script src="/js/stock.js?v=20260819-default-symbol-4"></script>
 </body>
 </html>

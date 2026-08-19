@@ -13,7 +13,7 @@
 .academy-menu-item.active { color:var(--accent-dark); background:#e7f0ff; font-weight:800; box-shadow:inset 3px 0 0 var(--accent); }
 .academy-side-foot { margin:0 18px 18px; padding:10px; border-radius:7px; color:var(--muted); background:var(--surface-2); font-size:10px; line-height:1.5; }
 .academy-side-foot i { color:var(--accent); }
-.academy-content { min-width:0; max-width:1680px; padding:16px clamp(18px,2.2vw,36px) 30px; }
+.academy-content { min-width:0; max-width:none; padding:16px clamp(18px,2.2vw,36px) 30px; }
 .academy-breadcrumb { display:none; }
 .academy-breadcrumb span { color:var(--accent-dark); }
 .academy-hero { margin-bottom:14px; padding:13px 18px; border:1px solid #cdddfb; border-radius:10px; background:linear-gradient(115deg,#f7fbff 0%,#edf4ff 100%); }

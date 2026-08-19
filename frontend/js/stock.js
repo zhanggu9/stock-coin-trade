@@ -10,6 +10,24 @@ let stockPickerActiveIndex = -1;
 let stockPickerMatches = [];
 let stockPickerRequestId = 0;
 let currentStockPrice = 0;
+// 종목 목록(/api/stocks/list)이 코드순 30개만 반환해 삼성전자 등 대형주가 빠질 수 있으므로,
+// 기본 종목은 검색 API에 의존하지 않고 아래 객체를 allStocks에 직접 주입해 항상 보장한다.
+let DEFAULT_STOCK_SYMBOL = '005930';
+let defaultStockCandidate = { symbol: '005930', name: '삼성전자', market: 'KOSPI', sector: '반도체·IT' };
+
+async function pickTopVolumeKospiSymbol() {
+  try {
+    const data = await requestJson('/api/stocks/prices');
+    const quotes = Object.values(data.prices ?? {});
+    const top = quotes
+      .filter(q => q.market === 'KOSPI' && Number(q.volume) > 0)
+      .sort((a, b) => Number(b.volume) - Number(a.volume))[0];
+    if (top?.symbol) {
+      DEFAULT_STOCK_SYMBOL = top.symbol;
+      defaultStockCandidate = { symbol: top.symbol, name: top.name, market: top.market, sector: top.sector || '기타' };
+    }
+  } catch {}
+}
 
 /* ── LW Charts ───────────────────────────────────────────────────────────── */
 let lwChart  = null;
@@ -124,11 +142,11 @@ function updatePortfolioMini(positions, cash) {
     `<span style="display:inline-flex;align-items:center;gap:3px;"><i style="width:6px;height:6px;border-radius:50%;background:${colors[i % colors.length]};display:inline-block;"></i>${sector} ${Math.round(amount / total * 100)}%</span>`
   ).join(' · ');
 
-  el.innerHTML = `<div style="font-size:10px;font-weight:700;color:var(--muted);margin-top:4px;">종목별 비중</div>
-    <div style="display:flex;height:7px;border-radius:4px;overflow:hidden;gap:1px;margin-top:3px;">${stockBars.join('')}</div>
-    <div style="font-size:10px;font-weight:700;color:var(--muted);margin-top:7px;">섹터별 비중</div>
-    <div style="display:flex;height:7px;border-radius:4px;overflow:hidden;gap:1px;margin-top:3px;">${sectorBars.join('')}</div>
-    <div style="font-size:9px;line-height:1.5;color:var(--muted);margin-top:4px;">${sectorLabels || '보유 주식 없음'}${sectorLabels ? ` · 현금 ${cashPct}%` : ''}</div>`;
+  el.innerHTML = `<div style="font-size:13px;font-weight:700;color:var(--muted);margin-top:6px;">종목별 비중</div>
+    <div style="display:flex;height:9px;border-radius:4px;overflow:hidden;gap:1px;margin-top:4px;">${stockBars.join('')}</div>
+    <div style="font-size:13px;font-weight:700;color:var(--muted);margin-top:10px;">섹터별 비중</div>
+    <div style="display:flex;height:9px;border-radius:4px;overflow:hidden;gap:1px;margin-top:4px;">${sectorBars.join('')}</div>
+    <div style="font-size:12px;line-height:1.6;color:var(--muted);margin-top:6px;">${sectorLabels || '보유 주식 없음'}${sectorLabels ? ` · 현금 ${cashPct}%` : ''}</div>`;
 }
 
 /* ── 포맷터 ──────────────────────────────────────────────────────────────── */
@@ -339,19 +357,26 @@ async function selectStockFromList(sym) {
 async function loadStockList() {
   const data = await requestJson('/api/stocks/list?limit=30');
   allStocks = data.stocks ?? [];
-  const requestedSymbol = new URLSearchParams(window.location.search).get('symbol')?.trim().toUpperCase();
-  if (requestedSymbol) {
-    try {
-      const search = await requestJson(`/api/stocks/search?q=${encodeURIComponent(requestedSymbol)}&limit=20`);
-      const requestedStock = (search.stocks ?? []).find(stock => stock.symbol === requestedSymbol);
-      if (requestedStock) addStockToPicker(requestedStock);
-    } catch {}
+  const explicitSymbol = new URLSearchParams(window.location.search).get('symbol')?.trim().toUpperCase();
+  const targetSymbol = explicitSymbol || DEFAULT_STOCK_SYMBOL;
+
+  if (targetSymbol && !allStocks.some(stock => stock.symbol === targetSymbol)) {
+    if (!explicitSymbol && defaultStockCandidate?.symbol === targetSymbol) {
+      // 검색 API 없이도 기본 종목이 항상 목록에 포함되도록 직접 주입한다.
+      addStockToPicker(defaultStockCandidate);
+    } else {
+      try {
+        const search = await requestJson(`/api/stocks/search?q=${encodeURIComponent(targetSymbol)}&limit=20`);
+        const found = (search.stocks ?? []).find(stock => stock.symbol === targetSymbol);
+        if (found) addStockToPicker(found);
+      } catch {}
+    }
   }
   rebuildSelectOptions();
-  if (requestedSymbol && allStocks.some(stock => stock.symbol === requestedSymbol)) {
+  if (targetSymbol && allStocks.some(stock => stock.symbol === targetSymbol)) {
     const select = document.getElementById('stockSymbol');
-    if (select) select.value = requestedSymbol;
-    updateStockPickerSelected(requestedSymbol);
+    if (select) select.value = targetSymbol;
+    updateStockPickerSelected(targetSymbol);
   }
 }
 
@@ -477,7 +502,9 @@ function rebuildSelectOptions() {
     sel.appendChild(grp);
   });
 
-  sel.value = allStocks.some(s => s.symbol === prevVal) ? prevVal : allStocks[0].symbol;
+  sel.value = allStocks.some(s => s.symbol === prevVal)
+    ? prevVal
+    : (allStocks.some(s => s.symbol === DEFAULT_STOCK_SYMBOL) ? DEFAULT_STOCK_SYMBOL : allStocks[0].symbol);
   updateStockPickerSelected(sel.value);
 }
 
@@ -588,12 +615,12 @@ async function loadPositions() {
     const pnl   = Number(pos.pnl ?? 0);
     const color = colorByVal(pnl);
     return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
-      <td style="padding:6px 10px;font-weight:700;color:var(--fg);font-size:12px;">${pos.name}<br><span style="font-size:10px;color:var(--accent-dark);">${pos.symbol}</span></td>
-      <td style="padding:6px 10px;font-size:10px;color:var(--muted);white-space:nowrap;">${pos.sector || '기타'}</td>
-      <td style="padding:6px 10px;text-align:right;font-size:12px;color:var(--fg);">${pos.quantity}</td>
-      <td style="padding:6px 10px;text-align:right;font-size:12px;color:rgba(255,255,255,0.7);">${fmtKrw(pos.avgPrice)}</td>
-      <td style="padding:6px 10px;text-align:right;font-size:12px;color:var(--accent-dark);">${fmtKrw(pos.evalAmount)}</td>
-      <td style="padding:6px 10px;text-align:right;font-size:13px;font-weight:800;color:${color};">${pnl >= 0 ? '+' : ''}${fmtKrw(pnl)}</td>
+      <td style="padding:9px 12px;font-weight:700;color:var(--fg);font-size:15px;">${pos.name}<br><span style="font-size:12px;color:var(--accent-dark);">${pos.symbol}</span></td>
+      <td style="padding:9px 12px;font-size:13px;color:var(--muted);white-space:nowrap;">${pos.sector || '기타'}</td>
+      <td style="padding:9px 12px;text-align:right;font-size:15px;color:var(--fg);">${pos.quantity}</td>
+      <td style="padding:9px 12px;text-align:right;font-size:15px;color:rgba(255,255,255,0.7);">${fmtKrw(pos.avgPrice)}</td>
+      <td style="padding:9px 12px;text-align:right;font-size:15px;color:var(--accent-dark);">${fmtKrw(pos.evalAmount)}</td>
+      <td style="padding:9px 12px;text-align:right;font-size:16px;font-weight:800;color:${color};">${pnl >= 0 ? '+' : ''}${fmtKrw(pnl)}</td>
     </tr>`;
   }).join('');
   renderStockMarketList();
@@ -618,11 +645,11 @@ async function loadHistory() {
       const color = isBuy ? '#E11D48' : '#2563EB';
       const dt    = new Date(h.ts).toLocaleTimeString('ko-KR', { hour12: false });
       return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
-        <td style="padding:5px 10px;color:var(--muted);font-size:11px;">${dt}</td>
-        <td style="padding:5px 10px;font-weight:700;color:var(--fg);font-size:12px;">${h.name}<br><span style="font-size:10px;color:var(--accent-dark);">${h.symbol}</span></td>
-        <td style="padding:5px 10px;text-align:center;font-weight:800;font-size:12px;color:${color};">${isBuy ? '매수' : '매도'}</td>
-        <td style="padding:5px 10px;text-align:right;color:rgba(255,255,255,0.7);font-size:12px;">${Number(h.quantity).toLocaleString('ko-KR')}주</td>
-        <td style="padding:5px 10px;text-align:right;color:var(--accent-dark);font-weight:700;font-size:12px;">${fmtKrw(h.amount)}</td>
+        <td style="padding:8px 12px;color:var(--muted);font-size:13px;">${dt}</td>
+        <td style="padding:8px 12px;font-weight:700;color:var(--fg);font-size:15px;">${h.name}<br><span style="font-size:12px;color:var(--accent-dark);">${h.symbol}</span></td>
+        <td style="padding:8px 12px;text-align:center;font-weight:800;font-size:15px;color:${color};">${isBuy ? '매수' : '매도'}</td>
+        <td style="padding:8px 12px;text-align:right;color:rgba(255,255,255,0.7);font-size:15px;">${Number(h.quantity).toLocaleString('ko-KR')}주</td>
+        <td style="padding:8px 12px;text-align:right;color:var(--accent-dark);font-weight:700;font-size:15px;">${fmtKrw(h.amount)}</td>
       </tr>`;
     }).join('');
   } catch {}
@@ -647,11 +674,11 @@ function renderOrderBook(price) {
   const bidRows = Array.from({ length: 5 }, (_, i) => ({ price: price - tick * (i + 1), qty: qty(price - tick * (i + 1), 31) }));
 
   askBody.innerHTML = askRows.map(r => `<tr style="background:rgba(37,99,235,0.04);">
-    <td style="padding:4px 10px;text-align:right;color:#60A5FA;font-weight:700;font-size:11px;">${Number(r.price).toLocaleString('ko-KR')}</td>
-    <td style="padding:4px 10px;text-align:right;color:var(--muted);font-size:11px;">${Number(r.qty).toLocaleString('ko-KR')}</td></tr>`).join('');
+    <td style="padding:7px 12px;text-align:right;color:#60A5FA;font-weight:700;font-size:14px;">${Number(r.price).toLocaleString('ko-KR')}</td>
+    <td style="padding:7px 12px;text-align:right;color:var(--muted);font-size:14px;">${Number(r.qty).toLocaleString('ko-KR')}</td></tr>`).join('');
   bidBody.innerHTML = bidRows.map(r => `<tr style="background:rgba(225,29,72,0.04);">
-    <td style="padding:4px 10px;text-align:right;color:#F87171;font-weight:700;font-size:11px;">${Number(r.price).toLocaleString('ko-KR')}</td>
-    <td style="padding:4px 10px;text-align:right;color:var(--muted);font-size:11px;">${Number(r.qty).toLocaleString('ko-KR')}</td></tr>`).join('');
+    <td style="padding:7px 12px;text-align:right;color:#F87171;font-weight:700;font-size:14px;">${Number(r.price).toLocaleString('ko-KR')}</td>
+    <td style="padding:7px 12px;text-align:right;color:var(--muted);font-size:14px;">${Number(r.qty).toLocaleString('ko-KR')}</td></tr>`).join('');
 
   setText('obCurrentPrice', Number(price).toLocaleString('ko-KR'));
   const spread = tick * 2;
@@ -837,6 +864,7 @@ function initUsageGuide() {
   await initPage();
   initStockChart();
 
+  await pickTopVolumeKospiSymbol();
   await loadStockList();
 
   const sym = document.getElementById('stockSymbol')?.value;

@@ -10,7 +10,7 @@
   <script>tailwind.config={theme:{extend:{fontFamily:{sans:['Pretendard','sans-serif']}}}}</script>
   <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
   <style>
-    .pine-page { max-width:1540px; min-height:calc(100vh - 126px); margin:0 auto; padding:20px 18px 30px; }
+    .pine-page { max-width:none; min-height:calc(100vh - 126px); margin:0; padding:20px 18px 30px; }
     .pine-card { border:1px solid var(--border); border-radius:12px; background:var(--surface); box-shadow:var(--shadow-sm); }
     .pine-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
     .pine-select { min-width:190px; padding:8px 10px; border:1px solid var(--border); border-radius:7px; color:var(--fg); background:var(--surface-2); font:inherit; font-size:13px; }
@@ -28,7 +28,7 @@
     .notice { margin:0; padding:11px 14px; color:var(--muted); font-size:12px; line-height:1.65; }
     .log { max-height:165px; overflow:auto; margin:10px 0 0; padding:10px; border-radius:7px; background:var(--surface-2); color:var(--muted); font:11px/1.6 ui-monospace,monospace; white-space:pre-wrap; }
     .pine-footer { border-top:1px solid var(--border); background:var(--surface); }
-    .pine-footer-inner { display:flex; align-items:center; justify-content:space-between; gap:12px; max-width:1540px; margin:0 auto; padding:14px 18px; }
+    .pine-footer-inner { display:flex; align-items:center; justify-content:space-between; gap:12px; max-width:none; margin:0; padding:14px 18px; }
     @media (max-width:900px) { .editor-grid { grid-template-columns:1fr; } .pine-page { padding:14px 10px 24px; } .pine-footer-inner { padding:12px 14px; } }
   </style>
 </head>

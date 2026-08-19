@@ -9,14 +9,14 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config={theme:{extend:{fontFamily:{sans:['Pretendard','sans-serif']}}}}</script>
   <style>
-    .guide-wrap { max-width:1280px; min-height:calc(100vh - 126px); margin:0 auto; padding:34px 24px 44px; }
+    .guide-wrap { max-width:none; min-height:calc(100vh - 126px); margin:0; padding:34px 24px 44px; }
     .guide-card { padding:26px; border:1px solid var(--border); border-radius:12px; background:var(--surface); box-shadow:var(--shadow-sm); }
     .step { display:grid; grid-template-columns:32px 1fr; gap:10px; align-items:start; padding:13px 0; border-bottom:1px solid var(--border); }
     .step:last-child { border-bottom:0; }.step-number { display:flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:50%; background:var(--accent); color:#fff; font-size:13px; font-weight:900; }
     .compare { width:100%; border-collapse:collapse; font-size:14px; }.compare th,.compare td { padding:14px; border:1px solid var(--border); text-align:left; vertical-align:top; }.compare th { background:var(--surface-2); font-weight:800; }
     .flow { display:flex; align-items:center; gap:9px; flex-wrap:wrap; padding:15px; border-radius:9px; background:var(--surface-2); font-size:13px; font-weight:750; }.flow span { padding:7px 10px; border:1px solid var(--border); border-radius:6px; background:#fff; }.flow i { color:var(--accent); }
     code { padding:1px 4px; border-radius:4px; background:#EEF3FF; color:var(--accent-dark); font-size:.92em; }
-    .guide-footer { border-top:1px solid var(--border); background:var(--surface); }.guide-footer-inner { display:flex; align-items:center; justify-content:space-between; gap:12px; max-width:1280px; margin:0 auto; padding:14px 24px; }
+    .guide-footer { border-top:1px solid var(--border); background:var(--surface); }.guide-footer-inner { display:flex; align-items:center; justify-content:space-between; gap:12px; max-width:none; margin:0; padding:14px 24px; }
     @media (max-width:640px) { .guide-wrap { padding:20px 12px 28px; } .guide-card { padding:17px; } .guide-footer-inner { padding:12px; } .compare { font-size:12px; } .compare th,.compare td { padding:9px; } }
   </style>
 </head>

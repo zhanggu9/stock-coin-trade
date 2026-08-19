@@ -20,23 +20,23 @@
 </head>
 <body class="min-h-screen">
 <div id="header-mount"></div>
-<main class="mx-auto w-full max-w-[1640px] px-4 py-6">
+<main class="w-full px-4 py-6">
 
   <!-- Hero cards -->
   <section class="mb-6 grid grid-cols-1 gap-5 xl:grid-cols-3">
     <article class="glow-card p-8 relative overflow-hidden">
       <div style="position:absolute;top:-40px;right:-40px;width:180px;height:180px;background:radial-gradient(circle,rgba(124,92,252,0.12) 0%,transparent 70%);pointer-events:none;"></div>
-      <div class="badge badge-gold mb-4" style="width:fit-content;">실시간 시세</div>
-      <h1 class="text-[28px] font-black leading-tight" style="color:var(--fg);">코인 거래 실습</h1>
-      <p class="mt-3 text-sm leading-relaxed" style="color:var(--muted);">업비트 기반 실시간 시세로 코인 실습을 제공합니다.<br>KRW 마켓 매수/매도 및 보유자산 관리를 사용할 수 있습니다.</p>
-      <button onclick="location.href='/trade/order.html'" type="button" class="btn-gold mt-6" style="width:fit-content;padding:0.65rem 1.75rem;">코인 거래 시작 →</button>
+      <div class="badge badge-gold mb-4" style="width:fit-content;">KOSPI · KOSDAQ</div>
+      <h1 class="text-[28px] font-black leading-tight" style="color:var(--fg);">주식 거래 실습</h1>
+      <p class="mt-3 text-sm leading-relaxed" style="color:var(--muted);">파이썬 기반 백엔드에서 시세/주문/포지션을 처리합니다.<br>KOSPI · KOSDAQ 가상 잔고로 매수/매도 실습을 진행할 수 있습니다.</p>
+      <button onclick="location.href='/trade/stock.html'" type="button" class="btn-gold mt-6" style="width:fit-content;padding:0.65rem 1.75rem;">주식 실습 시작 →</button>
     </article>
     <article class="glass-card p-8 relative overflow-hidden">
       <div style="position:absolute;top:-40px;right:-40px;width:180px;height:180px;background:radial-gradient(circle,rgba(124,92,252,0.07) 0%,transparent 70%);pointer-events:none;"></div>
-      <div class="badge badge-muted mb-4" style="width:fit-content;">KOSPI · KOSDAQ</div>
-      <h1 class="text-[28px] font-black leading-tight" style="color:var(--fg);">주식 거래 실습</h1>
-      <p class="mt-3 text-sm leading-relaxed" style="color:var(--muted);">파이썬 기반 백엔드에서 시세/주문/포지션을 처리합니다.<br>KOSPI · KOSDAQ 가상 잔고로 매수/매도 실습을 진행할 수 있습니다.</p>
-      <button onclick="location.href='/trade/stock.html'" type="button" class="btn-ghost mt-6" style="width:fit-content;padding:0.65rem 1.75rem;">주식 실습 시작 →</button>
+      <div class="badge badge-muted mb-4" style="width:fit-content;">Upbit KRW</div>
+      <h1 class="text-[28px] font-black leading-tight" style="color:var(--fg);">코인 거래 실습</h1>
+      <p class="mt-3 text-sm leading-relaxed" style="color:var(--muted);">업비트 기반 실시간 시세로 코인 실습을 제공합니다.<br>KRW 마켓 매수/매도 및 보유자산 관리를 사용할 수 있습니다.</p>
+      <button onclick="location.href='/trade/order.html'" type="button" class="btn-ghost mt-6" style="width:fit-content;padding:0.65rem 1.75rem;">코인 거래 시작 →</button>
     </article>
     <article class="glass-card p-8 relative overflow-hidden">
       <div class="badge badge-muted mb-4" style="width:fit-content;">선물 · 옵션 · 금 · 은 · 부동산</div>
@@ -48,6 +48,28 @@
 
   <!-- 실시간 Top 10 카드 (2열) -->
   <section class="mb-6 grid grid-cols-1 gap-5 xl:grid-cols-2">
+
+    <!-- 주식 Top 10 -->
+    <div class="glass-card overflow-hidden">
+      <div class="px-5 py-3 flex items-center gap-3" style="border-bottom:1px solid var(--border);">
+        <h2 class="text-base font-black" style="color:var(--fg);">주식 Top 10</h2>
+        <span class="badge badge-muted">KOSPI · KOSDAQ</span>
+        <span class="live-dot ml-auto" id="stockLiveDot" title="30초 갱신"></span>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead>
+          <tr style="background:var(--surface-2);">
+            <th style="padding:6px 12px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;">종목</th>
+            <th style="padding:6px 12px;text-align:right;color:var(--muted);font-size:10px;font-weight:700;">현재가</th>
+            <th style="padding:6px 12px;text-align:right;color:var(--muted);font-size:10px;font-weight:700;">등락</th>
+            <th style="padding:6px 12px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;">시장</th>
+          </tr>
+        </thead>
+        <tbody id="stockTop10Body">
+          <tr><td colspan="4" style="padding:16px;text-align:center;color:var(--muted);">로딩 중...</td></tr>
+        </tbody>
+      </table>
+    </div>
 
     <!-- 코인 Top 10 (업비트 WebSocket 실시간) -->
     <div class="glass-card overflow-hidden">
@@ -71,33 +93,11 @@
       </table>
     </div>
 
-    <!-- KOSPI 상위 10 (30초 캐시 갱신) -->
-    <div class="glass-card overflow-hidden">
-      <div class="px-5 py-3 flex items-center gap-3" style="border-bottom:1px solid var(--border);">
-        <h2 class="text-base font-black" style="color:var(--fg);">주식 Top 10</h2>
-        <span class="badge badge-muted">KOSPI · KOSDAQ</span>
-        <span class="live-dot ml-auto" title="30초 갱신"></span>
-      </div>
-      <table style="width:100%;border-collapse:collapse;font-size:13px;">
-        <thead>
-          <tr style="background:var(--surface-2);">
-            <th style="padding:6px 12px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;">종목</th>
-            <th style="padding:6px 12px;text-align:right;color:var(--muted);font-size:10px;font-weight:700;">현재가</th>
-            <th style="padding:6px 12px;text-align:right;color:var(--muted);font-size:10px;font-weight:700;">등락</th>
-            <th style="padding:6px 12px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;">시장</th>
-          </tr>
-        </thead>
-        <tbody id="stockTop10Body">
-          <tr><td colspan="4" style="padding:16px;text-align:center;color:var(--muted);">로딩 중...</td></tr>
-        </tbody>
-      </table>
-    </div>
-
   </section>
 
 </main>
 <footer id="site-footer">
-  <div class="mx-auto w-full max-w-[1640px] px-4 py-3 flex items-center justify-between">
+  <div class="w-full px-4 py-3 flex items-center justify-between">
     <span class="brand-logo-text" style="font-size:13px;letter-spacing:1.5px;">EDUMGT</span>
       <p style="font-size:12px;color:var(--muted);">(주)에듀엠지티 &nbsp;|&nbsp; <a href="https://www.edumgt.co.kr" target="_blank" style="color:var(--accent-dark);text-decoration:none;font-weight:600;">www.edumgt.co.kr</a> &nbsp;|&nbsp; © 2025</p>
   </div>
@@ -178,7 +178,7 @@
         const color = rate > 0 ? '#E11D48' : rate < 0 ? '#2563EB' : 'var(--muted)';
         const rateStr = (rate >= 0 ? '+' : '') + rate.toFixed(2) + '%';
         const mktColor = s.market === 'KOSPI' ? 'color:var(--accent-dark);' : 'color:#059669;';
-        return `<tr style="border-bottom:1px solid var(--border);cursor:pointer;" onclick="location.href='/trade/stock.html'">
+        return `<tr style="border-bottom:1px solid var(--border);cursor:pointer;" onclick="location.href='/trade/stock.html?symbol=${encodeURIComponent(s.sym)}'">
           <td style="padding:8px 12px;font-weight:700;color:var(--fg);">${s.name}</td>
           <td style="padding:8px 12px;text-align:right;font-weight:700;color:var(--fg);">${Number(s.price).toLocaleString('ko-KR')}</td>
           <td style="padding:8px 12px;text-align:right;font-size:12px;font-weight:700;color:${color};">${rateStr}</td>
