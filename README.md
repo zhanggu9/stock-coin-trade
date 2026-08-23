@@ -22,6 +22,7 @@ Flask REST API와 Vanilla JavaScript로 만든 주식·암호화폐 모의투자
 - 분석·도구의 읽기 전용 연결 테스트
   - `증권사 시세 테스트`: KIS Testbed 현재가, KB증권 인증 상태
   - `Alpaca Test`: Alpaca Paper 계정 상태
+- (선택) VS Code용 한투 공식 KIS MCP 서버 연동 — 자세한 내용은 아래 "KIS MCP" 절 참고
 
 ## 아키텍처
 
@@ -246,6 +247,73 @@ GET /api/alpaca-test/paper/account
 
 KIS Testbed에는 호출 제한이 있으므로 토큰과 짧은 시세 결과를 서버에서 캐시합니다. KB증권 키가 인증 단계에서 거부되면 검증되지 않은 시세 URI를 추측해 호출하지 않습니다. Alpaca Test는 Paper 환경만 사용하고 주문·잔고·계좌번호를 반환하지 않습니다.
 
+## KIS MCP — VS Code에서 자연어로 KIS API 사용하기
+
+`/broker-api-test.html`의 증권사 연결 테스트와는 별개로, 한국투자증권이 공식 배포하는 **MCP(Model Context Protocol) 서버**를 VS Code(GitHub Copilot Chat 에이전트 모드)·Claude Desktop·Cursor에 연결해 자연어로 KIS Open API를 호출할 수 있습니다. 이 저장소의 `broker_test.py`를 MCP로 감싼 것이 아니라, 한투 공식 저장소 [koreainvestment/open-trading-api](https://github.com/koreainvestment/open-trading-api)의 `MCP/Kis Trading MCP` 서버를 별도로 clone해 그대로 사용합니다. 국내·해외 주식, 선물옵션, 채권, ETF 등 166개 API를 도구로 제공합니다.
+
+### 설치
+
+```bash
+# 1. 공식 MCP 서버 저장소를 로컬에 clone (이 repo의 git 이력에는 포함되지 않음)
+mkdir -p mcp
+git clone --depth 1 https://github.com/koreainvestment/open-trading-api.git mcp/open-trading-api
+
+# 2. 의존성 설치 (요구사항: Python 3.11+, uv)
+cd "mcp/open-trading-api/MCP/Kis Trading MCP"
+uv sync
+```
+
+### 모의투자 키 재사용
+
+이미 갖고 있는 `kis.key`(모의투자 App Key·Secret)를 그대로 재사용합니다. 실전 키는 설정하지 않아 실전 거래 도구는 비활성 상태로 유지됩니다.
+
+```bash
+# mcp/kis-trade-mcp.env — gitignore 처리됨(/mcp/), Git에 절대 커밋하지 않습니다
+KIS_PAPER_APP_KEY=<kis.key의 App-KEY 값>
+KIS_PAPER_APP_SECRET=<kis.key의 Secret 값>
+```
+
+### VS Code 연결 (`.vscode/mcp.json`)
+
+`.vscode/`는 이미 `.gitignore`에 포함되어 있어 별도 조치 없이 커밋되지 않습니다. 모의투자 계좌번호는 이 저장소 어디에도 저장하지 않고, VS Code가 서버를 처음 실행할 때 안전한 입력창으로 물어보도록 `inputs`를 사용합니다.
+
+```json
+{
+  "inputs": [
+    { "type": "promptString", "id": "kis-paper-account", "description": "KIS 모의투자 계좌번호 앞 8자리" },
+    { "type": "promptString", "id": "kis-hts-id", "description": "한국투자증권 HTS ID (선택)" }
+  ],
+  "servers": {
+    "kis-trade-mcp": {
+      "type": "stdio",
+      "command": "uv",
+      "args": ["--directory", "${workspaceFolder}/mcp/open-trading-api/MCP/Kis Trading MCP", "run", "python", "server.py"],
+      "envFile": "${workspaceFolder}/mcp/kis-trade-mcp.env",
+      "env": {
+        "ENV": "live",
+        "MCP_TYPE": "stdio",
+        "KIS_PAPER_STOCK": "${input:kis-paper-account}",
+        "KIS_PROD_TYPE": "01",
+        "KIS_HTS_ID": "${input:kis-hts-id}"
+      }
+    }
+  }
+}
+```
+
+`ENV=live`는 실전 거래를 뜻하지 않습니다 — MCP 서버가 로드할 전송 설정 파일(`.env.live`) 이름일 뿐이며, 실전·모의 구분은 `KIS_APP_KEY`(실전, 비워둠) 대 `KIS_PAPER_APP_KEY`(모의, 설정함)로 결정됩니다.
+
+### 사용
+
+VS Code에서 이 워크스페이스를 열고 Copilot Chat을 에이전트 모드로 전환하면 계좌번호 입력 프롬프트가 표시됩니다. 이후 채팅에서 자연어로 질문합니다.
+
+- "삼성전자 현재가 조회해줘"
+- "모의투자 계좌 잔고 보여줘"
+
+전체 도구 목록과 Docker+SSE 실행 방식 등 상세 내용은 [공식 MCP README](https://github.com/koreainvestment/open-trading-api/blob/main/MCP/README.MD)를 참조하세요. 프론트엔드 학습 페이지(`/learning/kis-developers.html`)에도 동일한 안내가 있습니다.
+
+> ⚠️ 실전 거래용 `KIS_APP_KEY`/`KIS_APP_SECRET`는 설정하지 마세요. 설정하면 MCP 도구가 실제 자금으로 주문을 실행할 수 있습니다.
+
 ## Alpaca Paper Trading
 
 `실전연습 → Alpaca API`에는 계정 생성, Paper API Key 발급 위치, `alpaca-py`, Trading CLI, WebSocket 및 주의사항을 정리했습니다.
@@ -296,7 +364,8 @@ KIS Testbed에는 호출 제한이 있으므로 토큰과 짧은 시세 결과�
 ├── docker/                            # Frontend·Backend 이미지와 Nginx 설정
 ├── docker-compose.yml                 # 로컬 실행 구성
 ├── scripts/ec2/deploy.sh              # 배포 전 문법 검사·Compose 재기동
-└── .env.example                       # 공유 가능한 환경 변수 예시
+├── .env.example                       # 공유 가능한 환경 변수 예시
+└── mcp/                                # (선택, git 미추적) 한투 공식 KIS MCP 서버 clone + 로컬 키
 ```
 
 ## 개발·검증

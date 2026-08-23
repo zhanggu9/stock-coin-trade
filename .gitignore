@@ -59,3 +59,6 @@ venv/
 
 # Local deployment runbook (contains environment-specific operational details)
 deploy.md
+
+# Locally-cloned KIS MCP server (third-party, not part of this project) + its secrets
+/mcp/
