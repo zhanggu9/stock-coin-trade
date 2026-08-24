@@ -249,7 +249,16 @@ KIS Testbed에는 호출 제한이 있으므로 토큰과 짧은 시세 결과�
 
 ## KIS MCP — VS Code에서 자연어로 KIS API 사용하기
 
-`/broker-api-test.html`의 증권사 연결 테스트와는 별개로, 한국투자증권이 공식 배포하는 **MCP(Model Context Protocol) 서버**를 VS Code(GitHub Copilot Chat 에이전트 모드)·Claude Desktop·Cursor에 연결해 자연어로 KIS Open API를 호출할 수 있습니다. 이 저장소의 `broker_test.py`를 MCP로 감싼 것이 아니라, 한투 공식 저장소 [koreainvestment/open-trading-api](https://github.com/koreainvestment/open-trading-api)의 `MCP/Kis Trading MCP` 서버를 별도로 clone해 그대로 사용합니다. 국내·해외 주식, 선물옵션, 채권, ETF 등 166개 API를 도구로 제공합니다.
+`/broker-api-test.html`의 증권사 연결 테스트와는 별개로, 한국투자증권은 AI 도구로 **MCP(Model Context Protocol)** 를 제공합니다. MCP는 생성형 AI가 외부 도구와 데이터에 표준 방식으로 연결되도록 하는 규약입니다. 이 프로젝트는 MCP 서버를 자체 구현하거나 `broker_test.py`를 MCP로 감싼 것이 아니라, 아래의 한투 공식 MCP를 별도로 사용합니다.
+
+| 구분 | 용도 | 공식 안내 |
+|---|---|---|
+| KIS Code Assistant MCP (코딩도우미) | 자연어로 필요한 Open API를 찾고, 파라미터·응답 구조를 포함한 호출 예제 코드를 생성 | [코딩도우미 MCP](https://apiportal.koreainvestment.com/tools-sample) |
+| KIS Trading MCP (트레이딩) | 국내·해외주식, 선물·옵션, 채권, ETF/ETN·인증 등의 Open API를 MCP 도구로 호출 | [트레이딩 MCP](https://apiportal.koreainvestment.com/tools-trading) |
+
+두 도구의 차이와 API 신청 → MCP 클라이언트 연결 → 보안인증키 발급 → 샘플 실행 절차는 [한국투자증권 MCP 소개](https://apiportal.koreainvestment.com/tools-mcp)에서 최신 내용을 확인하세요. 코딩도우미는 API 탐색·예제 생성용이고, 트레이딩 MCP는 API를 실제 호출할 수 있으므로 이 저장소에서는 **모의투자 키만** 연결하는 것을 기본으로 합니다.
+
+아래 설정은 한투 공식 저장소 [koreainvestment/open-trading-api](https://github.com/koreainvestment/open-trading-api)의 `MCP/Kis Trading MCP` 서버를 VS Code(GitHub Copilot Chat 에이전트 모드)·Claude Desktop·Cursor 등에 연결하는 예시입니다.
 
 ### 설치
 
