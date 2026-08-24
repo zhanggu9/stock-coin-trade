@@ -1,5 +1,7 @@
 # 모의투자 · OpenAPI 실습 플랫폼
 
+![](./archi.png)
+
 ## AWS 에 Lambda 구성, API GW 구성, 해당 repo FE EC2 구성
 ## 개인별 ML/DL 대체 AI resource 연동
 
