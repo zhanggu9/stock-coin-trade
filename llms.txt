@@ -1,0 +1,57 @@
+# stock-coin-trade
+
+> Flask REST API + Vanilla JavaScript로 만든 국내 주식·코인 모의투자 및 OpenAPI 학습 플랫폼. 교육·연습용이며, 증권사(KIS/KB)·Alpaca 연동은 키 검증과 읽기 전용 조회만 다루고 실제 주문 자동화는 제공하지 않는다.
+
+이 파일은 AI 코딩 에이전트(Claude Code 등)가 저장소를 빠르게 파악하도록 돕는 진입점이다. 사람이 읽는 전체 설명은 [README.md](README.md)를 참고한다.
+
+## 시작하기
+
+- [README.md](README.md): 기능 개요, 아키텍처, 빠른 시작(Docker Compose), 기본 계정, API 요약, 저장소 구조 전체
+- [.env.example](.env.example): 필요한 환경 변수 전체 목록 (DB, SECRET_KEY, CMC/ANTHROPIC 키, KIS/KB/Alpaca 키)
+- [docker-compose.yml](docker-compose.yml): frontend / python-backend / mariadb(local profile) / postgres(local-db profile) 구성
+
+## 백엔드 (python-stock-backend/)
+
+- [app.py](python-stock-backend/app.py): Flask 앱 진입점, Blueprint 등록
+- [members.py](python-stock-backend/members.py): 회원가입·로그인·세션
+- [stocks.py](python-stock-backend/stocks.py), [stock_trading.py](python-stock-backend/stock_trading.py), [stock_market.py](python-stock-backend/stock_market.py): 국내 주식 모의 주문·시세·차트
+- [crypto.py](python-stock-backend/crypto.py): 코인 시세·모의 주문
+- [alternatives.py](python-stock-backend/alternatives.py): 대체자산(선물·옵션·금속·부동산 지분) 모의 주문
+- [openapi.py](python-stock-backend/openapi.py), [api_keys.py](python-stock-backend/api_keys.py): 외부 연동용 Open API(`/openapi/v1/*`)와 API 키 발급·인증
+- [broker_test.py](python-stock-backend/broker_test.py), [broker_test_api.py](python-stock-backend/broker_test_api.py), [kis_quote_test.py](python-stock-backend/kis_quote_test.py), [kb_token_test.py](python-stock-backend/kb_token_test.py): KIS·KB증권 읽기 전용 연결 테스트
+- [alpaca_test.py](python-stock-backend/alpaca_test.py), [alpaca_test_api.py](python-stock-backend/alpaca_test_api.py): Alpaca Paper 읽기 전용 연결 테스트
+- [quant.py](python-stock-backend/quant.py): PostgreSQL 퀀트 API(백테스트·시그널·OHLCV)
+- [ai.py](python-stock-backend/ai.py), [ai_sheet.py](python-stock-backend/ai_sheet.py), [qdrant_service.py](python-stock-backend/qdrant_service.py): AI 분석·AI Sheet·Qdrant 지식 검색
+- [models.py](python-stock-backend/models.py), [db.py](python-stock-backend/db.py): SQLAlchemy 모델과 DB 연결
+- [requirements.txt](python-stock-backend/requirements.txt): Python 의존성
+
+## 프론트엔드 (frontend/)
+
+- [index.html](frontend/index.html): 대시보드
+- [trade/](frontend/trade/): 코인·주식·대체자산 모의거래 화면
+- [learning/](frontend/learning/): TradingView(Pine), KB증권, 한국투자증권(KIS), Alpaca 실전연습 학습 페이지
+- [broker-api-test.html](frontend/broker-api-test.html): 증권사 시세 테스트 UI
+- [alpaca-test.html](frontend/alpaca-test.html): Alpaca Paper 연결 테스트 UI
+- [openapi.html](frontend/openapi.html): 외부 연동 Open API 명세
+- [quant.html](frontend/quant.html): PostgreSQL 퀀트 랩
+- [member/](frontend/member/): 로그인·회원가입·플랫폼 API 키 발급
+- [js/common.js](frontend/js/common.js): 모든 페이지가 공유하는 offcanvas 메뉴
+
+## 데이터베이스
+
+- [database/db.sql](database/db.sql): MariaDB 초기 스키마 및 예제 데이터 (회원·모의 주문)
+- `database/quant-postgres.sql`: PostgreSQL 퀀트 스키마 및 샘플 OHLCV (README.md 참고)
+
+## 배포·운영
+
+- [docker/](docker/): Frontend·Backend 이미지, Nginx 설정
+- [scripts/ec2/deploy.sh](scripts/ec2/deploy.sh): 배포 전 Python 문법 검사 후 Compose 재기동
+
+## KIS MCP (선택)
+
+- README.md의 ["KIS MCP" 절](README.md#kis-mcp--vs-code에서-자연어로-kis-api-사용하기): 한국투자증권 공식 MCP(Model Context Protocol) 서버를 VS Code/Claude Desktop/Cursor에 연결해 자연어로 KIS Open API를 조회하는 방법. 이 저장소는 MCP 서버를 자체 구현하지 않으며 [koreainvestment/open-trading-api](https://github.com/koreainvestment/open-trading-api)의 공식 서버를 `mcp/`에 별도 clone(git 미추적)해서 사용한다.
+
+## 주의사항
+
+- `.env`, `*.key`, `*.pem`, 토큰, 계좌번호, 비밀번호는 Git에 커밋하지 않는다 (`.gitignore` 참고).
+- 이 프로젝트는 모의투자·읽기 전용 테스트만 제공하며 실전 주문 자동화 기능이 없다. 실전 거래용 키(`KIS_APP_KEY` 등)는 설정하지 않는 것이 기본값이다.
