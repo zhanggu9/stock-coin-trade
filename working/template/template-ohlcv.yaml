@@ -1,18 +1,42 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: PostgreSQL pg-stock 집계 조회 Lambda (lambda/ohlcv)
+Description: PostgreSQL pg-stock 집계 조회 Lambda (lambda/ohlcv) + HTTP API + (선택) ALB
 
 Parameters:
   OhlcvDatabaseUrl:
     Type: String
     NoEcho: true
-    Description: EC2 Docker pg-stock 접속 URL
-  VpcSecurityGroupIds:
-    Type: List<AWS::EC2::SecurityGroup::Id>
+    Description: EC2 Docker pg-stock 접속 URL (postgresql+psycopg://user:pw@EC2_PRIVATE_IP:55432/db)
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: EC2(pg-stock) 가 있는 VPC. Lambda SG 와 ALB SG 를 이 VPC 에 만든다
   VpcSubnetIds:
     Type: List<AWS::EC2::Subnet::Id>
+    Description: Lambda ENI 를 둘 서브넷 (EC2 와 같은 서브넷이면 충분)
+  CreateAlb:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: "true 면 인터넷 공개 ALB → Lambda 타깃까지 함께 만든다 (시간당 과금)"
+  AlbSecondSubnetCidr:
+    Type: String
+    Default: 172.31.1.0/24
+    Description: ALB 는 AZ 2개가 필요. VPC 에 퍼블릭 서브넷이 하나뿐이라 이 CIDR 로 하나 더 만든다
+  AlbSecondSubnetAz:
+    Type: String
+    Default: ap-northeast-2c
+
+Conditions:
+  WithAlb: !Equals [!Ref CreateAlb, 'true']
 
 Resources:
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ohlcv Lambda ENI (outbound only). Use as source of EC2 DB SG inbound 55432
+      VpcId: !Ref VpcId
+      Tags: [{ Key: Name, Value: !Sub '${AWS::StackName}-lambda' }]
+
   DatabasePracticeFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -25,21 +49,112 @@ Resources:
         Variables:
           OHLCV_DATABASE_URL: !Ref OhlcvDatabaseUrl
       VpcConfig:
-        SecurityGroupIds: !Ref VpcSecurityGroupIds
+        SecurityGroupIds: [!Ref LambdaSecurityGroup]
         SubnetIds: !Ref VpcSubnetIds
       Events:
+        # DB 없이도 200 을 돌려주는 배포 확인용 경로
+        HealthApi:
+          Type: HttpApi
+          Properties: { Path: /ohlcv/health, Method: GET }
         Api:
           Type: HttpApi
           Properties:
             Path: /ohlcv/summary
             Method: GET
+        # Flask /api/ohlcv-db/* 와 같은 기능 5종. 핸들러가 rawPath 로 분기한다.
+        YearlyApi:
+          Type: HttpApi
+          Properties: { Path: /ohlcv/yearly, Method: GET }
+        MarketsApi:
+          Type: HttpApi
+          Properties: { Path: /ohlcv/markets, Method: GET }
+        QualityApi:
+          Type: HttpApi
+          Properties: { Path: /ohlcv/quality, Method: GET }
+        TickersApi:
+          Type: HttpApi
+          Properties: { Path: /ohlcv/tickers, Method: GET }
+        RowsApi:
+          Type: HttpApi
+          Properties: { Path: /ohlcv/rows, Method: GET }
         # 배치로 전환하려면 EventBridge Scheduler를 쓰고 중복 실행 방지 키를 유지한다.
         # DailySchedule:
         #   Type: ScheduleV2
         #   Properties:
         #     ScheduleExpression: cron(30 6 * * ? *)
 
+  FunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${DatabasePracticeFunction}
+      RetentionInDays: 14
+
+  # ---------- ALB → Lambda (CreateAlb=true 일 때만) ----------
+  AlbSecondSubnet:
+    Type: AWS::EC2::Subnet
+    Condition: WithAlb
+    Properties:
+      VpcId: !Ref VpcId
+      CidrBlock: !Ref AlbSecondSubnetCidr
+      AvailabilityZone: !Ref AlbSecondSubnetAz
+      # 라우트 테이블을 명시하지 않으면 VPC main 라우트 테이블(IGW 경로)을 따른다
+      Tags: [{ Key: Name, Value: !Sub '${AWS::StackName}-alb-b' }]
+
+  AlbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Condition: WithAlb
+    Properties:
+      GroupDescription: ohlcv ALB (HTTP 80 from anywhere)
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - { IpProtocol: tcp, FromPort: 80, ToPort: 80, CidrIp: 0.0.0.0/0 }
+      Tags: [{ Key: Name, Value: !Sub '${AWS::StackName}-alb' }]
+
+  Alb:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Condition: WithAlb
+    Properties:
+      Type: application
+      Scheme: internet-facing
+      # 1번째 = Lambda 와 같은 기존 퍼블릭 서브넷, 2번째 = 이 스택이 만든 서브넷 (다른 AZ)
+      Subnets: [!Select [0, !Ref VpcSubnetIds], !Ref AlbSecondSubnet]
+      SecurityGroups: [!Ref AlbSecurityGroup]
+
+  AlbInvokePermission:
+    Type: AWS::Lambda::Permission
+    Condition: WithAlb
+    Properties:
+      FunctionName: !Ref DatabasePracticeFunction
+      Action: lambda:InvokeFunction
+      Principal: elasticloadbalancing.amazonaws.com
+
+  AlbTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Condition: WithAlb
+    DependsOn: AlbInvokePermission
+    Properties:
+      TargetType: lambda
+      Targets: [{ Id: !GetAtt DatabasePracticeFunction.Arn }]
+
+  AlbListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Condition: WithAlb
+    Properties:
+      LoadBalancerArn: !Ref Alb
+      Port: 80
+      Protocol: HTTP
+      DefaultActions: [{ Type: forward, TargetGroupArn: !Ref AlbTargetGroup }]
+
 Outputs:
   ApiUrl:
-    Description: OHLCV 집계 조회 API 기본 URL
+    Description: OHLCV 집계 조회 HTTP API 기본 URL
     Value: !Sub 'https://${ServerlessHttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}'
+  FunctionArn:
+    Value: !GetAtt DatabasePracticeFunction.Arn
+  LambdaSecurityGroupId:
+    Description: EC2 DB SG 인바운드(55432) 의 source 로 넣을 값
+    Value: !Ref LambdaSecurityGroup
+  AlbUrl:
+    Condition: WithAlb
+    Description: ALB 경유 URL (HTTP 80)
+    Value: !Sub 'http://${Alb.DNSName}'

@@ -3,240 +3,411 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>SAM 활용 3 — Docker DB 연동과 AWS 배포 — EDUMGT</title>
+  <title>SAM 활용 3 — pg-stock 로컬 Lambda 실습 — EDUMGT</title>
   <link rel="icon" href="/img/favicon.png">
   <link rel="stylesheet" href="/css/style.css?v=20260920-chart-f13">
   <link rel="stylesheet" href="/css/lambda-db-practice.css?v=20260927-split1-f13">
-  <link rel="stylesheet" href="/css/sam-guide.css?v=20260927-direct-env-f14">
+  <link rel="stylesheet" href="/css/sam-guide.css?v=20260927-pg-stock-local-f15">
   <link rel="stylesheet" href="/css/tech-glossary.css?v=20260927-1-f13">
 </head>
 <body class="lambda-practice-body sam-guide-body">
   <div id="header-mount"></div>
   <main class="lambda-practice-shell">
     <section class="lambda-hero">
-      <div><span>SAM × LOCAL/EC2 DOCKER DATABASE</span><h1>SAM 활용 3 — 저장소 Docker DB를 Lambda·API Gateway에 연결</h1><p>이 저장소는 별도 RDS·ElastiCache를 만들지 않습니다. 로컬에서는 SAM 컨테이너가 Compose DB에 직접 붙고, AWS Lambda는 같은 VPC의 EC2 Docker 포트에 붙습니다. 배포값은 Secret ARN 목록이 아니라 커밋하지 않는 <code>working/env/lambda.env</code> 하나로 관리합니다.</p></div>
-      <div class="lambda-hero-badge"><i class="fa-brands fa-aws" aria-hidden="true"></i><b>SAM 3 / 3</b><small>Docker DB → API</small></div>
+      <div><span>SAM × PG-STOCK · LOCAL FIRST</span><h1>SAM 활용 3 — pg-stock DB를 로컬 Lambda로 조회하기</h1><p>AWS 설정부터 시작하지 않습니다. 현재 실행 중인 <code>pg-stock</code> 컨테이너의 ID·비밀번호·IP를 그대로 넣어 Lambda 함수를 로컬에서 호출하고, HTTP API까지 확인한 다음 마지막 단계에서 EC2 주소로 바꿉니다.</p></div>
+      <div class="lambda-hero-badge"><i class="fa-solid fa-database" aria-hidden="true"></i><b>LOCAL FIRST</b><small>pg-stock → Lambda</small></div>
     </section>
 
-    <section class="lambda-boundary" aria-label="연결 흐름">
-      <div><b>SAM local</b><span>Docker 서비스명 + Docker network</span></div><i>→</i>
-      <div><b>AWS Lambda</b><span>EC2 private IP/DNS + VPC</span></div><i>→</i>
-      <div><b>HTTP API</b><span>API Gateway 경로</span></div><i>→</i>
-      <div><b>검증</b><span>curl · logs · DB 응답</span></div>
+    <section class="lambda-boundary" aria-label="실습 순서">
+      <div><b>1. DB 확인</b><span>컨테이너 IP · ID · PW</span></div><i>→</i>
+      <div><b>2. Lambda</b><span>OHLCV 요약 조회</span></div><i>→</i>
+      <div><b>3. SAM local</b><span>invoke · start-api</span></div><i>→</i>
+      <div><b>4. EC2 전환</b><span>호스트 주소만 교체</span></div>
     </section>
 
-    <section class="lambda-sam-guide" aria-labelledby="sam3-model">
-      <header class="lambda-sam-head"><div><span>00 · CONNECTION MODEL</span><h2 id="sam3-model">먼저 구분: 로컬 Docker 이름과 AWS Lambda 주소는 다릅니다</h2></div></header>
-      <table class="sam-table"><thead><tr><th>타깃</th><th>SAM local에서 사용할 주소</th><th>AWS Lambda에서 사용할 주소</th><th>현재 상태</th></tr></thead><tbody>
-        <tr><td>member · MariaDB</td><td><code>mariadb:3306</code><br><code>stock-coin-trade_internal</code></td><td><code>EC2_PRIVATE_IP:3306</code></td><td class="ok">Compose 서비스 있음</td></tr>
-        <tr><td>quant · PostgreSQL</td><td><code>postgres:5432</code><br><code>stock-coin-trade_internal</code></td><td><code>EC2_PRIVATE_IP:5432</code></td><td class="ok">Compose 서비스 있음</td></tr>
-        <tr><td>ohlcv · pg-stock</td><td><code>pg-stock:5432</code><br><code>postgresql_default</code></td><td><code>EC2_PRIVATE_IP:55432</code></td><td class="warn">외부 Docker 프로젝트 확인 필요</td></tr>
-        <tr><td>session · Redis</td><td><code>redis:6379</code><br><code>stock-coin-trade_internal</code></td><td><code>EC2_PRIVATE_IP:6379</code></td><td class="ok">Compose 서비스 있음</td></tr>
-        <tr><td>knowledge · Qdrant</td><td><code>qdrant:6333</code></td><td><code>EC2_PRIVATE_IP:6333</code></td><td class="warn">현재 <code>:memory:</code>이면 독립 서버가 아니므로 먼저 Qdrant 컨테이너 필요</td></tr>
+    <section class="lambda-sam-guide" aria-labelledby="pg-connection">
+      <header class="lambda-sam-head"><div><span>00 · CURRENT CONNECTION</span><h2 id="pg-connection">현재 pg-stock 접속정보 그대로 사용</h2></div></header>
+      <table class="sam-table"><thead><tr><th>항목</th><th>현재 값</th><th>설명</th></tr></thead><tbody>
+        <tr><td>컨테이너</td><td><code>pg-stock</code></td><td>docker-class PostgreSQL 컨테이너</td></tr>
+        <tr><td>Docker network</td><td><code>postgresql_default</code></td><td>SAM Lambda 컨테이너도 이 네트워크에 연결</td></tr>
+        <tr><td>컨테이너 IP</td><td><code>172.30.0.3</code></td><td>현재 실측값. 컨테이너 재생성 시 바뀔 수 있음</td></tr>
+        <tr><td>Port</td><td><code>5432</code></td><td>Docker network 내부 PostgreSQL 포트</td></tr>
+        <tr><td>Database</td><td><code>admin</code></td><td>POSTGRES_DB</td></tr>
+        <tr><td>ID</td><td><code>admin</code></td><td>POSTGRES_USER</td></tr>
+        <tr><td>PW</td><td><code>admin1234</code></td><td>로컬 실습용 비밀번호</td></tr>
+        <tr><td>SQLAlchemy URL</td><td><code>postgresql+psycopg://admin:admin1234@172.30.0.3:5432/admin</code></td><td>이번 실습에서 그대로 주입</td></tr>
       </tbody></table>
-      <p class="lambda-sam-note"><b>핵심:</b> 개발 PC의 <code>mariadb</code> 같은 이름은 Docker 네트워크 내부 DNS입니다. AWS Lambda는 개발 PC 컨테이너에 접근할 수 없습니다. EC2 배포에서는 같은 VPC의 EC2 private IP/DNS와 EC2 호스트에 publish된 포트를 사용합니다.</p>
+      <p class="lambda-sam-note"><b>실습 범위:</b> 위 값은 현재 로컬 Docker 실습값이라 문서에 그대로 표시합니다. 실제 운영 비밀번호로 재사용하지 않습니다. 안정적인 로컬 실행에는 IP 대신 Docker DNS <code>pg-stock</code>을 권장하지만, 이번 단계에서는 연결 구조를 눈으로 확인하기 위해 IP를 사용합니다.</p>
     </section>
 
-    <section class="lambda-sam-guide" aria-labelledby="sam3-env">
-      <header class="lambda-sam-head"><div><span>01 · ENVIRONMENT</span><h2 id="sam3-env">로컬 값과 AWS 배포값 준비</h2></div></header>
+    <section class="lambda-sam-guide" aria-labelledby="pg-step1">
+      <header class="lambda-sam-head"><div><span>01 · DATABASE CHECK</span><h2 id="pg-step1">STEP 1 — 컨테이너와 DB를 먼저 확인</h2></div></header>
       <div class="lambda-sam-details">
-        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>STEP 1 · LOCAL</span><h3>루트 .env → SAM local JSON 자동 생성</h3><p>실제 비밀번호를 복사해 JSON에 반복해서 적지 않습니다. 스크립트가 루트 <code>.env</code>를 읽고 URL 인코딩하여 커밋 제외 파일을 만듭니다.</p></div><div class="sam-split"><div class="sam-split-code">
-          <section class="lambda-code"><header><span>repo 루트에서 실행</span><button type="button" data-copy-code>복사</button></header><pre><code>./working/scripts/prepare-local-env.sh
-python3 -m json.tool working/env/local-env.generated.json &gt;/dev/null
-git check-ignore -v working/env/local-env.generated.json
+        <article class="sam-step-wide"><div class="sam-split"><div class="sam-split-code">
+          <section class="lambda-code"><header><span>컨테이너 정보 확인</span><button type="button" data-copy-code>복사</button></header><pre><code>docker inspect pg-stock --format \
+  'IP={{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'
 
-# 비밀값을 출력하지 않고 키만 확인
-python3 - &lt;&lt;'PY'
-import json
-x=json.load(open("working/env/local-env.generated.json"))
-print(sorted(x["DatabasePracticeFunction"]))
-PY</code></pre></section>
-          <section class="lambda-code sam-transcript"><header><span>생성 결과</span></header><pre><code>Generated: .../working/env/local-env.generated.json
-['DATABASE_URL', 'OHLCV_DATABASE_URL', 'QDRANT_API_KEY',
- 'QDRANT_COLLECTION', 'QDRANT_URL', 'QUANT_DATABASE_URL',
- 'REDIS_SESSION_KEY_PREFIX', 'REDIS_URL']</code></pre></section>
+docker exec pg-stock sh -lc \
+  'echo "USER=$POSTGRES_USER DB=$POSTGRES_DB"'
+
+docker network inspect postgresql_default --format \
+  '{{range .Containers}}{{.Name}}={{.IPv4Address}} {{end}}'</code></pre></section>
+          <section class="lambda-code"><header><span>실제 SQL 연결</span><button type="button" data-copy-code>복사</button></header><pre><code>docker run --rm --network postgresql_default \
+  -e PGPASSWORD=admin1234 postgres:16-alpine \
+  psql -h 172.30.0.3 -p 5432 -U admin -d admin \
+  -c "SELECT current_database(), current_user, version();"
+
+docker exec pg-stock psql -U admin -d admin \
+  -c "SELECT * FROM ohlcv_summary_snapshot WHERE snapshot_id=1;"</code></pre></section>
+          <section class="lambda-code sam-transcript"><header><span>컨테이너 DB 확인 실행결과</span></header><pre><code>root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade# docker inspect pg-stock --format \
+  'IP={{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'
+
+docker exec pg-stock sh -lc \
+  'echo "USER=$POSTGRES_USER DB=$POSTGRES_DB"'
+
+docker network inspect postgresql_default --format \
+  '{{range .Containers}}{{.Name}}={{.IPv4Address}} {{end}}'
+IP=172.30.0.3
+USER=admin DB=admin
+crypto-mock-python=172.30.0.2/16 pg-stock=172.30.0.3/16</code></pre></section>
+          <section class="lambda-code sam-transcript"><header><span>pg-stock SQL 확인 실행결과</span></header><pre><code>root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade# docker run --rm --network postgresql_default \
+  -e PGPASSWORD=admin1234 postgres:16-alpine \
+  psql -h 172.30.0.3 -p 5432 -U admin -d admin \
+  -c "SELECT current_database(), current_user, version();"
+
+docker exec pg-stock psql -U admin -d admin \
+  -c "SELECT * FROM ohlcv_summary_snapshot WHERE snapshot_id=1;"
+ current_database | current_user |                                                      version
+------------------+--------------+--------------------------------------------------------------------------------------------------------------------
+ admin            | admin        | PostgreSQL 18.6 (Debian 18.6-1.pgdg13+2) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+(1 row)
+
+ snapshot_id | ohlcv_rows | ticker_count | first_date | last_date  | quarantined_rows | affected_tickers | tracked_ranges | success_ranges | failed_ranges |       last_completed_at       |         refreshed_at
+-------------+------------+--------------+------------+------------+------------------+------------------+----------------+----------------+---------------+-------------------------------+-------------------------------
+           1 |     669405 |         2708 | 2020-01-02 | 2026-09-23 |               21 |               21 |             28 |             28 |             0 | 2026-09-27 09:20:02.189136+00 | 2026-09-27 09:20:02.195455+00
+(1 row)</code></pre></section>
         </div><aside class="sam-errors"><header><i>!</i> 예상 오류와 해결</header>
-          <div class="sam-err"><b>.env 값이 change-me</b><code>.env 필수 값 누락 또는 change-me 상태</code><p><span>원인</span>첫 설치용 예시값이 남아 있음</p><p class="fix"><span>해결</span>실제 Compose 컨테이너를 만들 때 사용한 값과 루트 .env를 맞춘 뒤 다시 생성</p></div>
-          <div class="sam-err"><b>한글 비밀번호로 PyMySQL 실패</b><code>UnicodeEncodeError: 'latin-1' codec...</code><p><span>원인</span><code>비밀번호</code>라는 문서 자리표시자를 실제 값처럼 사용</p><p class="fix"><span>해결</span>직접 JSON을 만들지 말고 <code>prepare-local-env.sh</code>로 재생성</p></div>
-        </aside></div></article>
-
-        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>STEP 1 · AWS</span><h3>lambda.env에 직접 접속 URL 입력</h3><p>이 파일에는 ARN을 적지 않습니다. EC2 private 주소를 넣고 URL 전체를 작은따옴표로 감쌉니다. <code>sam-deploy.sh</code>가 자동으로 읽습니다.</p></div><div class="sam-split"><div class="sam-split-code">
-          <section class="lambda-code"><header><span>working/env/lambda.env</span><button type="button" data-copy-code>복사</button></header><pre><code>cp working/env/lambda.env.example working/env/lambda.env
-chmod 600 working/env/lambda.env
-
-LAMBDA_MEMBER_DATABASE_URL='mysql+pymysql://USER:ENCODED_PASSWORD@10.0.1.10:3306/mockinv'
-LAMBDA_QUANT_DATABASE_URL='postgresql+psycopg://USER:ENCODED_PASSWORD@10.0.1.10:5432/quant_research'
-LAMBDA_OHLCV_DATABASE_URL='postgresql+psycopg://USER:ENCODED_PASSWORD@10.0.1.10:55432/admin'
-LAMBDA_REDIS_URL='redis://10.0.1.10:6379/0'
-LAMBDA_QDRANT_URL='http://10.0.1.10:6333'
-LAMBDA_QDRANT_API_KEY=''
-VPC_SECURITY_GROUP_IDS='sg-lambda-id'
-VPC_SUBNET_IDS='subnet-private-a,subnet-private-b'
-JWT_ISSUER='https://cognito-idp.ap-northeast-2.amazonaws.com/POOL_ID'
-JWT_AUDIENCE='APP_CLIENT_ID'</code></pre></section>
-        </div><aside class="sam-errors"><header><i>!</i> lambda.env 작성 규칙</header>
-          <div class="sam-err"><b>EC2 주소 선택</b><code>10.x.x.x 또는 private DNS</code><p><span>원인</span>Lambda와 EC2가 같은 VPC이므로 public 도메인보다 private 경로가 단순하고 안전함</p><p class="fix"><span>해결</span><code>aws ec2 describe-instances</code>에서 PrivateIpAddress 확인</p></div>
-          <div class="sam-err"><b>URL 특수문자</b><code>@ : / # %</code><p><span>원인</span>비밀번호의 특수문자가 URL 구분자로 해석됨</p><p class="fix"><span>해결</span><code>python3 -c 'import urllib.parse; print(urllib.parse.quote_plus(input()))'</code>로 비밀번호만 인코딩</p></div>
-          <div class="sam-err"><b>보안 범위</b><p><span>원인</span><code>NoEcho</code>는 CloudFormation 출력만 가리며 Lambda 환경변수 읽기 권한 보유자는 값을 볼 수 있음</p><p class="fix"><span>해결</span>lambda.env를 커밋하지 않고 IAM의 함수 구성 조회 권한을 최소화</p></div>
+          <div class="sam-err"><b>컨테이너 없음</b><code>Error: No such container: pg-stock</code><p><span>원인</span>docker-class PostgreSQL 프로젝트가 실행되지 않음</p><p class="fix"><span>해결</span>pg-stock을 먼저 실행하고 <code>docker ps</code>에서 이름 확인</p></div>
+          <div class="sam-err"><b>IP가 문서와 다름</b><code>pg-stock=172.30.0.x/16</code><p><span>원인</span>컨테이너가 재생성되며 IP가 변경됨</p><p class="fix"><span>해결</span><code>docker inspect</code> 출력으로 JSON의 IP도 변경하거나 <code>pg-stock</code> 서비스명을 사용</p></div>
+          <div class="sam-err"><b>relation 없음</b><code>relation "ohlcv_summary_snapshot" does not exist</code><p><span>원인</span>스키마/집계 스냅샷이 아직 생성되지 않음</p><p class="fix"><span>해결</span>기존 pg-stock 초기화·집계 작업을 먼저 실행</p></div>
         </aside></div></article>
       </div>
     </section>
 
-    <section class="lambda-sam-guide" aria-labelledby="sam3-local">
-      <header class="lambda-sam-head"><div><span>02 · BUILD · LOCAL</span><h2 id="sam3-local">Docker DB를 붙여 validate → build → invoke</h2></div></header>
+    <section class="lambda-sam-guide" aria-labelledby="pg-step2">
+      <header class="lambda-sam-head"><div><span>02 · LAMBDA CODE</span><h2 id="pg-step2">STEP 2 — pg-stock 요약 조회 Lambda</h2></div></header>
       <div class="lambda-sam-details">
-        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>STEP 2</span><h3>타깃별 스크립트 실행</h3><p>스크립트가 환경 JSON 생성, Docker network 확인, 빌드 결과 선택까지 수행합니다.</p></div><div class="sam-split"><div class="sam-split-code">
-          <section class="lambda-code"><header><span>member 예시</span><button type="button" data-copy-code>복사</button></header><pre><code>docker compose --profile local-db up -d mariadb postgres
-docker compose up -d redis
+        <article class="sam-step-wide"><div class="sam-split"><div class="sam-split-code">
+          <section class="lambda-code"><header><span>working/lambda/ohlcv/lambda_ohlcv_summary.py</span><button type="button" data-copy-code>복사</button></header><pre><code>import json, logging
+from sqlalchemy import create_engine
+from sqlalchemy.exc import SQLAlchemyError
+import ohlcv_service as svc
+from secret_config import environment_values
 
-./working/scripts/preflight-check.sh
-./working/scripts/sam-build.sh member
-./working/scripts/sam-local-invoke.sh member
+logger = logging.getLogger()
+config = environment_values(("OHLCV_DATABASE_URL",))
+engine = create_engine(config["OHLCV_DATABASE_URL"], pool_pre_ping=True)
 
-# HTTP 경로 검증: 터미널 1
-./working/scripts/sam-local-start-api.sh member 3013
-# 터미널 2
-curl -i http://127.0.0.1:3013/members/1
-curl -i http://127.0.0.1:3013/members/not-a-number</code></pre></section>
-          <section class="lambda-code sam-transcript"><header><span>이 저장소에서 확인한 member 결과</span></header><pre><code>Build Succeeded
+# Flask /api/ohlcv-db/* 와 같은 기능을 /ohlcv/* 로 제공. 경로 하나 = 서비스 함수 하나
+ROUTES = {
+    "/ohlcv/summary": lambda args: svc.load_summary(engine),
+    "/ohlcv/yearly":  lambda args: svc.load_yearly(engine),
+    "/ohlcv/markets": lambda args: svc.load_markets(engine),
+    "/ohlcv/quality": lambda args: svc.load_quality(engine),
+    "/ohlcv/tickers": lambda args: svc.load_tickers(engine, args),
+    "/ohlcv/rows":    lambda args: svc.load_rows(engine, args),
+}
+
+def _response(status, payload):
+    return {"statusCode": status, "headers": {"content-type": "application/json"},
+            "body": json.dumps(payload, ensure_ascii=False, default=str)}
+
+def lambda_handler(event, context):
+    path = event.get("rawPath") or event.get("requestContext", {}).get("http", {}).get("path", "")
+    args = event.get("queryStringParameters") or {}     # HTTP API v2 payload
+    handler = ROUTES.get(path)
+    if handler is None:
+        return _response(404, {"message": f"지원하지 않는 경로: {path}"})
+    try:
+        return _response(200, handler(args))
+    except svc.BadRequest as exc:                        # 날짜 역순 등 검증 실패
+        return _response(400, {"message": str(exc)})
+    except (ValueError, ArithmeticError):                # limit=abc 같은 형식 오류
+        return _response(400, {"message": "검색 조건의 숫자 또는 날짜 형식이 올바르지 않습니다."})
+    except (IndexError, SQLAlchemyError):
+        logger.exception("pg-stock 조회 실패: %s", path)
+        return _response(503, {"message": "OHLCV 집계를 조회할 수 없습니다."})</code></pre></section>
+          <section class="lambda-code"><header><span>working/lambda/ohlcv/ohlcv_service.py (발췌)</span><button type="button" data-copy-code>복사</button></header><pre><code># SQL 은 python-stock-backend/ohlcv_db.py 의 것을 그대로 옮겼다. 응답 형태도 같다.
+from datetime import date, datetime
+from decimal import Decimal
+from sqlalchemy import text
+
+SUMMARY_SQL = text("""SELECT ohlcv_rows, ticker_count, first_date, last_date, refreshed_at
+                      FROM ohlcv_summary_snapshot WHERE snapshot_id=1""")
+YEARLY_SQL  = text("""SELECT data_year AS year, row_count, ticker_count,
+                             round(row_count::numeric / nullif(ticker_count, 0), 1) AS average_rows,
+                             first_date, last_date, refreshed_at
+                      FROM ohlcv_yearly_summary ORDER BY data_year""")
+MARKETS_SQL = text("""SELECT market, ticker_count FROM ohlcv_market_summary ORDER BY market""")
+QUALITY_SQL = text("""SELECT quarantined_rows, affected_tickers,
+                             tracked_ranges, success_ranges, failed_ranges, last_completed_at
+                      FROM ohlcv_summary_snapshot WHERE snapshot_id=1""")
+TICKERS_SQL = text("""WITH per_year AS (...), per_ticker AS (...), yearly_json AS (...)
+                      SELECT per_ticker.ticker_code, t.name, t.market, per_ticker.total_rows,
+                             per_ticker.first_date, per_ticker.last_date, yearly_json.yearly_rows
+                      FROM per_ticker JOIN yearly_json USING (ticker_code)
+                      LEFT JOIN tickers t USING (ticker_code)
+                      ORDER BY ticker_code LIMIT :limit OFFSET :offset""")
+
+def _value(v):                      # Decimal → float, date → ISO 문자열 (Flask _value 와 동일)
+    if isinstance(v, Decimal): return float(v)
+    if isinstance(v, (date, datetime)): return v.isoformat()
+    return v
+
+def _rows(result):
+    return [{k: _value(v) for k, v in row.items()} for row in result.mappings()]
+
+def load_summary(engine): ...       # totals 1행
+def load_yearly(engine):  ...       # 연도별 리스트
+def load_markets(engine): ...       # 시장별 종목 수
+def load_quality(engine): ...       # {"quality": {...}, "sync": {...}}
+
+def load_tickers(engine, args):     # q · limit(1~200) · offset
+    query = (args.get("q") or "").strip().upper()
+    ...
+    return {"rows": rows, "total": total, "limit": limit, "offset": offset}
+
+class BadRequest(ValueError): ...
+
+def load_rows(engine, args):        # q · market · date_from/to · min/max_close · min/max_volume
+    ...                             # · sort · order · limit(1~500) · offset
+    if date_from and date_to and date_from &gt; date_to:
+        raise BadRequest("시작일은 종료일보다 늦을 수 없습니다.")
+    sort_column = ROW_SORT_COLUMNS.get(sort, "o.trade_date")   # 화이트리스트로만 ORDER BY
+    ...
+    return {"rows": rows, "total": total, "limit": limit, "offset": offset}</code></pre></section>
+        </div><aside class="sam-errors"><header><i>!</i> 코드 역할</header>
+          <div class="sam-err"><b>환경변수</b><code>OHLCV_DATABASE_URL</code><p><span>원인</span>코드에 접속정보를 고정하지 않고 SAM 실행 시 전달</p></div>
+          <div class="sam-err"><b>연결 재사용</b><code>engine = create_engine(...)</code><p class="fix"><span>해결</span>모듈 전역에 두어 warm Lambda 호출에서 engine 재사용</p></div>
+          <div class="sam-err"><b>읽기 전용 예제</b><code>SELECT ... snapshot_id=1</code><p class="fix"><span>해결</span>처음에는 주문·수정이 아닌 집계 조회로 네트워크와 API만 확인</p></div>
+          <div class="sam-err"><b>경로 분기</b><code>ROUTES[path](args)</code><p class="fix"><span>해결</span>함수 하나에 HttpApi 이벤트 6개를 걸고 <code>rawPath</code> 로 분기. Flask 블루프린트의 라우트 3개(summary·tickers·rows)와 summary 안의 하위 블록(yearly·markets·quality+sync)을 각각 경로로 노출</p></div>
+          <div class="sam-err"><b>입력 검증</b><code>BadRequest → 400</code><p class="fix"><span>해결</span>Flask 와 같은 메시지로 400 을 돌려주고, DB 오류만 503. <code>sort</code> 는 화이트리스트 사전으로만 컬럼을 고르므로 SQL 주입이 되지 않음</p></div>
+        </aside></div></article>
+      </div>
+    </section>
+
+    <section class="lambda-sam-guide" aria-labelledby="pg-step3">
+      <header class="lambda-sam-head"><div><span>03 · LOCAL ENV</span><h2 id="pg-step3">STEP 3 — ID·PW·IP를 env JSON에 그대로 입력</h2></div></header>
+      <div class="lambda-sam-details">
+        <article class="sam-step-wide"><div class="sam-split"><div class="sam-split-code">
+          <section class="lambda-code"><header><span>working/env/pg-stock-local.json</span><button type="button" data-copy-code>복사</button></header><pre><code>{
+  "DatabasePracticeFunction": {
+    "OHLCV_DATABASE_URL": "postgresql+psycopg://admin:admin1234@172.30.0.3:5432/admin"
+  }
+}</code></pre></section>
+          <section class="lambda-code"><header><span>IP가 바뀐 경우</span><button type="button" data-copy-code>복사</button></header><pre><code>docker inspect pg-stock \
+  --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'
+
+# 출력된 IP로 pg-stock-local.json의 172.30.0.3 부분만 수정
+# 또는 안정적인 Docker DNS 사용:
+# postgresql+psycopg://admin:admin1234@pg-stock:5432/admin</code></pre></section>
+        </div><aside class="sam-errors"><header><i>!</i> 주의</header>
+          <div class="sam-err"><b>최상위 키가 중요</b><code>DatabasePracticeFunction</code><p><span>원인</span>SAM 템플릿의 함수 논리 ID와 다르면 환경변수가 전달되지 않음</p><p class="fix"><span>해결</span>현재 이름을 그대로 유지</p></div>
+          <div class="sam-err"><b>Git 노출 범위</b><p><span>원인</span>이 파일은 요청에 따라 로컬 실습값을 그대로 표시함</p><p class="fix"><span>해결</span>운영 계정·운영 비밀번호는 절대 이 파일에 넣지 않고 EC2 전환 시 별도 <code>lambda.env</code> 사용</p></div>
+        </aside></div></article>
+      </div>
+    </section>
+
+    <section class="lambda-sam-guide" aria-labelledby="pg-step4">
+      <header class="lambda-sam-head"><div><span>04 · BUILD · INVOKE</span><h2 id="pg-step4">STEP 4 — 빌드하고 Lambda 단일 호출</h2></div></header>
+      <div class="lambda-sam-details">
+        <article class="sam-step-wide"><div class="sam-split"><div class="sam-split-code">
+          <section class="lambda-code"><header><span>repo 루트에서 실행</span><button type="button" data-copy-code>복사</button></header><pre><code>sam validate --lint \
+  --template-file working/template/template-ohlcv.yaml
+
+sam build --use-container \
+  --template-file working/template/template-ohlcv.yaml \
+  --build-dir working/.aws-sam/ohlcv
+
+sam local invoke DatabasePracticeFunction \
+  --template-file working/.aws-sam/ohlcv/template.yaml \
+  --event working/lambda/ohlcv/event.json \
+  --env-vars working/env/pg-stock-local.json \
+  --docker-network postgresql_default \
+  --container-host-interface 0.0.0.0</code></pre></section>
+          <section class="lambda-code sam-transcript"><header><span>실행 결과</span></header><pre><code>$ sam local invoke DatabasePracticeFunction \
+  --template-file working/.aws-sam/ohlcv/template.yaml \
+  --event working/lambda/ohlcv/event.json \
+  --env-vars working/env/pg-stock-local.json \
+  --docker-network postgresql_default \
+  --container-host-interface 0.0.0.0
+No current session found, using default AWS::AccountId
+Invoking lambda_ohlcv_summary.lambda_handler (python3.11)
+Local image is up-to-date
+Using local image: public.ecr.aws/lambda/python:3.11-rapid-x86_64.
+
+Mounting /home/ubuntu/stock-coin-trade/working/.aws-sam/ohlcv/DatabasePracticeFunction as
+/var/task:ro,delegated, inside runtime container
+SAM_CONTAINER_ID: b18864a0a9092cb33fb267ba253d0886d5f983d39c3be30bea06fe1afaae16a0
+START RequestId: 7d46b820-18b3-40c1-9f45-d4c94e89e6f1 Version: $LATEST
+END RequestId: 7d46b820-18b3-40c1-9f45-d4c94e89e6f1
+REPORT RequestId: 7d46b820-18b3-40c1-9f45-d4c94e89e6f1  Init Duration: 0.06 ms  Duration: 688.99 ms  Billed Duration: 689 ms Memory Size: 512 MB     Max Memory Used: 512 MB
+{"statusCode": 200, "headers": {"content-type": "application/json"}, "body": "{\"ohlcv_rows\": 669405, \"ticker_count\": 2708, \"first_date\": \"2020-01-02\", \"last_date\": \"2026-09-23\", \"refreshed_at\": \"2026-09-27 09:20:02.195455+00:00\"}"}</code></pre></section>
+        </div><aside class="sam-errors"><header><i>!</i> 예상 오류와 해결</header>
+          <div class="sam-err"><b>DB 연결 거부</b><code>OperationalError: connection refused</code><p><span>원인</span>IP가 바뀌었거나 pg-stock이 중지됨</p><p class="fix"><span>해결</span>STEP 1의 inspect·psql을 다시 확인</p></div>
+          <div class="sam-err"><b>인증 실패</b><code>password authentication failed for user "admin"</code><p><span>원인</span>현재 컨테이너의 계정과 JSON 값이 다름</p><p class="fix"><span>해결</span><code>docker exec pg-stock env</code>에서 POSTGRES_USER/DB를 확인하고 생성 시 사용한 비밀번호 확인</p></div>
+          <div class="sam-err"><b>Docker Desktop 500</b><code>ports are not available ... /forwards/expose ... 500</code><p><span>원인</span>SAM Runtime 임시 포트 전달 오류이며 PostgreSQL 오류가 아님</p><p class="fix"><span>해결</span>실행 중 SAM 컨테이너를 확인하고 Docker Desktop/WSL 재시작 후 재호출</p></div>
+        </aside></div></article>
+      </div>
+    </section>
+
+    <section class="lambda-sam-guide" aria-labelledby="pg-step5">
+      <header class="lambda-sam-head"><div><span>05 · LOCAL HTTP API</span><h2 id="pg-step5">STEP 5 — 브라우저처럼 HTTP 경로 호출</h2></div></header>
+      <div class="lambda-sam-details">
+        <article><div class="lambda-sam-section-title"><span>TERMINAL 1</span><h3>SAM API 서버</h3></div><section class="lambda-code"><header><span>start-api</span><button type="button" data-copy-code>복사</button></header><pre><code>sam local start-api \
+  --template-file working/.aws-sam/ohlcv/template.yaml \
+  --env-vars working/env/pg-stock-local.json \
+  --docker-network postgresql_default \
+  --container-host-interface 0.0.0.0 \
+  --warm-containers EAGER \
+  --port 3005
+# --warm-containers EAGER: 요청마다 컨테이너를 새로 띄우지 않아 WSL 포트 포워딩 502 를 피한다
+# 템플릿(경로 추가)을 바꿨으면 sam build 후 start-api 도 재시작한다</code></pre></section></article>
+        <article><div class="lambda-sam-section-title"><span>TERMINAL 2</span><h3>API Gateway 경로 확인</h3></div><section class="lambda-code"><header><span>curl</span><button type="button" data-copy-code>복사</button></header><pre><code>curl -i http://127.0.0.1:3005/ohlcv/summary
+
+# 응답
 HTTP/1.1 200 OK
-{"member_id":1,"username":"이코인","email":"jj@jj.com","asset":98190003}
+content-type: application/json
+{"ohlcv_rows":669405,"ticker_count":2708,
+ "first_date":"2020-01-02","last_date":"2026-09-23"}</code></pre></section></article>
+      </div>
+      <div class="lambda-sam-details" style="margin-top:11px">
+        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>SAME AS FLASK</span><h3>Flask /api/ohlcv-db 와 같은 기능 5종</h3><p>이 저장소의 <code>python-stock-backend/ohlcv_db.py</code> 는 라우트 3개(<code>/summary</code>·<code>/tickers</code>·<code>/rows</code>)로 OHLCV 화면을 서비스합니다. <code>/summary</code> 하나가 totals·yearly·quality·markets·sync 다섯 블록을 한 번에 돌려주므로, Lambda 에서는 그 하위 블록과 나머지 라우트를 각각 경로로 나눠 5개를 추가했습니다. SQL 과 응답 키는 Flask 와 같습니다.</p></div>
+        <table class="sam-table" aria-label="Flask 대응 API 5종"><thead><tr><th>#</th><th>Lambda 경로</th><th>Flask 원본</th><th>쿼리 파라미터</th><th>테스트에서 확인할 것</th></tr></thead><tbody>
+<tr><td>1</td><td><code>GET /ohlcv/yearly</code></td><td><code>/api/ohlcv-db/summary</code> 의 <code>yearly</code></td><td>없음</td><td>연도별 배열, <code>average_rows</code> 는 소수 1자리(round). 2020~2026 7행</td></tr>
+<tr><td>2</td><td><code>GET /ohlcv/markets</code></td><td><code>summary</code> 의 <code>markets</code></td><td>없음</td><td>KOSDAQ 1725 · KOSDAQ GLOBAL 47 · KOSPI 936 = 2708 (summary 의 ticker_count 와 일치)</td></tr>
+<tr><td>3</td><td><code>GET /ohlcv/quality</code></td><td><code>summary</code> 의 <code>quality</code> + <code>sync</code></td><td>없음</td><td><code>quarantined_rows</code>·<code>affected_tickers</code>, <code>tracked/success/failed_ranges</code>. failed 가 0 이면 동기화 정상</td></tr>
+<tr><td>4</td><td><code>GET /ohlcv/tickers</code></td><td><code>/api/ohlcv-db/tickers</code></td><td><code>q</code>(코드 부분일치) · <code>limit</code> 1~200 · <code>offset</code></td><td><code>total</code> 은 필터 전체 수, <code>rows</code> 는 페이지. <code>yearly_rows</code> 가 연도→행수 객체</td></tr>
+<tr><td>5</td><td><code>GET /ohlcv/rows</code></td><td><code>/api/ohlcv-db/rows</code></td><td><code>q</code>(코드·이름) · <code>market</code> · <code>date_from/date_to</code> · <code>min_close/max_close</code> · <code>min_volume/max_volume</code> · <code>sort</code> · <code>order</code> · <code>limit</code> 1~500 · <code>offset</code></td><td>필터·정렬·페이지가 Flask 와 같은 순서로 나오고, 잘못된 입력은 400 메시지까지 동일</td></tr>
+</tbody></table></article>
+        <article class="sam-step-wide"><div class="sam-split"><div class="sam-split-code">
+          <section class="lambda-code"><header><span>테스트 1 · 5종 호출 (응답은 실제 실행값을 줄인 것)</span><button type="button" data-copy-code>복사</button></header><pre><code>L=http://127.0.0.1:3005/ohlcv
 
-HTTP/1.1 400 BAD REQUEST
-{"message":"member_id가 필요합니다."}</code></pre></section>
-        </div><aside class="sam-errors"><header><i>!</i> 예상 오류와 해결</header>
-          <div class="sam-err"><b>Docker network 없음</b><code>Docker network not found</code><p><span>원인</span>Compose DB가 실행되지 않음</p><p class="fix"><span>해결</span>위 <code>docker compose up</code> 실행 후 <code>docker network ls</code> 확인</p></div>
-          <div class="sam-err"><b>Docker Desktop 포트 500</b><code>ports are not available ... /forwards/expose ... 500</code><p><span>원인</span>WSL2 Docker Desktop의 SAM Runtime 임시 포트 전달 오류이며 DB 코드 오류가 아님</p><p class="fix"><span>해결</span>스크립트는 <code>--container-host-interface 0.0.0.0</code>을 적용합니다. 반복되면 실행 중인 작업을 확인한 뒤 Docker Desktop/WSL을 재시작하고 다시 호출합니다.</p></div>
-          <div class="sam-err"><b>knowledge 연결 실패</b><code>qdrant:6333 connection refused</code><p><span>원인</span>현재 <code>QDRANT_URL=:memory:</code>는 백엔드 프로세스 내부 저장소이며 독립 서버가 아님</p><p class="fix"><span>해결</span>Qdrant 컨테이너를 Compose에 추가하기 전에는 knowledge Lambda 검증 대상에서 제외</p></div>
+curl -s "$L/yearly" | head -c 300
+# [{"year": 2020, "row_count": 5666, "ticker_count": 23, "average_rows": 246.3,
+#   "first_date": "2020-01-02", "last_date": "2020-12-30", ...}, {"year": 2021, ...
+
+curl -s "$L/markets"
+# [{"market": "KOSDAQ", "ticker_count": 1725}, {"market": "KOSDAQ GLOBAL", "ticker_count": 47},
+#  {"market": "KOSPI", "ticker_count": 936}]
+
+curl -s "$L/quality"
+# {"quality": {"quarantined_rows": 21, "affected_tickers": 21},
+#  "sync": {"tracked_ranges": 28, "success_ranges": 28, "failed_ranges": 0,
+#           "last_completed_at": "2026-09-27T09:20:02.189136+00:00"}}
+
+curl -s "$L/tickers?q=0000&amp;limit=2"
+# {"rows": [{"ticker_code": "000020", "name": "동화약품", "market": "KOSPI", "total_rows": 241,
+#            "first_date": "2025-01-02", "last_date": "2025-12-30", "yearly_rows": {"2025": 241}},
+#           {"ticker_code": "000040", "name": "KR모터스", ...}], "total": 10, "limit": 2, "offset": 0}
+
+curl -s "$L/rows?q=005930&amp;date_from=2026-09-22&amp;limit=2"
+# {"rows": [{"ticker_code": "005930", "name": "삼성전자", "market": "KOSPI", "trade_date": "2026-09-23",
+#            "open": 284500.0, "high": 286500.0, "low": 281000.0, "close": 286500.0, "adj_close": 286500.0,
+#            "volume": 19385053, "change_rate": 0.703, "traded_value": 5553817684500.0},
+#           {"trade_date": "2026-09-22", ... "change_rate": -1.9435, ...}], "total": 2, "limit": 2, "offset": 0}
+
+# 한글 검색어는 반드시 URL 인코딩 (브라우저·API Gateway 와 같은 조건)
+curl -s --get --data-urlencode "q=삼성" --data-urlencode "max_volume=100000" --data-urlencode "limit=2" "$L/rows"
+# {"rows": [{"ticker_code": "207940", "name": "삼성바이오로직스", ...}], ...}</code></pre></section>
+          <section class="lambda-code"><header><span>테스트 2 · 입력 검증과 오류 응답</span><button type="button" data-copy-code>복사</button></header><pre><code>curl -s -w ' HTTP %{http_code}\n' "$L/rows?limit=abc"
+# {"message": "검색 조건의 숫자 또는 날짜 형식이 올바르지 않습니다."} HTTP 400
+
+curl -s -w ' HTTP %{http_code}\n' "$L/rows?date_from=2026-09-30&amp;date_to=2026-09-01"
+# {"message": "시작일은 종료일보다 늦을 수 없습니다."} HTTP 400
+
+curl -s "$L/rows?limit=999" | python3 -c 'import json,sys;print(json.load(sys.stdin)["limit"])'
+# 500                                  ← 상한으로 잘림 (Flask 와 동일)
+
+curl -s -w ' HTTP %{http_code}\n' "$L/nope"
+# {"message":"Missing Authentication Token"} HTTP 403
+# 템플릿에 없는 경로는 Lambda 까지 오지 않고 API Gateway 가 403 (핸들러의 404 는 직접 invoke 때만)</code></pre></section>
+          <section class="lambda-code sam-transcript"><header><span>테스트 3 · Flask 응답과 자동 비교 (실행 결과)</span><button type="button" data-copy-code>복사</button></header><pre><code>F=http://localhost:3333/api/ohlcv-db      # 저장소 Flask (nginx 경유)
+L=http://127.0.0.1:3005/ohlcv             # SAM local
+py(){ python3 -c 'import json,sys;print(json.dumps(json.load(sys.stdin),ensure_ascii=False,sort_keys=True))'; }
+part(){ python3 -c "import json,sys;d=json.load(sys.stdin);print(json.dumps($1,ensure_ascii=False,sort_keys=True))"; }
+
+curl -s "$F/summary" &gt; /tmp/fs.json
+for pair in "summary|d['totals']" "yearly|d['yearly']" "markets|d['markets']" \
+            "quality|{'quality':d['quality'],'sync':d['sync']}"; do
+  n=${pair%%|*}; e=${pair#*|}
+  part "$e" &lt; /tmp/fs.json &gt; /tmp/f.json; curl -s "$L/$n" | py &gt; /tmp/l.json
+  cmp -s /tmp/f.json /tmp/l.json &amp;&amp; echo "$n same" || echo "$n DIFF"
+done
+for q in "tickers?q=0000&amp;limit=2" "tickers?q=005930" \
+         "rows?q=005930&amp;date_from=2026-09-22&amp;limit=2" \
+         "rows?market=KOSPI&amp;min_close=100000&amp;sort=volume&amp;order=asc&amp;limit=3&amp;offset=2"; do
+  curl -s "$F/$q" | py &gt; /tmp/f.json; curl -s "$L/$q" | py &gt; /tmp/l.json
+  cmp -s /tmp/f.json /tmp/l.json &amp;&amp; echo "$q same" || echo "$q DIFF"
+done
+
+summary same
+yearly same
+markets same
+quality same
+tickers?q=0000&amp;limit=2 same
+tickers?q=005930 same
+rows?q=005930&amp;date_from=2026-09-22&amp;limit=2 same
+rows?market=KOSPI&amp;min_close=100000&amp;sort=volume&amp;order=asc&amp;limit=3&amp;offset=2 same</code></pre></section>
+        </div><aside class="sam-errors"><header><i>⚠</i> 발생할 수 있는 오류</header>
+          <div class="sam-err"><b>간헐적 502 (실제 발생)</b><code>HTTP/1.1 502 BAD GATEWAY
+{"message":"Internal server error"}
+# start-api 로그: docker.errors.APIError: 500 ... ("ports are not available:
+#   exposing port TCP 0.0.0.0:5869 -&gt; 127.0.0.1:0: /forwards/expose returned unexpected status: 500")</code><p><span>원인</span>sam local 이 요청마다 Lambda 컨테이너를 새로 띄우며 임의 포트를 노출하는데, WSL2 의 Docker Desktop 포트 포워딩이 간헐적으로 실패. Lambda 코드·DB 와 무관하며 같은 요청을 다시 보내면 200</p><p class="fix"><span>해결</span><code>--warm-containers EAGER</code> 로 컨테이너를 유지. 이 옵션으로 위 비교 스크립트를 3회 반복해 502 가 0건인 것을 확인</p></div>
+          <div class="sam-err"><b>한글 검색어가 0건</b><code>curl "$L/rows?q=삼성"   → {"rows": [], "total": 0}</code><p><span>원인</span>URL 에 UTF-8 원문을 그대로 넣으면 sam local 이 다른 인코딩으로 해석. nginx 뒤의 Flask 는 우연히 통과하지만 실제 API Gateway 도 인코딩된 값만 받음</p><p class="fix"><span>해결</span><code>curl --get --data-urlencode "q=삼성"</code> 또는 <code>q=%EC%82%BC%EC%84%B1</code>. 브라우저 fetch 는 자동 인코딩</p></div>
+          <div class="sam-err"><b>새 경로가 403</b><code>{"message":"Missing Authentication Token"}</code><p><span>원인</span>템플릿에 HttpApi 이벤트를 추가했지만 <code>sam build</code> 를 안 했거나, start-api 가 이전 빌드 템플릿을 보고 있음</p><p class="fix"><span>해결</span><code>sam build --use-container ... --build-dir working/.aws-sam/ohlcv</code> 후 start-api 재시작. 기동 로그의 <code>Mounting ... /ohlcv/rows [GET]</code> 줄이 6개인지 확인</p></div>
+          <div class="sam-err"><b>포트 충돌</b><code>Port 3005 is in use by another program.</code><p><span>원인</span>이전 start-api 가 살아 있음</p><p class="fix"><span>해결</span><code>ss -ltnp | grep :3005</code> 로 PID 확인 후 종료하거나 <code>--port 3006</code></p></div>
         </aside></div></article>
       </div>
+      <div class="lambda-server-result"><h3>로컬 완료 기준</h3><span><b>DB</b> psql 연결 성공</span><span><b>BUILD</b> SAM Build Succeeded</span><span><b>INVOKE</b> statusCode 200</span><span><b>HTTP</b> /ohlcv/summary 200</span><span><b>5종</b> yearly · markets · quality · tickers · rows 200</span><span><b>검증</b> limit=abc · 날짜 역순 400</span><span><b>비교</b> Flask 와 8개 케이스 same</span><p>여기까지 성공한 다음에만 EC2/AWS 단계로 넘어갑니다.</p></div>
     </section>
 
-    <section class="lambda-sam-guide" aria-labelledby="sam3-template">
-      <header class="lambda-sam-head"><div><span>03 · TEMPLATE</span><h2 id="sam3-template">직접 환경변수 방식의 SAM 템플릿</h2></div></header>
-      <div class="lambda-sam-details"><article class="sam-step-wide"><div class="lambda-sam-section-title"><span>STEP 3</span><h3>Secret 정책 없이 URL Parameter → Lambda Environment</h3><p>다섯 템플릿 모두 같은 패턴입니다. DB 서버는 만들지 않고 기존 EC2 Docker에 접속합니다.</p></div><div class="sam-split"><div class="sam-split-code">
-        <section class="lambda-code"><header><span>template/template-member.yaml 핵심</span><button type="button" data-copy-code>복사</button></header><pre><code>Parameters:
-  DatabaseUrl:
-    Type: String
-    NoEcho: true
-  VpcSecurityGroupIds:
-    Type: List&lt;AWS::EC2::SecurityGroup::Id&gt;
-  VpcSubnetIds:
-    Type: List&lt;AWS::EC2::Subnet::Id&gt;
-
-Resources:
-  DatabasePracticeFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ../lambda/member/
-      Handler: lambda_member.lambda_handler
-      Runtime: python3.11
-      Environment:
-        Variables:
-          DATABASE_URL: !Ref DatabaseUrl
-      VpcConfig:
-        SecurityGroupIds: !Ref VpcSecurityGroupIds
-        SubnetIds: !Ref VpcSubnetIds
-      Events:
-        Api:
-          Type: HttpApi
-          Properties:
-            Path: /members/{member_id}
-            Method: GET</code></pre></section>
-      </div><aside class="sam-errors"><header><i>!</i> 구현 범위</header>
-        <div class="sam-err"><b>SAM이 만드는 것</b><p><span>해결</span>Lambda 함수, 실행 역할, API Gateway HTTP API, 호출 권한, VPC 연결</p></div>
-        <div class="sam-err"><b>SAM이 만들지 않는 것</b><p><span>원인</span>MariaDB/PostgreSQL/Redis/Qdrant 컨테이너와 데이터는 기존 EC2 Compose 소유</p><p class="fix"><span>해결</span>EC2 Docker 상태·볼륨·백업은 기존 운영 절차로 관리</p></div>
-      </aside></div></article></div>
-    </section>
-
-    <section class="lambda-sam-guide" aria-labelledby="sam3-network">
-      <header class="lambda-sam-head"><div><span>04 · EC2 NETWORK</span><h2 id="sam3-network">Lambda → EC2 Docker 포트 열기</h2></div></header>
+    <section class="lambda-sam-guide" aria-labelledby="pg-step6">
+      <header class="lambda-sam-head"><div><span>06 · MOVE TO EC2</span><h2 id="pg-step6">마지막 — 동일 코드를 EC2 Docker DB 주소로 변경</h2></div></header>
       <div class="lambda-sam-details">
-        <article><div class="lambda-sam-section-title"><span>EC2</span><h3>컨테이너 포트 publish 확인</h3></div><section class="lambda-code"><header><span>EC2에서 실행</span><button type="button" data-copy-code>복사</button></header><pre><code># .env
+        <article class="sam-step-wide"><div class="sam-split"><div class="sam-split-code">
+          <section class="lambda-code"><header><span>로컬 → EC2 값 변경</span><button type="button" data-copy-code>복사</button></header><pre><code># 로컬 Docker
+postgresql+psycopg://admin:admin1234@172.30.0.3:5432/admin
+
+# AWS Lambda → EC2 Docker
+# 10.0.1.10은 예시이며 실제 EC2 private IP로 교체
+LAMBDA_OHLCV_DATABASE_URL='postgresql+psycopg://admin:admin1234@10.0.1.10:55432/admin'
+VPC_SECURITY_GROUP_IDS='sg-lambda-id'
+VPC_SUBNET_IDS='subnet-private-a,subnet-private-b'</code></pre></section>
+          <section class="lambda-code"><header><span>EC2와 배포</span><button type="button" data-copy-code>복사</button></header><pre><code># EC2 .env: pg-stock 호스트 publish 포트
 DB_EXTERNAL_BIND=0.0.0.0
-MARIADB_EXTERNAL_PORT=3306
-QUANT_EXTERNAL_PORT=5432
 OHLCV_EXTERNAL_PORT=55432
-REDIS_EXTERNAL_PORT=6379
-QDRANT_EXTERNAL_PORT=6333
 
-docker compose ps
-ss -lnt | grep -E ':(3306|5432|55432|6379|6333)\b'</code></pre></section></article>
-        <article><div class="lambda-sam-section-title"><span>SECURITY GROUP</span><h3>인터넷 전체가 아니라 Lambda SG만 허용</h3></div><section class="lambda-code"><header><span>AWS CLI 예시</span><button type="button" data-copy-code>복사</button></header><pre><code>EC2_SG=sg-ec2-id
-LAMBDA_SG=sg-lambda-id
-for port in 3306 5432 55432 6379 6333; do
-  aws ec2 authorize-security-group-ingress \
-    --group-id "$EC2_SG" --protocol tcp --port "$port" \
-    --source-group "$LAMBDA_SG"
-done</code></pre></section></article>
+# EC2 SG: 55432 inbound source는 Lambda SG만 허용
+# 값 입력
+cp working/env/lambda.env.example working/env/lambda.env
+
+# 배포
+./working/scripts/sam-deploy.sh ohlcv</code></pre></section>
+        </div><aside class="sam-errors"><header><i>!</i> EC2 전환 때 달라지는 것</header>
+          <div class="sam-err"><b>바뀌는 값</b><p><span>해결</span>DB host는 컨테이너 IP에서 EC2 private IP로, port는 5432에서 host publish 포트 55432로 변경</p></div>
+          <div class="sam-err"><b>그대로인 코드</b><p><span>해결</span>Lambda handler, SQL, API 경로 <code>/ohlcv/summary</code>는 변경 없음</p></div>
+          <div class="sam-err"><b>외부 공개 금지</b><code>0.0.0.0/0 → 55432 금지</code><p><span>원인</span>PostgreSQL이 인터넷 전체에 노출됨</p><p class="fix"><span>해결</span>EC2 보안 그룹 source를 Lambda 보안 그룹으로 제한</p></div>
+        </aside></div></article>
       </div>
-      <p class="lambda-sam-note"><b>주의:</b> EC2의 <code>DB_EXTERNAL_ALLOWED_CIDR</code> 문서 규칙과 Lambda SG 규칙을 함께 적용합니다. <code>0.0.0.0/0</code>으로 DB 포트를 공개하지 않습니다. Lambda subnet과 EC2가 서로 라우팅 가능한 같은 VPC인지 확인합니다.</p>
+      <p class="lambda-sam-note"><b>정리:</b> EC2 이관은 새 Lambda 코드를 만드는 작업이 아니라 접속 URL의 host/port와 VPC 보안그룹을 바꾸는 작업입니다. 먼저 로컬 200을 만든 뒤 이 단계로 이동하면 코드 오류와 네트워크 오류를 분리할 수 있습니다.</p>
     </section>
 
-    <section class="lambda-sam-guide" aria-labelledby="sam3-deploy">
-      <header class="lambda-sam-head"><div><span>05 · DEPLOY</span><h2 id="sam3-deploy">lambda.env를 읽어 타깃별 배포</h2></div></header>
-      <div class="lambda-sam-details"><article class="sam-step-wide"><div class="lambda-sam-section-title"><span>STEP 5</span><h3>프롬프트에 값을 반복 입력하지 않는 배포</h3><p><code>sam-deploy.sh</code>가 타깃에 필요한 URL·VPC·JWT 값만 골라 <code>--parameter-overrides</code>로 전달합니다. 직접 URL은 samconfig.toml에 저장하지 않습니다.</p></div><div class="sam-split"><div class="sam-split-code">
-        <section class="lambda-code"><header><span>배포와 Output</span><button type="button" data-copy-code>복사</button></header><pre><code>aws sts get-caller-identity
-cd /home/ubuntu/stock-coin-trade
-
-./working/scripts/sam-deploy.sh member
-./working/scripts/sam-deploy.sh quant
-./working/scripts/sam-deploy.sh ohlcv
-./working/scripts/sam-deploy.sh session
-# Qdrant 서버 준비 뒤 실행
-./working/scripts/sam-deploy.sh knowledge
-
-aws cloudformation describe-stacks \
-  --stack-name stock-coin-trade-member-practice \
-  --query 'Stacks[0].Outputs' --output table</code></pre></section>
-      </div><aside class="sam-errors"><header><i>!</i> 예상 오류와 해결</header>
-        <div class="sam-err"><b>lambda.env 없음</b><code>배포 설정 없음: working/env/lambda.env</code><p class="fix"><span>해결</span>example을 복사하고 실제 EC2 주소·VPC 값을 입력</p></div>
-        <div class="sam-err"><b>자리표시자 차단</b><code>자리표시자를 실제 값으로 바꾸세요</code><p><span>원인</span><code>CHANGE_ME</code> 또는 <code>EXAMPLE</code>이 남아 있음</p><p class="fix"><span>해결</span>해당 키만 수정한 뒤 재실행</p></div>
-        <div class="sam-err"><b>Task timed out</b><code>Task timed out after 15 seconds</code><p><span>원인</span>EC2 private 주소, SG source, host publish 포트 중 하나가 맞지 않음</p><p class="fix"><span>해결</span>Lambda SG → EC2 SG 규칙과 EC2 <code>ss -lnt</code>를 확인</p></div>
-      </aside></div></article></div>
-    </section>
-
-    <section class="lambda-sam-guide" aria-labelledby="sam3-auth">
-      <header class="lambda-sam-head"><div><span>06 · AUTH · VERIFY</span><h2 id="sam3-auth">JWT 타깃과 배포 API 검증</h2></div></header>
-      <div class="lambda-sam-details">
-        <article><div class="lambda-sam-section-title"><span>JWT</span><h3>member · session</h3><p>두 API는 <code>JWT_ISSUER</code>와 <code>JWT_AUDIENCE</code>가 필요합니다. 로컬 SAM은 authorizer를 생략할 수 있으므로 인증은 배포 API에서 확인합니다.</p></div><section class="lambda-code"><header><span>401 / 200 확인</span><button type="button" data-copy-code>복사</button></header><pre><code>API_URL=$(aws cloudformation describe-stacks \
-  --stack-name stock-coin-trade-member-practice \
-  --query 'Stacks[0].Outputs[?OutputKey==`ApiUrl`].OutputValue' --output text)
-
-curl -i "$API_URL/members/1"                       # 401 기대
-curl -i -H "Authorization: Bearer $ID_TOKEN" \
-  "$API_URL/members/1"                            # 200 기대</code></pre></section></article>
-        <article><div class="lambda-sam-section-title"><span>LOGS</span><h3>5xx는 Lambda 로그부터 확인</h3></div><section class="lambda-code"><header><span>운영 점검</span><button type="button" data-copy-code>복사</button></header><pre><code>sam logs --stack-name stock-coin-trade-member-practice \
-  --name DatabasePracticeFunction --tail
-
-aws lambda get-function-configuration \
-  --function-name &lt;실제 함수 이름&gt; \
-  --query '{Vpc:VpcConfig,Keys:Environment.Variables|keys(@)}'
-
-# 값은 출력하지 않고 환경변수 키만 확인</code></pre></section></article>
-      </div>
-      <div class="lambda-server-result"><h3>응답 판정</h3><span><b>200</b> DB 데이터와 JSON 확인</span><span><b>400</b> 입력 검증 확인</span><span><b>401/403</b> JWT issuer·audience 확인</span><span><b>503</b> EC2 Docker 계정·주소·포트 확인</span><p>Lambda 환경변수 전체를 출력하는 CLI 명령은 DB URL과 비밀번호를 노출할 수 있으므로 문서에서도 키 목록만 조회합니다.</p></div>
-    </section>
-
-    <section class="lambda-sam-guide" aria-labelledby="sam3-cleanup">
-      <header class="lambda-sam-head"><div><span>07 · CLEANUP · LIMITS</span><h2 id="sam3-cleanup">정리와 완료 기준</h2></div></header>
-      <div class="lambda-sam-details">
-        <article><div class="lambda-sam-section-title"><span>DELETE</span><h3>Lambda 스택만 삭제</h3><p>DB 컨테이너와 데이터 볼륨은 이 스택 소유가 아니므로 삭제되지 않습니다.</p></div><section class="lambda-code"><header><span>타깃 스택 정리</span><button type="button" data-copy-code>복사</button></header><pre><code>sam delete \
-  --stack-name stock-coin-trade-member-practice \
-  --region ap-northeast-2
-
-# 필요 없어진 EC2 SG 인바운드 규칙도 별도 제거
-# working/env/lambda.env는 유지하거나 안전하게 직접 삭제</code></pre></section></article>
-        <article><div class="lambda-sam-section-title"><span>DONE</span><h3>완료 조건</h3><p>다섯 조건을 모두 확인해야 AWS 연동 완료입니다.</p></div><div class="lambda-checkpoint"><div><span>✓ 로컬 invoke DB 200</span><span>✓ EC2 private 주소 사용</span><span>✓ Lambda SG만 DB 포트 허용</span><span>✓ CloudFormation CREATE_COMPLETE</span><span>✓ 배포 API 200·401 확인</span></div></div></article>
-      </div>
-      <p class="lambda-sam-note"><b>현재 제한:</b> member 로컬 MariaDB 호출은 실제 200으로 확인했습니다. AWS 종단간 결과는 유효한 EC2 private 주소·VPC 값으로 배포한 뒤 확인해야 합니다. Qdrant는 현재 인메모리 구성이라 독립 컨테이너가 준비되기 전에는 knowledge Lambda의 네트워크 연동이 완료된 것이 아닙니다.</p>
-    </section>
-
-    <section class="lambda-official"><h2>연결 문서</h2><div><a href="/sam-guide-1.html">SAM 활용 1</a><a href="/sam-guide-2.html">SAM 활용 2</a><a href="/lambda-db-practice.html">Lambda DB 실습</a><a href="/db-backup-policy.html">Docker DB 백업 정책</a><a href="https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc.html" target="_blank" rel="noopener noreferrer">Lambda VPC 공식 문서</a></div></section>
+    <section class="lambda-official"><h2>관련 문서</h2><div><a href="/sam-guide-1.html">SAM 활용 1</a><a href="/sam-guide-2.html">SAM 활용 2</a><a href="/lambda-db-practice.html">Lambda DB 실습</a><a href="/db-backup-policy.html">DB 백업 정책</a><a href="https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/using-sam-cli-local-start-api.html" target="_blank" rel="noopener noreferrer">SAM local start-api</a></div></section>
   </main>
   <div id="lambda-toast" class="lambda-toast" role="status" aria-live="polite"></div>
   <script src="/js/config.js"></script>
-  <script src="/js/common.js?v=20260927-sam3-direct-f14"></script>
+  <script src="/js/common.js?v=20260927-pg-stock-local-f15"></script>
   <script src="/js/sam-guide.js?v=20260927-1-f13"></script>
   <script src="/js/tech-glossary.js?v=20260927-3" data-glossary-root="main"></script>
 </body>
