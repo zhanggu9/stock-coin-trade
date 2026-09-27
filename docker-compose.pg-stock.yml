@@ -1,0 +1,33 @@
+# 운영 EC2에서 OHLCV 원본 저장소(pg-stock)를 Docker로 함께 띄우는 오버레이.
+# 로컬에서는 docker-class의 pg-stock을 그대로 쓰므로 이 파일을 붙이지 않는다.
+#
+# 사용(운영):
+#   docker compose -p stock-coin-trade \
+#     -f docker-compose.yml -f docker-compose.ssl.yml -f docker-compose.pg-stock.yml up -d
+#
+# python-backend의 OHLCV_DATABASE_URL 기본값(admin:admin1234@pg-stock:5432/admin)과
+# 일치하도록 사용자·비밀번호·DB·컨테이너명을 맞춘다. 두 서비스 모두 외부
+# 네트워크 postgresql_default(ohlcv-db)에 연결되어 컨테이너명으로 통신한다.
+services:
+  pg-stock:
+    image: postgres:latest
+    container_name: pg-stock
+    networks:
+      - ohlcv-db
+    environment:
+      POSTGRES_DB: admin
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin1234
+    volumes:
+      # postgres:18+ 이미지는 /var/lib/postgresql 에 마운트해야 한다(데이터는 버전 하위 디렉터리).
+      - pg-stock-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d admin"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+volumes:
+  pg-stock-data:
+    name: pg-stock-data

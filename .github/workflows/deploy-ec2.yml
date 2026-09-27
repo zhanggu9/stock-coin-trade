@@ -49,10 +49,13 @@ jobs:
             --exclude='node_modules' --exclude='__pycache__' \
             ./ "$REMOTE_USER@$HOST:$APP_DIR/"
 
-      - name: 빌드 및 재기동 (SSL 오버레이)
+      - name: 빌드 및 재기동 (SSL + pg-stock 오버레이)
         run: |
+          # pg-stock 오버레이를 포함해야 --remove-orphans가 OHLCV DB를 지우지 않는다.
+          # 재빌드로 python-backend IP가 바뀌면 nginx 업스트림 캐시가 낡아 502가 나므로
+          # 마지막에 frontend를 재시작해 업스트림을 다시 해석시킨다.
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new "$REMOTE_USER@$HOST" \
-            "cd $APP_DIR && docker compose -p stock-coin-trade -f docker-compose.yml -f docker-compose.ssl.yml up -d --build --remove-orphans && docker compose -p stock-coin-trade ps"
+            "cd $APP_DIR && docker compose -p stock-coin-trade -f docker-compose.yml -f docker-compose.ssl.yml -f docker-compose.pg-stock.yml up -d --build --remove-orphans && docker restart crypto-mock-frontend && docker compose -p stock-coin-trade ps"
 
       - name: 헬스체크 (인스턴스 내부)
         # 보안그룹이 80/443을 특정 IP로 제한할 수 있으므로, 러너에서 공개 HTTPS로
