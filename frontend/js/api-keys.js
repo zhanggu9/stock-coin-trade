@@ -21,17 +21,17 @@ async function loadKeys() {
     tbody.innerHTML = keys.map(k => `
       <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
         <td class="px-4 py-3" style="font-weight:700;color:var(--fg);font-size:13px;">${k.label}</td>
-        <td class="px-4 py-3" style="font-family:monospace;font-size:12px;color:var(--muted);">${k.keyPrefix}••••••••</td>
-        <td class="px-4 py-3" style="font-size:12px;color:var(--muted);">${fmtDate(k.createdAt)}</td>
-        <td class="px-4 py-3" style="font-size:12px;color:var(--muted);">${fmtDate(k.lastUsedAt)}</td>
+        <td class="px-4 py-3" style="font-family:monospace;font-size:13.5px;color:var(--muted);">${k.keyPrefix}••••••••</td>
+        <td class="px-4 py-3" style="font-size:13.5px;color:var(--muted);">${fmtDate(k.createdAt)}</td>
+        <td class="px-4 py-3" style="font-size:13.5px;color:var(--muted);">${fmtDate(k.lastUsedAt)}</td>
         <td class="px-4 py-3 text-center">
           ${k.isActive
-            ? '<span class="badge" style="background:rgba(5,150,105,0.12);color:#059669;font-size:11px;">활성</span>'
-            : '<span class="badge" style="background:rgba(156,163,175,0.15);color:#9CA3AF;font-size:11px;">폐기됨</span>'}
+            ? '<span class="badge" style="background:rgba(5,150,105,0.12);color:#059669;font-size:13.5px;">활성</span>'
+            : '<span class="badge" style="background:rgba(156,163,175,0.15);color:#9CA3AF;font-size:13.5px;">폐기됨</span>'}
         </td>
         <td class="px-4 py-3 text-center">
           ${k.isActive
-            ? `<button onclick="revokeKey(${k.id})" style="background:rgba(225,29,72,0.08);color:#E11D48;border:1px solid rgba(225,29,72,0.2);border-radius:6px;padding:.3rem .8rem;font-size:12px;font-weight:700;cursor:pointer;">폐기</button>`
+            ? `<button onclick="revokeKey(${k.id})" style="background:rgba(225,29,72,0.08);color:#E11D48;border:1px solid rgba(225,29,72,0.2);border-radius:6px;padding:.3rem .8rem;font-size:13.5px;font-weight:700;cursor:pointer;">폐기</button>`
             : '-'}
         </td>
       </tr>`).join('');

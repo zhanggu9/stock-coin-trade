@@ -88,11 +88,11 @@
       ${gate}
       <div class="x-sec"><h3>요청 파라미터</h3>
         <form id="form" class="x-form">${selectorHtml(api)}${api.params.map(fieldHtml).join('')}</form>
-        ${fixed.length ? `<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;color:var(--muted)">고정·공란 파라미터 ${fixed.length}개</summary><div class="x-meta" style="margin-top:6px">${fixed.map((p) => `<span><code>${esc(p.key)}</code> = "${esc(p.value ?? '')}" <small>(${esc(p.label)})</small></span>`).join('')}</div></details>` : ''}
+        ${fixed.length ? `<details style="margin-top:8px"><summary style="cursor:pointer;font-size:13.5px;color:var(--muted)">고정·공란 파라미터 ${fixed.length}개</summary><div class="x-meta" style="margin-top:6px">${fixed.map((p) => `<span><code>${esc(p.key)}</code> = "${esc(p.value ?? '')}" <small>(${esc(p.label)})</small></span>`).join('')}</div></details>` : ''}
         <div class="x-actions">
           <button class="btn" id="run" ${callable ? '' : 'disabled'}>${callable ? 'Testbed 호출' : '호출 불가'}</button>
           <button class="btn-alt" id="reset" type="button">기본값 복원</button>
-          <span style="font-size:12px;color:var(--muted)">Testbed 초당 호출 제한이 있어 연속 클릭은 서버가 간격을 둡니다.</span>
+          <span style="font-size:13.5px;color:var(--muted)">Testbed 초당 호출 제한이 있어 연속 클릭은 서버가 간격을 둡니다.</span>
         </div>
       </div>
       <div class="x-sec" id="resultSec"><h3>응답</h3><div class="empty">아직 호출하지 않았습니다.</div></div>`;

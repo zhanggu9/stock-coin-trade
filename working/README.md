@@ -1,9 +1,9 @@
 # working/ — SAM 활용 · Lambda/API 실습 파일
 
-프런트 문서와 같은 두 과정으로 나눕니다.
+프런트 문서(`/sam-guide-1.html` → `-2` → `-3` → `/lambda-db-practice.html`)와 짝을 이룹니다.
 
-1. [`SAM.md`](SAM.md) — SAM 소개, 설치, 검증, 빌드와 단일 로컬 호출
-2. [`LAMBDA_API.md`](LAMBDA_API.md) — DB Python을 Lambda로 만들고 API Gateway에 연결·배포
+1. [`SAM.md`](SAM.md) — SAM 소개, 설치, 검증, 빌드와 단일 로컬 호출 (프런트: SAM 활용 1·2)
+2. [`LAMBDA_API.md`](LAMBDA_API.md) — DB Python을 Lambda로 만들고 API Gateway에 연결·배포 (프런트: SAM 활용 3, Lambda/API)
 
 ## 디렉터리
 

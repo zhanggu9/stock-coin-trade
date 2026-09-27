@@ -63,13 +63,13 @@
     .trade-tab { position:relative; flex:1; min-height:54px; padding:9px 10px; border:1px solid transparent; border-radius:9px; color:var(--muted); background:transparent; font-family:inherit; font-size:15px; font-weight:800; cursor:pointer; transition:background .15s,border-color .15s,color .15s,box-shadow .15s,transform .15s; }
     .trade-tab:hover { color:var(--accent-dark); background:rgba(255,255,255,.76); border-color:rgba(41,98,255,.18); }
     .trade-tab.active { color:#fff; background:linear-gradient(135deg,var(--accent),var(--accent-dark)); border-color:var(--accent-dark); box-shadow:0 4px 12px rgba(41,98,255,.26); transform:translateY(-1px); }
-    .trade-tab::after { display:block; margin-top:3px; color:inherit; font-size:11px; font-weight:600; opacity:.74; }
+    .trade-tab::after { display:block; margin-top:3px; color:inherit; font-size:13.5px; font-weight:600; opacity:.74; }
     .trade-tab[data-tab="positions"]::after { content:'내 자산'; }
     .trade-tab[data-tab="overview"]::after { content:'시세 · 계좌'; }
     .trade-tab[data-tab="history"]::after { content:'체결 기록'; }
     .trade-tab[data-tab="orderbook"]::after { content:'실시간 가격'; }
     .ma-legend { display:flex; align-items:center; gap:6px; padding:5px 12px; border-bottom:1px solid var(--border); }
-    .ma-toggle { --ma-color:var(--accent); display:inline-flex; align-items:center; gap:4px; min-height:24px; padding:2px 7px; border:1px solid transparent; border-radius:5px; color:var(--ma-color); background:transparent; font-family:inherit; font-size:10px; font-weight:800; cursor:pointer; transition:background .15s,border-color .15s,opacity .15s; }
+    .ma-toggle { --ma-color:var(--accent); display:inline-flex; align-items:center; gap:4px; min-height:24px; padding:2px 7px; border:1px solid transparent; border-radius:5px; color:var(--ma-color); background:transparent; font-family:inherit; font-size:13px; font-weight:800; cursor:pointer; transition:background .15s,border-color .15s,opacity .15s; }
     .ma-toggle::before { content:''; width:13px; height:2px; border-radius:999px; background:currentColor; }
     .ma-toggle:hover { border-color:color-mix(in srgb, var(--ma-color) 38%, transparent); background:color-mix(in srgb, var(--ma-color) 9%, transparent); }
     .ma-toggle:not(.active) { color:var(--muted); opacity:.62; text-decoration:line-through; }
@@ -77,16 +77,16 @@
     .stock-chart-card { flex:0 0 auto; min-height:0; }
     #stockChart { height:clamp(340px, 42vh, 520px) !important; min-height:340px; }
     .detail-launcher { display:grid; grid-template-columns:repeat(4,1fr); gap:5px; margin-top:0; padding:6px; border:1px solid var(--border); border-top:0; border-radius:0 0 var(--radius) var(--radius); background:var(--surface); box-shadow:var(--shadow-sm); }
-    .detail-launcher-btn { min-height:50px; padding:7px; border:1px solid var(--border); border-radius:8px; color:var(--accent-dark); background:linear-gradient(180deg,#fff,#F5F8FD); font-family:inherit; font-size:12px; font-weight:850; cursor:pointer; transition:transform .15s,box-shadow .15s,border-color .15s; }
-    .detail-launcher-btn::after { display:block; margin-top:3px; color:var(--muted); font-size:9px; font-weight:600; }
+    .detail-launcher-btn { min-height:50px; padding:7px; border:1px solid var(--border); border-radius:8px; color:var(--accent-dark); background:linear-gradient(180deg,#fff,#F5F8FD); font-family:inherit; font-size:13.5px; font-weight:850; cursor:pointer; transition:transform .15s,box-shadow .15s,border-color .15s; }
+    .detail-launcher-btn::after { display:block; margin-top:3px; color:var(--muted); font-size:13px; font-weight:600; }
     .detail-launcher-btn[data-tab="positions"]::after { content:'내 자산'; }
     .detail-launcher-btn[data-tab="overview"]::after { content:'시세 · 계좌'; }
     .detail-launcher-btn[data-tab="history"]::after { content:'체결 기록'; }
     .detail-launcher-btn[data-tab="orderbook"]::after { content:'실시간 가격'; }
     .detail-launcher-btn:hover { border-color:var(--accent); box-shadow:0 5px 14px rgba(41,98,255,.18); transform:translateY(-1px); }
     .usage-guide { flex:1 0 140px; display:flex; flex-direction:column; justify-content:center; min-height:140px; padding:18px 22px; border:1px solid var(--border); border-top:0; border-radius:0 0 var(--radius) var(--radius); background:linear-gradient(135deg,#F8FBFF 0%,#EEF4FF 100%); }
-    .usage-guide-title { display:flex; align-items:center; gap:7px; margin:0; color:var(--accent-dark); font-size:12px; font-weight:900; }
-    .usage-guide-title::before { content:'i'; display:inline-flex; align-items:center; justify-content:center; width:17px; height:17px; border-radius:50%; color:#fff; background:var(--accent); font-size:11px; font-family:serif; font-weight:900; }
+    .usage-guide-title { display:flex; align-items:center; gap:7px; margin:0; color:var(--accent-dark); font-size:13.5px; font-weight:900; }
+    .usage-guide-title::before { content:'i'; display:inline-flex; align-items:center; justify-content:center; width:17px; height:17px; border-radius:50%; color:#fff; background:var(--accent); font-size:13.5px; font-family:serif; font-weight:900; }
     .usage-guide-message { max-width:760px; margin:7px 0 0 24px; color:var(--fg-2); font-size:13px; line-height:1.65; }
     .details-modal-backdrop { position:fixed; inset:0; z-index:110; display:none; align-items:center; justify-content:center; padding:20px; background:rgba(15,23,42,.5); backdrop-filter:blur(3px); }
     .details-modal-backdrop.open { display:flex; }
@@ -109,19 +109,19 @@
     .stock-picker-clear { display:none; width:22px; height:22px; border:0; border-radius:50%; color:var(--muted); background:transparent; cursor:pointer; }
     .stock-picker-input:not(:placeholder-shown) ~ .stock-picker-clear { display:block; }
     .stock-picker-clear:hover { color:var(--fg); background:var(--surface); }
-    .stock-picker-search { flex:none; min-width:52px; height:26px; border:0; border-radius:7px; color:#fff; background:var(--accent); font-size:12px; font-weight:800; cursor:pointer; }
+    .stock-picker-search { flex:none; min-width:52px; height:26px; border:0; border-radius:7px; color:#fff; background:var(--accent); font-size:13.5px; font-weight:800; cursor:pointer; }
     .stock-picker-search:hover { background:var(--accent-dark); }
-    .order-percent-btn { min-height:25px; padding:0 2px; border:1px solid var(--border); border-radius:5px; color:var(--fg); background:var(--surface); font-size:11px; font-weight:750; white-space:nowrap; cursor:pointer; }
+    .order-percent-btn { min-height:25px; padding:0 2px; border:1px solid var(--border); border-radius:5px; color:var(--fg); background:var(--surface); font-size:13.5px; font-weight:750; white-space:nowrap; cursor:pointer; }
     .order-percent-btn:hover { border-color:var(--accent); color:var(--accent-dark); background:rgba(37,99,235,.08); }
     .stock-picker-results { position:absolute; z-index:40; top:calc(100% + 6px); left:0; right:0; display:none; max-height:320px; overflow-y:auto; padding:6px; background:var(--surface); border:1px solid var(--border); border-radius:10px; box-shadow:0 16px 32px rgba(15,23,42,.18); }
     .stock-picker-results.open { display:block; }
     .stock-picker-result { width:100%; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; align-items:center; padding:9px 10px; border:0; border-radius:7px; color:var(--fg); background:transparent; text-align:left; cursor:pointer; }
     .stock-picker-result:hover, .stock-picker-result.active { background:rgba(37,99,235,.1); }
     .stock-picker-result-name { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; font-weight:800; }
-    .stock-picker-result-meta { display:block; margin-top:2px; color:var(--muted); font-size:11px; }
-    .stock-picker-result-code { color:var(--accent-dark); font-size:12px; font-weight:800; }
-    .stock-picker-empty { padding:14px 10px; color:var(--muted); font-size:12px; text-align:center; }
-    .stock-picker-selected { display:block; margin:4px 0 0 2px; color:var(--muted); font-size:10px; }
+    .stock-picker-result-meta { display:block; margin-top:2px; color:var(--muted); font-size:13.5px; }
+    .stock-picker-result-code { color:var(--accent-dark); font-size:13.5px; font-weight:800; }
+    .stock-picker-empty { padding:14px 10px; color:var(--muted); font-size:13.5px; text-align:center; }
+    .stock-picker-selected { display:block; margin:4px 0 0 2px; color:var(--muted); font-size:13px; }
     @media (max-width:640px) { .stock-picker { min-width:100%; width:100%; } }
 
     .avgdown-modal-backdrop { position:fixed; inset:0; z-index:100; display:none; align-items:center; justify-content:center; padding:16px; background:rgba(15,23,42,.52); }
@@ -138,7 +138,7 @@
   </style>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config={theme:{extend:{fontFamily:{sans:['Pretendard','-apple-system','BlinkMacSystemFont','Segoe UI','sans-serif']}}}}</script>
-  <link rel="stylesheet" href="/css/style.css?v=20260920-chart">
+  <link rel="stylesheet" href="/css/style.css?v=20260920-chart-f13">
   <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
@@ -152,21 +152,21 @@
       <!-- 종목명 + 현재가 요약 -->
       <div style="display:flex;align-items:center;gap:10px;padding:4px 2px 8px;flex-wrap:wrap;">
         <span id="chartStockName" style="font-size:20px;font-weight:900;color:var(--fg);">-</span>
-        <span id="dataSourceBadge" class="hidden badge badge-muted" style="font-size:11px;">시뮬레이션</span>
+        <span id="dataSourceBadge" class="hidden badge badge-muted" style="font-size:13.5px;">시뮬레이션</span>
         <span id="quotePrice" style="font-size:18px;font-weight:900;color:var(--accent-dark);margin-left:4px;">-</span>
         <span id="quoteChangeRate" style="font-size:13px;font-weight:700;">-</span>
         <span class="live-dot" title="실시간 갱신 중"></span>
         <!-- 시장지수 compact -->
         <div style="margin-left:auto;display:flex;gap:12px;">
           <div style="text-align:center;">
-            <div style="font-size:10px;color:var(--muted);font-weight:700;">KOSPI</div>
+            <div style="font-size:13px;color:var(--muted);font-weight:700;">KOSPI</div>
             <div id="kospiPrice" style="font-size:13px;font-weight:800;color:var(--fg);">-</div>
-            <div id="kospiChange" style="font-size:10px;font-weight:700;">-</div>
+            <div id="kospiChange" style="font-size:13px;font-weight:700;">-</div>
           </div>
           <div style="text-align:center;">
-            <div style="font-size:10px;color:var(--muted);font-weight:700;">KOSDAQ</div>
+            <div style="font-size:13px;color:var(--muted);font-weight:700;">KOSDAQ</div>
             <div id="kosdaqPrice" style="font-size:13px;font-weight:800;color:var(--fg);">-</div>
-            <div id="kosdaqChange" style="font-size:10px;font-weight:700;">-</div>
+            <div id="kosdaqChange" style="font-size:13px;font-weight:700;">-</div>
           </div>
         </div>
       </div>
@@ -256,11 +256,11 @@
 
         <!-- 주문 -->
         <div id="orderPanel" class="glass-card order-panel" style="padding:12px;" data-guide="수량 또는 비율을 선택해 현재 종목을 매수·매도합니다.">
-          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">주문</div>
+          <div style="font-size:13.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">주문</div>
           <input id="orderQty" type="number" min="1" step="1" placeholder="수량 (주)" class="dark-input" style="font-size:13px;padding:.4rem .7rem;margin-bottom:6px;">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
             <div>
-              <div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:4px;">매수 · 보유 현금 비율</div>
+              <div style="font-size:13px;color:var(--muted);font-weight:700;margin-bottom:4px;">매수 · 보유 현금 비율</div>
               <div id="buyPercentBtns" style="display:grid;grid-template-columns:repeat(4,1fr);gap:3px;">
                 <button type="button" data-order-side="buy" data-percent="10" class="order-percent-btn">10%</button>
                 <button type="button" data-order-side="buy" data-percent="25" class="order-percent-btn">25%</button>
@@ -269,7 +269,7 @@
               </div>
             </div>
             <div>
-              <div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:4px;">매도 · 보유 주식 비율</div>
+              <div style="font-size:13px;color:var(--muted);font-weight:700;margin-bottom:4px;">매도 · 보유 주식 비율</div>
               <div id="sellPercentBtns" style="display:grid;grid-template-columns:repeat(3,1fr);gap:3px;">
                 <button type="button" data-order-side="sell" data-percent="25" class="order-percent-btn">25%</button>
                 <button type="button" data-order-side="sell" data-percent="50" class="order-percent-btn">50%</button>
@@ -277,13 +277,13 @@
               </div>
             </div>
           </div>
-          <div id="orderSummary" style="padding:7px 8px;margin-bottom:7px;border-radius:7px;background:var(--surface-2);font-size:10px;line-height:1.55;color:var(--muted);">시세를 불러오는 중입니다.</div>
+          <div id="orderSummary" style="padding:7px 8px;margin-bottom:7px;border-radius:7px;background:var(--surface-2);font-size:13px;line-height:1.55;color:var(--muted);">시세를 불러오는 중입니다.</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
             <button id="buyBtn" type="button" class="btn-buy" style="font-size:13px;padding:.45rem;">매수</button>
             <button id="sellBtn" type="button" class="btn-sell" style="font-size:13px;padding:.45rem;">매도</button>
           </div>
-          <button id="avgDownBtn" type="button" style="width:100%;padding:.42rem;border:1px solid rgba(37,99,235,.28);border-radius:7px;color:var(--accent-dark);background:rgba(37,99,235,.07);font-size:11px;font-weight:800;cursor:pointer;">물타기 계산기</button>
-          <p id="stockMessage" style="font-size:11px;color:var(--muted);"></p>
+          <button id="avgDownBtn" type="button" style="width:100%;padding:.42rem;border:1px solid rgba(37,99,235,.28);border-radius:7px;color:var(--accent-dark);background:rgba(37,99,235,.07);font-size:13.5px;font-weight:800;cursor:pointer;">물타기 계산기</button>
+          <p id="stockMessage" style="font-size:13.5px;color:var(--muted);"></p>
         </div>
       </div>
 
@@ -332,12 +332,12 @@
         <div id="tab-positions" style="max-height:60dvh;overflow-y:auto;">
           <table style="width:100%;border-collapse:collapse;font-size:15px;">
             <thead><tr style="background:var(--surface-2);">
-              <th style="padding:10px 12px;text-align:left;color:var(--muted);font-size:12px;font-weight:700;">종목</th>
-              <th style="padding:10px 12px;text-align:left;color:var(--muted);font-size:12px;font-weight:700;">섹터</th>
-              <th style="padding:10px 12px;text-align:right;color:var(--muted);font-size:12px;font-weight:700;">수량</th>
-              <th style="padding:10px 12px;text-align:right;color:var(--muted);font-size:12px;font-weight:700;">평균단가</th>
-              <th style="padding:10px 12px;text-align:right;color:var(--muted);font-size:12px;font-weight:700;">평가금액</th>
-              <th style="padding:10px 12px;text-align:right;color:var(--muted);font-size:12px;font-weight:700;">손익</th>
+              <th style="padding:10px 12px;text-align:left;color:var(--muted);font-size:13.5px;font-weight:700;">종목</th>
+              <th style="padding:10px 12px;text-align:left;color:var(--muted);font-size:13.5px;font-weight:700;">섹터</th>
+              <th style="padding:10px 12px;text-align:right;color:var(--muted);font-size:13.5px;font-weight:700;">수량</th>
+              <th style="padding:10px 12px;text-align:right;color:var(--muted);font-size:13.5px;font-weight:700;">평균단가</th>
+              <th style="padding:10px 12px;text-align:right;color:var(--muted);font-size:13.5px;font-weight:700;">평가금액</th>
+              <th style="padding:10px 12px;text-align:right;color:var(--muted);font-size:13.5px;font-weight:700;">손익</th>
             </tr></thead>
             <tbody id="positionsBody"></tbody>
           </table>
@@ -346,11 +346,11 @@
         <div id="tab-history" style="max-height:60dvh;overflow-y:auto;display:none;">
           <table style="width:100%;border-collapse:collapse;font-size:15px;">
             <thead><tr style="background:var(--surface-2);">
-              <th style="padding:10px 12px;text-align:left;color:var(--muted);font-size:12px;font-weight:700;">시간</th>
-              <th style="padding:10px 12px;text-align:left;color:var(--muted);font-size:12px;font-weight:700;">종목</th>
-              <th style="padding:10px 12px;text-align:center;color:var(--muted);font-size:12px;font-weight:700;">구분</th>
-              <th style="padding:10px 12px;text-align:right;color:var(--muted);font-size:12px;font-weight:700;">수량</th>
-              <th style="padding:10px 12px;text-align:right;color:var(--muted);font-size:12px;font-weight:700;">거래금액</th>
+              <th style="padding:10px 12px;text-align:left;color:var(--muted);font-size:13.5px;font-weight:700;">시간</th>
+              <th style="padding:10px 12px;text-align:left;color:var(--muted);font-size:13.5px;font-weight:700;">종목</th>
+              <th style="padding:10px 12px;text-align:center;color:var(--muted);font-size:13.5px;font-weight:700;">구분</th>
+              <th style="padding:10px 12px;text-align:right;color:var(--muted);font-size:13.5px;font-weight:700;">수량</th>
+              <th style="padding:10px 12px;text-align:right;color:var(--muted);font-size:13.5px;font-weight:700;">거래금액</th>
             </tr></thead>
             <tbody id="historyBody"><tr><td colspan="5" style="padding:16px;text-align:center;color:var(--muted);">거래 내역이 없습니다.</td></tr></tbody>
           </table>
@@ -360,7 +360,7 @@
           <div style="display:grid;grid-template-rows:auto auto auto;font-size:15px;">
             <div>
               <div style="padding:7px 12px;font-size:13px;font-weight:700;color:#F87171;border-bottom:1px solid rgba(255,255,255,0.05);">매수 호가 (Bid)</div>
-              <table style="width:100%;"><thead><tr style="background:rgba(225,29,72,0.04);"><th style="padding:7px 12px;text-align:right;font-size:12px;color:var(--muted);">가격</th><th style="padding:7px 12px;text-align:right;font-size:12px;color:var(--muted);">수량</th></tr></thead><tbody id="bidBody"></tbody></table>
+              <table style="width:100%;"><thead><tr style="background:rgba(225,29,72,0.04);"><th style="padding:7px 12px;text-align:right;font-size:13.5px;color:var(--muted);">가격</th><th style="padding:7px 12px;text-align:right;font-size:13.5px;color:var(--muted);">수량</th></tr></thead><tbody id="bidBody"></tbody></table>
             </div>
             <div style="display:flex;flex-direction:row;align-items:center;justify-content:center;padding:12px 14px;border-top:1px solid rgba(255,255,255,0.05);border-bottom:1px solid var(--border);gap:10px;">
               <span style="font-size:13px;color:var(--muted);">현재가</span>
@@ -370,7 +370,7 @@
             </div>
             <div>
               <div style="padding:7px 12px;font-size:13px;font-weight:700;color:#60A5FA;border-bottom:1px solid rgba(255,255,255,0.05);">매도 호가 (Ask)</div>
-              <table style="width:100%;"><thead><tr style="background:rgba(37,99,235,0.04);"><th style="padding:7px 12px;text-align:right;font-size:12px;color:var(--muted);">가격</th><th style="padding:7px 12px;text-align:right;font-size:12px;color:var(--muted);">수량</th></tr></thead><tbody id="askBody"></tbody></table>
+              <table style="width:100%;"><thead><tr style="background:rgba(37,99,235,0.04);"><th style="padding:7px 12px;text-align:right;font-size:13.5px;color:var(--muted);">가격</th><th style="padding:7px 12px;text-align:right;font-size:13.5px;color:var(--muted);">수량</th></tr></thead><tbody id="askBody"></tbody></table>
             </div>
           </div>
         </div>
@@ -384,18 +384,18 @@
     <div class="market-col">
       <div style="padding:8px 12px;border-bottom:1px solid var(--border);flex-shrink:0;" data-guide="내 보유 종목에서 현재가, 수량과 손익을 확인하고 종목을 선택할 수 있습니다.">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
-          <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">내 보유 종목</span>
+          <span style="font-size:13.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">내 보유 종목</span>
           <span class="live-dot" style="margin-left:auto;"></span>
         </div>
       </div>
       <div class="market-col-scroll" data-guide="보유 종목이 많으면 이 영역을 스크롤해 전체 목록을 확인합니다.">
-        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
           <thead>
             <tr style="position:sticky;top:0;z-index:10;background:var(--surface);">
-              <th style="padding:5px 10px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;letter-spacing:.05em;">종목</th>
-              <th style="padding:5px 10px;text-align:right;color:var(--muted);font-size:10px;font-weight:700;">현재가</th>
-              <th style="padding:5px 10px;text-align:right;color:var(--muted);font-size:10px;font-weight:700;">수량</th>
-              <th style="padding:5px 5px;text-align:right;color:var(--muted);font-size:10px;">손익</th>
+              <th style="padding:5px 10px;text-align:left;color:var(--muted);font-size:13px;font-weight:700;letter-spacing:.05em;">종목</th>
+              <th style="padding:5px 10px;text-align:right;color:var(--muted);font-size:13px;font-weight:700;">현재가</th>
+              <th style="padding:5px 10px;text-align:right;color:var(--muted);font-size:13px;font-weight:700;">수량</th>
+              <th style="padding:5px 5px;text-align:right;color:var(--muted);font-size:13px;">손익</th>
             </tr>
           </thead>
           <tbody id="stockMarketListBody">
@@ -409,8 +409,8 @@
 
   <footer id="site-footer">
     <div class="w-full px-4 py-2 flex items-center justify-between">
-      <span class="brand-logo-text" style="font-size:12px;letter-spacing:1.5px;">EDUMGT</span>
-      <p style="font-size:11px;color:var(--muted);">(주)에듀엠지티 &nbsp;|&nbsp; <a href="https://www.edumgt.co.kr" target="_blank" style="color:var(--accent-dark);text-decoration:none;font-weight:600;">www.edumgt.co.kr</a></p>
+      <span class="brand-logo-text" style="font-size:13.5px;letter-spacing:1.5px;">EDUMGT</span>
+      <p style="font-size:13.5px;color:var(--muted);">(주)에듀엠지티 &nbsp;|&nbsp; <a href="https://www.edumgt.co.kr" target="_blank" style="color:var(--accent-dark);text-decoration:none;font-weight:600;">www.edumgt.co.kr</a></p>
     </div>
   </footer>
 </div><!-- /trading-root -->
@@ -421,28 +421,28 @@
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
       <div>
         <h2 id="avgDownTitle" style="margin:0;font-size:18px;font-weight:900;color:var(--fg);">물타기 계산기</h2>
-        <p id="avgDownSubtitle" style="margin:5px 0 0;font-size:11px;line-height:1.55;color:var(--muted);"></p>
+        <p id="avgDownSubtitle" style="margin:5px 0 0;font-size:13.5px;line-height:1.55;color:var(--muted);"></p>
       </div>
       <button id="avgDownCloseBtn" type="button" aria-label="닫기" style="width:30px;height:30px;border:0;border-radius:7px;background:var(--surface-2);color:var(--muted);font-size:20px;cursor:pointer;">×</button>
     </div>
-    <div id="avgDownUnavailable" style="display:none;margin-top:14px;padding:12px;border-radius:9px;background:rgba(37,99,235,.08);color:var(--accent-dark);font-size:12px;line-height:1.6;"></div>
+    <div id="avgDownUnavailable" style="display:none;margin-top:14px;padding:12px;border-radius:9px;background:rgba(37,99,235,.08);color:var(--accent-dark);font-size:13.5px;line-height:1.6;"></div>
     <div id="avgDownContent">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px;">
-        <div style="padding:10px;border-radius:9px;background:var(--surface-2);"><div style="font-size:10px;color:var(--muted);">보유 수량 · 평균단가</div><strong id="avgDownHolding" style="display:block;margin-top:3px;font-size:13px;color:var(--fg);">-</strong></div>
-        <div style="padding:10px;border-radius:9px;background:var(--surface-2);"><div style="font-size:10px;color:var(--muted);">현재가 · 현재 손익률</div><strong id="avgDownCurrent" style="display:block;margin-top:3px;font-size:13px;">-</strong></div>
+        <div style="padding:10px;border-radius:9px;background:var(--surface-2);"><div style="font-size:13px;color:var(--muted);">보유 수량 · 평균단가</div><strong id="avgDownHolding" style="display:block;margin-top:3px;font-size:13px;color:var(--fg);">-</strong></div>
+        <div style="padding:10px;border-radius:9px;background:var(--surface-2);"><div style="font-size:13px;color:var(--muted);">현재가 · 현재 손익률</div><strong id="avgDownCurrent" style="display:block;margin-top:3px;font-size:13px;">-</strong></div>
       </div>
-      <label for="avgDownQty" style="display:block;margin-top:15px;font-size:11px;font-weight:800;color:var(--fg);">추가 매수 수량 (주)</label>
+      <label for="avgDownQty" style="display:block;margin-top:15px;font-size:13.5px;font-weight:800;color:var(--fg);">추가 매수 수량 (주)</label>
       <input id="avgDownQty" type="number" min="1" step="1" class="dark-input" style="margin-top:6px;font-size:14px;" placeholder="수량을 입력하세요">
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:7px;">
         <button type="button" class="order-percent-btn avgdown-percent-btn" data-percent="10">10%</button><button type="button" class="order-percent-btn avgdown-percent-btn" data-percent="25">25%</button><button type="button" class="order-percent-btn avgdown-percent-btn" data-percent="50">50%</button><button type="button" class="order-percent-btn avgdown-percent-btn" data-percent="100">전액</button>
       </div>
       <div class="avgdown-result">
-        <div><span style="font-size:10px;color:var(--muted);">추가 매수금액</span><strong id="avgDownCost" style="display:block;margin-top:3px;font-size:13px;color:var(--fg);">-</strong></div>
-        <div><span style="font-size:10px;color:var(--muted);">매수 후 평균단가</span><strong id="avgDownNewAvg" style="display:block;margin-top:3px;font-size:13px;color:var(--accent-dark);">-</strong></div>
-        <div><span style="font-size:10px;color:var(--muted);">평균단가 변화</span><strong id="avgDownDiff" style="display:block;margin-top:3px;font-size:13px;">-</strong></div>
-        <div><span style="font-size:10px;color:var(--muted);">남는 현금</span><strong id="avgDownCashLeft" style="display:block;margin-top:3px;font-size:13px;color:var(--fg);">-</strong></div>
+        <div><span style="font-size:13px;color:var(--muted);">추가 매수금액</span><strong id="avgDownCost" style="display:block;margin-top:3px;font-size:13px;color:var(--fg);">-</strong></div>
+        <div><span style="font-size:13px;color:var(--muted);">매수 후 평균단가</span><strong id="avgDownNewAvg" style="display:block;margin-top:3px;font-size:13px;color:var(--accent-dark);">-</strong></div>
+        <div><span style="font-size:13px;color:var(--muted);">평균단가 변화</span><strong id="avgDownDiff" style="display:block;margin-top:3px;font-size:13px;">-</strong></div>
+        <div><span style="font-size:13px;color:var(--muted);">남는 현금</span><strong id="avgDownCashLeft" style="display:block;margin-top:3px;font-size:13px;color:var(--fg);">-</strong></div>
       </div>
-      <p id="avgDownNotice" style="margin:12px 0 0;font-size:11px;line-height:1.55;color:var(--muted);"></p>
+      <p id="avgDownNotice" style="margin:12px 0 0;font-size:13.5px;line-height:1.55;color:var(--muted);"></p>
     </div>
   </section>
 </div>
@@ -486,7 +486,7 @@ document.addEventListener('keydown', event => {
 switchTab('positions');
 </script>
 <script src="/js/config.js"></script>
-<script src="/js/common.js?v=20260926-navstate4"></script>
-<script src="/js/stock.js?v=20260819-default-symbol-4"></script>
+<script src="/js/common.js?v=20260926-navstate4-f13"></script>
+<script src="/js/stock.js?v=20260819-default-symbol-4-f13"></script>
 </body>
 </html>

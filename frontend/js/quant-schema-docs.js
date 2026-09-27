@@ -15,6 +15,61 @@
   }).join('');
   const totalTableCount = columnSpecGroups.reduce((total, group) => total + group.tables.length, 0);
   const totalFieldCount = columnSpecGroups.reduce((total, group) => total + group.tables.reduce((sum, item) => sum + item.columns.length, 0), 0);
+  const renderDatabaseBootstrap = () => `
+    <section id="quant-db-bootstrap" class="quant-card quant-guide-card schema-doc db-bootstrap" data-quant-tab="schema">
+      <header><b>05</b><div><h2>새 PC Docker DB 최초 설치·데이터 이전</h2><p>저장소를 처음 받은 PC에서 Docker 설치, 네 DB 기동, 기존 PC 데이터 복사와 검증까지 한 스크립트로 실행합니다.</p></div></header>
+      <div class="guide-body">
+        <div class="guide-intro"><strong>실행 파일:</strong> 저장소 루트 기준 <code>scripts/setup-docker-databases.sh</code>입니다. Ubuntu/Debian의 Docker Engine 설치와 모든 OS의 DB 초기화·검증·논리 백업·복원을 담당하며, Docker 볼륨을 삭제하지 않습니다.</div>
+
+        <div class="bootstrap-file-grid">
+          <article><b>실행 스크립트</b><code>scripts/setup-docker-databases.sh</code><p><code>install</code>·<code>init</code>·<code>verify</code>·<code>export</code>·<code>restore</code> 명령을 제공합니다.</p></article>
+          <article><b>컨테이너 구성</b><code>docker-compose.yml</code><code>docker-compose.pg-stock.yml</code><p>MariaDB, Quant PostgreSQL, pg-stock PostgreSQL, Redis와 앱 컨테이너를 정의합니다.</p></article>
+          <article><b>최초 스키마·샘플</b><code>database/db.sql</code><code>database/quant-postgres.sql</code><code>database/pg-stock.sql</code><p>각 named volume이 비어 있는 첫 기동에만 자동 실행됩니다.</p></article>
+          <article><b>환경 설정</b><code>.env.example → .env</code><p>스크립트가 <code>.env</code>가 없을 때만 복사합니다. 기존 파일과 비밀번호는 덮어쓰지 않습니다.</p></article>
+        </div>
+
+        <section class="bootstrap-step"><span>STEP 1</span><h3>저장소 복제와 Docker 설치</h3><p>Windows·macOS는 Docker Desktop을 먼저 설치합니다. Ubuntu/Debian은 아래 <code>install</code> 명령이 Docker 공식 APT 저장소에서 Engine과 Compose v2 plugin을 설치합니다. 설치 후 docker 그룹 적용을 위해 로그아웃·로그인이 한 번 필요할 수 있습니다.</p><pre><code>git clone https://github.com/edumgt/stock-coin-trade.git
+cd stock-coin-trade
+
+# Ubuntu / Debian에서 Docker가 없을 때만
+./scripts/setup-docker-databases.sh install
+
+# 새 터미널에서 확인
+docker --version
+docker compose version</code></pre><p class="bootstrap-link">공식 절차: <a href="https://docs.docker.com/engine/install/ubuntu/" target="_blank" rel="noopener noreferrer">Docker Engine on Ubuntu</a> · <a href="https://docs.docker.com/desktop/" target="_blank" rel="noopener noreferrer">Docker Desktop</a></p></section>
+
+        <section class="bootstrap-step"><span>STEP 2</span><h3>빈 PC에 DB와 전체 앱 초기 구성</h3><p><code>init</code>은 <code>.env</code>, 외부 네트워크 <code>postgresql_default</code>, named volume과 네 DB를 준비합니다. <code>--with-app</code>을 붙이면 Nginx·Flask도 빌드합니다. MariaDB와 Quant DB에는 저장소의 샘플 데이터가 들어가고, pg-stock은 빈 스키마로 준비됩니다.</p><pre><code># 선택: init도 .env가 없으면 같은 복사를 자동 수행합니다.
+cp .env.example .env
+# 편집기로 .env의 change-me 비밀번호와 SECRET_KEY를 변경하세요.
+
+./scripts/setup-docker-databases.sh init --with-app
+./scripts/setup-docker-databases.sh verify
+
+# 선택: 주요 국내주식 OHLCV를 2020년부터 공급자에서 수집
+./scripts/setup-docker-databases.sh init --with-app --seed-ohlcv
+
+# 브라우저
+http://localhost:3333/quant.html?tab=schema</code></pre></section>
+
+        <section class="bootstrap-step"><span>STEP 3</span><h3>기존 PC 데이터를 논리 백업해 복사</h3><p>Docker volume 디렉터리를 직접 복사하지 않습니다. 구·신 PC의 이미지 버전과 파일 소유권 차이를 피하도록 <code>mariadb-dump</code>와 <code>pg_dump</code> 결과를 gzip과 SHA-256으로 묶습니다. 아래 첫 명령은 매번 새 타임스탬프 폴더를 만듭니다.</p><pre><code># 기존 PC: MariaDB + Quant PostgreSQL + pg-stock 내보내기
+./scripts/setup-docker-databases.sh export ./db-transfer
+# 결과: db-transfer/stock-coin-trade-db-YYYYMMDDTHHMMSS/
+
+# 기존 PC → 새 PC (예시: SSH 전송)
+rsync -av ./db-transfer/stock-coin-trade-db-YYYYMMDDTHHMMSS/ \
+  USER@NEW_PC:/path/to/stock-coin-trade/db-transfer/source/
+
+# 새 PC: 명시적 확인 옵션과 함께 복원
+./scripts/setup-docker-databases.sh restore ./db-transfer/source --confirm-restore --with-app
+./scripts/setup-docker-databases.sh verify</code></pre><div class="guide-warning"><b>복원 주의</b><span><code>restore</code>는 MariaDB <code>mockinv</code>, PostgreSQL <code>quant_research</code>와 <code>pg-stock/admin</code>의 같은 테이블을 백업 내용으로 교체할 수 있습니다. 대상 PC에 보존할 데이터가 있으면 먼저 <code>export</code>를 실행하세요.</span></div></section>
+
+        <section class="bootstrap-step"><span>STEP 4</span><h3>무엇이 복사되고 무엇이 재생성되나요?</h3><div class="bootstrap-data-grid"><article><b>복사됨</b><p>MariaDB 회원·모의주문, Quant OHLCV·전략·성과, pg-stock 종목·일봉·수집 이력과 집계</p></article><article><b>복사하지 않음</b><p>Redis 로그인 세션은 만료성 데이터이므로 새 PC에서 다시 로그인합니다.</p></article><article><b>자동 재생성</b><p>현재 Qdrant는 인메모리 모드이므로 Flask가 시작될 때 내장 지식 문서를 다시 임베딩합니다.</p></article><article><b>계속 유지</b><p><code>mariadb-data</code>, <code>postgres-quant-data</code>, <code>pg-stock-data</code>, <code>redis-session-data</code> named volume은 일반 재기동에서 유지됩니다.</p></article></div><p class="guide-note"><code>docker compose down -v</code>는 DB 볼륨을 삭제하므로 사용하지 마세요. SQL 파일을 수정해도 이미 생성된 볼륨에는 자동 재실행되지 않습니다. 스키마 변경은 마이그레이션 SQL을 별도로 적용합니다.</p></section>
+
+        <section class="bootstrap-step"><span>TROUBLESHOOTING</span><h3>설치 중 자주 발생하는 오류</h3><div class="bootstrap-errors"><article><b>permission denied: docker.sock</b><p>Docker 설치 뒤 로그아웃·로그인하거나 사용자가 docker 그룹에 포함됐는지 확인합니다.</p><code>groups
+docker info</code></article><article><b>network postgresql_default not found</b><p><code>init</code>을 먼저 실행합니다. 스크립트가 외부 네트워크를 멱등적으로 생성합니다.</p><code>./scripts/setup-docker-databases.sh init</code></article><article><b>스키마가 비어 있음</b><p>초기 SQL은 빈 볼륨에서만 실행됩니다. <code>verify</code>로 확인하고 기존 데이터가 필요하면 <code>restore</code>를 사용합니다.</p><code>./scripts/setup-docker-databases.sh verify</code></article><article><b>포트 3306·5432 충돌</b><p><code>.env</code>의 <code>MARIADB_EXTERNAL_PORT</code>·<code>QUANT_EXTERNAL_PORT</code>를 사용하지 않는 호스트 포트로 변경합니다.</p><code>MARIADB_EXTERNAL_PORT=13306
+QUANT_EXTERNAL_PORT=15432</code></article></div></section>
+      </div>
+    </section>`;
   const quantErd = `erDiagram
     MARKET_DATA {
       string symbol PK
@@ -425,6 +480,7 @@
       ${renderColumnSpecs()}
     </div></section>
     <section id="quant-data-policy" class="quant-card quant-guide-card schema-doc" data-quant-tab="schema"><header><b>04</b><div><h2>데이터 흐름·운영 원칙</h2><p>저장소 간 경계, 영속성, 백업과 민감정보 원칙입니다.</p></div></header><div class="guide-body"><div class="schema-details"><article><h3>Quant 연구 흐름</h3><p><code>market_data</code> 조회 → 전략 계산 → <code>strategies</code> 생성 → 체결·성과 저장 순서입니다. 팩터 분석 결과는 <code>factor_exposures</code>에 기록합니다.</p></article><article><h3>주식 원본 흐름</h3><p><code>pg-stock</code>은 최초 적재 후 12시간마다 증분 upsert하고 같은 배치에서 집계 스냅샷을 갱신합니다. 기본 실행 시각은 06:20·18:20(Asia/Seoul)이며 Quant DB와 자동 복제하거나 FK로 연결하지 않습니다.</p></article><article><h3>인증·AI 흐름</h3><p>로그인 세션은 Redis에 7일 TTL로 저장하고, 회원 원본은 MariaDB에서 조회합니다. 투자 문서는 임베딩해 Qdrant에서 검색하며 민감정보는 payload에 넣지 않습니다.</p></article></div><div class="policy-strip"><span><b>PostgreSQL</b>named volume · pg_dump</span><span><b>MariaDB</b>named volume · mariadb-dump</span><span><b>Qdrant</b>현재 인메모리 · 재시드</span><span><b>Redis</b>AOF · 7일 세션 TTL</span></div><div class="guide-warning"><b>네트워크 원칙</b><span>DB와 Redis 포트를 인터넷에 공개하지 않고 내부 Docker 네트워크 또는 사설 연결만 사용합니다.</span></div></div></section>
+    ${renderDatabaseBootstrap()}
     <div id="erd-modal" class="erd-modal" role="dialog" aria-modal="true" aria-labelledby="erd-modal-title" hidden>
       <div class="erd-modal-dialog">
         <header><div><h2 id="erd-modal-title">ERD 크게 보기</h2><span id="erd-modal-mode"></span></div><div class="erd-modal-header-actions"><div class="erd-modal-tools" role="group" aria-label="ERD 확대·축소"><button type="button" data-modal-zoom-out aria-label="축소" title="축소 (-)">−</button><output id="erd-modal-zoom">100%</output><button type="button" data-modal-zoom-in aria-label="확대" title="확대 (+)">+</button><button type="button" data-modal-zoom-fit title="화면 맞춤 (0)">화면 맞춤</button></div><button type="button" class="erd-modal-close" aria-label="ERD 크게 보기 닫기">×</button></div></header>

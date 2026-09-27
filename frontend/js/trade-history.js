@@ -35,7 +35,7 @@ function createHistoryGrid() {
     { headerName:'체결시간', field:'ts', minWidth:175, sort:'desc', valueFormatter: params => formatDate(params.value) },
     { headerName:'구분', field:'type', width:100, cellRenderer: params => `<span style="font-weight:800;color:${params.value === 'BUY' ? '#E11D48' : '#2563EB'};">${params.value === 'BUY' ? '매수' : '매도'}</span>` },
     { headerName:'자산', field:'assetClass', width:95, filter:true },
-    { headerName:'종목', field:'name', minWidth:180, flex:1, cellRenderer: params => `<a href="${(ASSET_LINK[params.data.assetClass] || (() => '#'))(params.data.code)}" style="font-weight:800;color:var(--fg);text-decoration:none;">${params.value} <span style="font-size:11px;color:var(--accent);">매매 ↗</span></a>` },
+    { headerName:'종목', field:'name', minWidth:180, flex:1, cellRenderer: params => `<a href="${(ASSET_LINK[params.data.assetClass] || (() => '#'))(params.data.code)}" style="font-weight:800;color:var(--fg);text-decoration:none;">${params.value} <span style="font-size:13.5px;color:var(--accent);">매매 ↗</span></a>` },
     { headerName:'종목코드', field:'code', width:110, cellStyle:{ color:'var(--accent)', fontWeight:'700' } },
     { headerName:'수량', field:'quantity', width:120, type:'rightAligned', valueFormatter: params => `${Number(params.value).toLocaleString('ko-KR', { maximumFractionDigits: 8 })}${params.data.unit}` },
     { headerName:'체결가', field:'price', minWidth:125, type:'rightAligned', valueFormatter: params => krw(params.value) },

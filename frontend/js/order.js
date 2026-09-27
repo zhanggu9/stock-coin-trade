@@ -124,7 +124,7 @@ function renderMarketSidebar(markets) {
     <tr onclick="selectCoin('${m.market}')" style="cursor:pointer;border-bottom:1px solid var(--border);">
       <td style="padding:7px 10px;font-weight:600;color:var(--fg);">${m.koreanName}</td>
       <td style="padding:7px 10px;text-align:right;font-weight:700;" id="${m.market}-trade_price">-</td>
-      <td style="padding:7px 10px;text-align:right;font-size:11px;" id="${m.market}-signed_change_rate">-</td>
+      <td style="padding:7px 10px;text-align:right;font-size:13.5px;" id="${m.market}-signed_change_rate">-</td>
       <td style="padding:7px 5px;text-align:center;" onclick="event.stopPropagation()">
         <button id="${m.market}-watch-btn" onclick="toggleCryptoWatch('${m.market}')"
           style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted);">☆</button>
@@ -302,7 +302,7 @@ async function updateAssetDisplay() {
     el.textContent = new Intl.NumberFormat('ko-KR').format(user.asset);
   } else {
     const disp = document.getElementById('buyAssetDisplay');
-    if (disp) disp.innerHTML = '<span style="font-size:12px;color:var(--muted);">로그인 필요</span>';
+    if (disp) disp.innerHTML = '<span style="font-size:13.5px;color:var(--muted);">로그인 필요</span>';
     el.textContent = '0';
   }
 }

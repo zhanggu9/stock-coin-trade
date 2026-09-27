@@ -56,7 +56,7 @@
   </style>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config={theme:{extend:{fontFamily:{sans:['Pretendard','-apple-system','BlinkMacSystemFont','Segoe UI','sans-serif']}}}}</script>
-  <link rel="stylesheet" href="/css/style.css?v=20260920-chart">
+  <link rel="stylesheet" href="/css/style.css?v=20260920-chart-f13">
   <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
@@ -100,27 +100,27 @@
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
             <!-- 선택 거래소 현재가 (크게) -->
             <div style="display:flex;align-items:baseline;gap:8px;">
-              <span id="selectedExchangeLabel" style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">업비트</span>
+              <span id="selectedExchangeLabel" style="font-size:13.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">업비트</span>
               <span id="selectedExchangePrice" style="font-size:20px;font-weight:900;color:var(--accent-dark);">-</span>
-              <span id="domestic_price_updated_at" style="font-size:10px;color:var(--muted);">-</span>
+              <span id="domestic_price_updated_at" style="font-size:13px;color:var(--muted);">-</span>
             </div>
             <!-- 4거래소 인라인 비교 -->
             <div id="domesticInlineBar" style="display:flex;gap:14px;flex-wrap:wrap;">
               <span class="dom-inline-item" data-exchange="UPBIT">
-                <span style="font-size:10px;color:var(--muted);">업비트</span>
-                <span id="domestic-price-UPBIT" style="font-size:12px;font-weight:700;color:var(--fg);margin-left:4px;">-</span>
+                <span style="font-size:13px;color:var(--muted);">업비트</span>
+                <span id="domestic-price-UPBIT" style="font-size:13.5px;font-weight:700;color:var(--fg);margin-left:4px;">-</span>
               </span>
               <span class="dom-inline-item" data-exchange="BITHUMB">
-                <span style="font-size:10px;color:var(--muted);">빗썸</span>
-                <span id="domestic-price-BITHUMB" style="font-size:12px;font-weight:700;color:var(--fg);margin-left:4px;">-</span>
+                <span style="font-size:13px;color:var(--muted);">빗썸</span>
+                <span id="domestic-price-BITHUMB" style="font-size:13.5px;font-weight:700;color:var(--fg);margin-left:4px;">-</span>
               </span>
               <span class="dom-inline-item" data-exchange="COINONE">
-                <span style="font-size:10px;color:var(--muted);">코인원</span>
-                <span id="domestic-price-COINONE" style="font-size:12px;font-weight:700;color:var(--fg);margin-left:4px;">-</span>
+                <span style="font-size:13px;color:var(--muted);">코인원</span>
+                <span id="domestic-price-COINONE" style="font-size:13.5px;font-weight:700;color:var(--fg);margin-left:4px;">-</span>
               </span>
               <span class="dom-inline-item" data-exchange="KORBIT">
-                <span style="font-size:10px;color:var(--muted);">코빗</span>
-                <span id="domestic-price-KORBIT" style="font-size:12px;font-weight:700;color:var(--fg);margin-left:4px;">-</span>
+                <span style="font-size:13px;color:var(--muted);">코빗</span>
+                <span id="domestic-price-KORBIT" style="font-size:13.5px;font-weight:700;color:var(--fg);margin-left:4px;">-</span>
               </span>
             </div>
           </div>
@@ -141,13 +141,13 @@
             <span id="buy_symbol_name" style="color:#F87171;">BTC</span> 매수
           </h3>
           <div class="asset-bar" style="display:flex;justify-content:space-between;margin-bottom:8px;">
-            <span style="font-size:12px;color:var(--muted);">매수 가능</span>
+            <span style="font-size:13.5px;color:var(--muted);">매수 가능</span>
             <span id="buyAssetDisplay" style="font-size:13px;font-weight:700;color:var(--fg);">
-              <span id="holdAsset">0</span> <span style="font-size:11px;color:var(--muted);">KRW</span>
+              <span id="holdAsset">0</span> <span style="font-size:13.5px;color:var(--muted);">KRW</span>
             </span>
           </div>
           <input type="text" id="buyKrw" class="dark-input" placeholder="주문 금액 (KRW)" style="font-size:13px;padding:.45rem .75rem;margin-bottom:6px;">
-          <div id="buyError" style="color:#F87171;font-size:12px;display:none;margin-bottom:4px;"></div>
+          <div id="buyError" style="color:#F87171;font-size:13.5px;display:none;margin-bottom:4px;"></div>
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:8px;" id="buyQuantityBtnGroup">
             <button type="button" class="btn-pct-buy">10%</button>
             <button type="button" class="btn-pct-buy">25%</button>
@@ -163,14 +163,14 @@
             <span id="sell_symbol_name" style="color:#60A5FA;">BTC</span> 매도
           </h3>
           <div class="asset-bar" style="display:flex;justify-content:space-between;margin-bottom:8px;">
-            <span style="font-size:12px;color:var(--muted);">매도 가능</span>
+            <span style="font-size:13.5px;color:var(--muted);">매도 가능</span>
             <span style="font-size:13px;font-weight:700;color:var(--fg);">
               <span id="holdCryptoCount">-</span>
-              <span id="holdCryptoSymbol" style="font-size:11px;color:var(--muted);">-</span>
+              <span id="holdCryptoSymbol" style="font-size:13.5px;color:var(--muted);">-</span>
             </span>
           </div>
           <input type="text" id="sellCount" class="dark-input" placeholder="주문 수량" style="font-size:13px;padding:.45rem .75rem;margin-bottom:6px;">
-          <div id="sellError" style="color:#F87171;font-size:12px;display:none;margin-bottom:4px;"></div>
+          <div id="sellError" style="color:#F87171;font-size:13.5px;display:none;margin-bottom:4px;"></div>
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:8px;" id="sellQuantityBtnGroup">
             <button type="button" class="btn-pct-sell">10%</button>
             <button type="button" class="btn-pct-sell">25%</button>
@@ -186,18 +186,18 @@
     <!-- ── 오른쪽 마켓 리스트 ── -->
     <div class="market-col">
       <div style="padding:8px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0;">
-        <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">원화 마켓</span>
+        <span style="font-size:13.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">원화 마켓</span>
         <span class="badge badge-gold" style="margin-left:auto;">KRW</span>
         <span class="live-dot"></span>
       </div>
       <div class="market-col-scroll">
-        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
           <thead>
             <tr style="position:sticky;top:0;z-index:10;background:var(--surface);">
-              <th style="padding:6px 10px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;">종목</th>
-              <th style="padding:6px 10px;text-align:right;color:var(--muted);font-size:10px;font-weight:700;">현재가</th>
-              <th style="padding:6px 10px;text-align:right;color:var(--muted);font-size:10px;font-weight:700;">등락</th>
-              <th style="padding:6px 6px;text-align:center;color:var(--muted);font-size:10px;">관심</th>
+              <th style="padding:6px 10px;text-align:left;color:var(--muted);font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;">종목</th>
+              <th style="padding:6px 10px;text-align:right;color:var(--muted);font-size:13px;font-weight:700;">현재가</th>
+              <th style="padding:6px 10px;text-align:right;color:var(--muted);font-size:13px;font-weight:700;">등락</th>
+              <th style="padding:6px 6px;text-align:center;color:var(--muted);font-size:13px;">관심</th>
             </tr>
           </thead>
           <tbody id="marketListBody">
@@ -210,14 +210,14 @@
 
   <footer id="site-footer">
     <div class="w-full px-4 py-2 flex items-center justify-between">
-      <span class="brand-logo-text" style="font-size:12px;letter-spacing:1.5px;">EDUMGT</span>
-      <p style="font-size:11px;color:var(--muted);">(주)에듀엠지티 &nbsp;|&nbsp; <a href="https://www.edumgt.co.kr" target="_blank" style="color:var(--accent-dark);text-decoration:none;font-weight:600;">www.edumgt.co.kr</a></p>
+      <span class="brand-logo-text" style="font-size:13.5px;letter-spacing:1.5px;">EDUMGT</span>
+      <p style="font-size:13.5px;color:var(--muted);">(주)에듀엠지티 &nbsp;|&nbsp; <a href="https://www.edumgt.co.kr" target="_blank" style="color:var(--accent-dark);text-decoration:none;font-weight:600;">www.edumgt.co.kr</a></p>
     </div>
   </footer>
 </div><!-- /trading-root -->
 
 <script src="/js/config.js"></script>
-<script src="/js/common.js?v=20260926-navstate4"></script>
+<script src="/js/common.js?v=20260926-navstate4-f13"></script>
 <script src="/js/order.js"></script>
 </body>
 </html>

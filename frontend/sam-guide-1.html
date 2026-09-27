@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SAM 활용 1 — 설치와 Hello World — EDUMGT</title>
+  <link rel="icon" href="/img/favicon.png">
+  <link rel="stylesheet" href="/css/style.css?v=20260920-chart-f13">
+  <link rel="stylesheet" href="/css/lambda-db-practice.css?v=20260927-split1-f13">
+  <link rel="stylesheet" href="/css/sam-guide.css?v=20260927-feature2">
+  <link rel="stylesheet" href="/css/tech-glossary.css?v=20260927-1-f13">
+</head>
+<body class="lambda-practice-body sam-guide-body">
+  <div id="header-mount"></div>
+  <main class="lambda-practice-shell">
+    <section class="lambda-hero">
+      <div><span>AWS SERVERLESS APPLICATION MODEL</span><h1>SAM 활용 1 — 설치와 Hello World</h1><p>SAM CLI 설치, <code>sam init</code> 프로젝트 생성, 검증·빌드·로컬 호출까지 익힙니다.</p></div>
+      <div class="lambda-hero-badge"><i class="fa-brands fa-aws" aria-hidden="true"></i><b>SAM 1 / 3</b><small>install → hello world</small></div>
+    </section>
+
+    <section class="lambda-boundary" aria-label="SAM 학습 범위">
+      <div><b>template.yaml</b><span>서버리스 리소스를 간단한 YAML로 정의</span></div><i>→</i>
+      <div><b>SAM CLI</b><span>검증·빌드·로컬 실행·배포 명령 제공</span></div><i>→</i>
+      <div><b>CloudFormation</b><span>AWS 리소스로 변환하고 스택으로 관리</span></div>
+    </section>
+
+    <section class="lambda-sam-guide" aria-labelledby="sam-intro-title">
+      <header class="lambda-sam-head"><div><span>01 · INTRODUCTION</span><h2 id="sam-intro-title">SAM은 무엇인가요?</h2></div><a href="https://github.com/aws/serverless-application-model" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-github" aria-hidden="true"></i> 공식 GitHub</a></header>
+      <div class="lambda-sam-summary">
+        <article><b>AWS SAM</b><p>CloudFormation을 확장한 오픈소스 서버리스 애플리케이션 모델입니다. <code>AWS::Serverless::Function</code> 같은 간결한 선언을 실제 AWS 리소스로 변환합니다.</p></article>
+        <article><b>SAM CLI</b><p><code>sam</code> 명령을 제공하는 별도 도구입니다. 초기화, 검증, 빌드, 로컬 실행, 배포와 로그 확인을 한 흐름으로 묶습니다.</p></article>
+        <article><b>Docker</b><p><code>sam build --use-container</code>와 <code>sam local</code> 명령이 Lambda와 비슷한 실행 이미지를 사용할 때 필요합니다. AWS 배포 자체에 항상 필요한 것은 아닙니다.</p></article>
+      </div>
+      <div class="lambda-sam-flow"><span><small>작성</small><b>template.yaml</b></span><i>→</i><span><small>변환</small><b>SAM Transform</b></span><i>→</i><span><small>배포</small><b>CloudFormation Stack</b></span><i>→</i><span><small>생성</small><b>Lambda · IAM 등</b></span></div>
+      <p class="lambda-sam-note"><b>구분:</b> <code>aws/serverless-application-model</code>은 SAM 규격과 변환 구현 저장소이고, <code>aws/aws-sam-cli</code>는 터미널에서 사용하는 CLI 저장소입니다.</p>
+    </section>
+
+    <section class="lambda-sam-guide" aria-labelledby="sam-install-title">
+      <header class="lambda-sam-head"><div><span>02 · INSTALL</span><h2 id="sam-install-title">Linux에 SAM CLI 설치</h2></div></header>
+      <div class="lambda-sam-details">
+        <article><div class="lambda-sam-section-title"><span>PRECHECK</span><h3>설치 여부 · Python 버전 · AWS CLI 인증 확인</h3><p>이미 설치돼 있으면 다시 설치하지 않습니다. 컨테이너 없는 <code>sam build</code>는 템플릿 Runtime과 같은 버전의 로컬 Python이 필요하므로 WSL의 Python 버전을 먼저 확인해 둡니다. 로컬 실행에는 Docker 데몬이, AWS 배포에는 CLI 자격증명과 리전이 필요합니다. 개인 키는 템플릿이나 저장소에 기록하지 않습니다.</p></div><section class="lambda-code"><header><span>환경 · Python · 인증 확인</span><button type="button" data-copy-code>복사</button></header><pre><code># 1) 설치 여부
+uname -m
+command -v sam || true
+sam --version
+aws --version
+docker --version
+docker info
+
+# 2) WSL Python 설치·버전 확인 (sam build 가 이 버전을 사용)
+cat /etc/os-release | grep PRETTY_NAME       # 예: Ubuntu 24.04 LTS
+command -v python3 || echo "python3 없음"
+python3 --version                            # 예: Python 3.12.3
+ls /usr/bin/python3.*                        # 설치된 모든 버전 (python3.12 ...)
+python3 -m pip --version                     # pip 사용 가능 여부
+#  → 이 버전(예: 3.12)을 STEP 2 템플릿의 Runtime 에 그대로 씁니다: Runtime: python3.12
+#  → sam init 이 고른 python3.14 처럼 로컬에 없는 버전이면 STEP 3 에서
+#    "Binary validation failed for python" 오류가 납니다 (해결: --use-container 또는 Runtime 변경)
+
+# python3 / pip 이 없으면 (Ubuntu)
+# sudo apt update &amp;&amp; sudo apt install -y python3 python3-pip python3-venv
+
+# 다른 버전(예: 3.14)이 꼭 필요하면 deadsnakes PPA
+# sudo add-apt-repository ppa:deadsnakes/ppa &amp;&amp; sudo apt update
+# sudo apt install -y python3.14 python3.14-venv
+# ls /usr/bin/python3.*                       # 이제 3.12 와 3.14 가 함께 보임
+
+# 3) AWS CLI 인증 (배포 단계에서만 필요)
+aws configure list              # 자격증명 출처 확인
+aws sts get-caller-identity     # 계정·주체 확인
+aws configure get region        # ap-northeast-2 권장
+
+# 아직 설정 전이면
+# aws configure                 # Access Key / Secret / region / output 입력</code></pre></section></article>
+        <article><div class="lambda-sam-section-title"><span>X86_64</span><h3>x86_64 설치</h3><p>GitHub의 최신 공식 설치 ZIP을 내려받아 설치합니다.</p></div><section class="lambda-code"><header><span>Linux x86_64</span><button type="button" data-copy-code>복사</button></header><pre><code>curl -L "https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-linux-x86_64.zip" \
+  -o aws-sam-cli-linux-x86_64.zip
+unzip aws-sam-cli-linux-x86_64.zip -d sam-installation
+sudo ./sam-installation/install
+sam --version</code></pre></section></article>
+      </div>
+    </section>
+
+    <section class="lambda-sam-guide" aria-labelledby="sam-quick-title">
+      <header class="lambda-sam-head"><div><span>03 · QUICK START</span><h2 id="sam-quick-title">가장 작은 SAM 프로젝트 사용법</h2></div><a href="/sam-guide-2.html">다음: SAM 활용 2</a></header>
+      <div class="lambda-sam-details">
+        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>STEP 1</span><h3>프로젝트 생성</h3><p>처음에는 공식 템플릿으로 디렉터리 구조와 명령 흐름부터 확인합니다.</p></div><div class="sam-split"><div class="sam-split-code"><section class="lambda-code"><header><span>초기화</span><button type="button" data-copy-code>복사</button></header><pre><code>sam init
+# 선택 예시
+# Template source: AWS Quick Start Templates
+# Runtime: python3.11
+# Package type: Zip
+
+# 프로젝트 이름 예시: sam-app-01
+# 여러 종류의 프로젝트를 계속 만들기 위해 sam-app-01 ~ sam-app-nn 으로 각자 만들면서 테스트합니다.
+cd sam-app-01
+find . -maxdepth 2 -type f | sort</code></pre></section><section class="lambda-code sam-transcript"><header><span>실행방법</span></header><pre><code>init
+
+You can preselect a particular runtime or package type when using the `sam init` experience.
+Call `sam init --help` to learn more.
+
+Which template source would you like to use?
+        1 - AWS Quick Start Templates
+        2 - Custom Template Location
+Choice: 1
+
+Choose an AWS Quick Start application template
+        1 - Hello World Example
+        2 - Data processing
+        3 - Hello World Example with Powertools for AWS Lambda
+        4 - Multi-step workflow
+        5 - Scheduled task
+        6 - Standalone function
+        7 - Serverless API
+        8 - Infrastructure event management
+        9 - Lambda Response Streaming
+        10 - GraphQLApi Hello World Example
+        11 - Full Stack
+        12 - Durable Functions
+        13 - Lambda EFS example
+        14 - Serverless Connector Hello World Example
+        15 - Multi-step workflow with Connectors
+        16 - Hello World Durable Function Example
+        17 - DynamoDB Example
+        18 - Machine Learning
+Template: 1
+
+Use the most popular runtime and package type? (python3.14 and zip) [y/N]: 
+
+Which runtime would you like to use?
+        1 - dotnet10
+        2 - dotnet8
+        3 - dotnet6
+        4 - go (provided.al2)
+        5 - go (provided.al2023)
+        6 - graalvm.java11 (provided.al2)
+        7 - graalvm.java17 (provided.al2)
+        8 - java25
+        9 - java21
+        10 - java17
+        11 - java11
+        12 - java8.al2
+        13 - nodejs24.x
+        14 - nodejs22.x
+        15 - nodejs20.x
+        16 - python3.9
+        17 - python3.14
+        18 - python3.13
+        19 - python3.12
+        20 - python3.11
+        21 - python3.10
+        22 - ruby4.0
+        23 - ruby3.4
+        24 - ruby3.3
+        25 - ruby3.2
+        26 - rust (provided.al2)
+        27 - rust (provided.al2023)
+Runtime: 19
+
+What package type would you like to use?
+        1 - Zip
+        2 - Image
+Package type: 1
+
+Based on your selections, the only dependency manager available is pip.
+We will proceed copying the template using pip.
+
+Would you like to enable X-Ray tracing on the function(s) in your application?  [y/N]: 
+
+Would you like to enable monitoring using CloudWatch Application Insights?
+For more info, please view https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/cloudwatch-application-insights.html [y/N]: 
+
+Would you like to set Structured Logging in JSON format on your Lambda functions?  [y/N]: 
+
+Project name [sam-app]: sam-app-01
+
+    -----------------------
+    Generating application:
+    -----------------------
+    Name: sam-app-01
+    Runtime: python3.12
+    Architectures: x86_64
+    Dependency Manager: pip
+    Application Template: hello-world
+    Output Directory: .
+    Configuration file: sam-app-01/samconfig.toml
+    
+    Next steps can be found in the README file at sam-app-01/README.md
+        
+
+Commands you can use next
+=========================
+[*] Create pipeline: cd sam-app-01 &amp;&amp; sam pipeline init --bootstrap
+[*] Validate SAM template: cd sam-app-01 &amp;&amp; sam validate
+[*] Test Function in the Cloud: cd sam-app-01 &amp;&amp; sam sync --stack-name {stack-name} --watch</code></pre></section></div><aside class="sam-errors"><header><i>⚠</i> 발생할 수 있는 오류</header><div class="sam-err"><b>sam 명령이 없음</b><code>bash: sam: command not found</code><p><span>원인</span>SAM CLI 미설치 또는 <code>/usr/local/bin</code>이 PATH에 없음</p><p class="fix"><span>해결</span>02 INSTALL 절차로 설치 후 새 터미널에서 <code>sam --version</code> 확인</p></div><div class="sam-err"><b>생성된 폴더 이름이 다름</b><code>bash: cd: sam-app-01: No such file or directory</code><p><span>원인</span><code>sam init</code> 마지막 질문 "Project name" 에 다른 이름을 입력함</p><p class="fix"><span>해결</span><code>ls -d */</code> 로 실제 폴더명을 확인해 그 폴더로 이동</p></div><div class="sam-err"><b>같은 이름의 폴더가 이미 있음</b><code>Error: Directory sam-app-01 already exists</code><p><span>원인</span>이전 실습 폴더가 남아 있음</p><p class="fix"><span>해결</span>다른 이름으로 만들거나 <code>rm -rf sam-app-01</code> 후 다시 <code>sam init</code></p></div><div class="sam-err"><b>런타임 목록에 원하는 버전이 없음</b><p><span>원인</span>SAM CLI 버전이 오래되어 최신 Python 런타임을 모름</p><p class="fix"><span>해결</span><code>pip install --upgrade aws-sam-cli</code> 또는 설치 ZIP 재설치 후 재시도</p></div></aside></div></article>
+        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>STEP 2</span><h3>최소 템플릿 이해</h3><p>먼저 <code>sam init</code>이 만든 폴더로 이동해 구조를 확인한 뒤 <code>template.yaml</code>을 읽습니다. <code>Transform</code>, 함수 타입, 코드 위치, 런타임과 핸들러가 핵심입니다.</p></div><div class="sam-split"><div class="sam-split-code"><section class="lambda-code"><header><span>폴더 이동 → 구조 확인</span><button type="button" data-copy-code>복사</button></header><pre><code># 1) 프로젝트 루트로 이동 (sam init 으로 만든 폴더)
+cd ~/sam-app-01
+pwd
+ls -la                     # template.yaml, samconfig.toml 이 보여야 합니다
+
+# 2) sam init 이 만들어 준 구조 확인
+find . -path ./.aws-sam -prune -o -type f -print | sort
+# ./events/event.json          ← 로컬 호출용 샘플 이벤트 (STEP 4에서 사용)
+# ./hello_world/app.py         ← 핸들러: lambda_handler(event, context)
+# ./hello_world/requirements.txt ← 함수에 설치할 pip 패키지 목록
+# ./samconfig.toml             ← sam 명령 기본 옵션 (stack_name 등)
+# ./template.yaml              ← SAM 템플릿
+# ./tests/...                  ← 단위/통합 테스트</code></pre></section><section class="lambda-code"><header><span>template.yaml</span><button type="button" data-copy-code>복사</button></header><pre><code>AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  HelloWorldFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: hello_world/        # 코드 폴더 (sam init 이 생성)
+      Handler: app.lambda_handler  # hello_world/app.py 의 lambda_handler
+      Runtime: python3.14
+      Architectures: [x86_64]
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: get</code></pre></section></div><aside class="sam-errors"><header><i>⚠</i> 발생할 수 있는 오류</header><div class="sam-err"><b>YAML 들여쓰기 오류</b><code>Error: [InvalidTemplateException] ... Template format error: YAML not well-formed</code><p><span>원인</span>탭 사용, 콜론 뒤 공백 누락, 들여쓰기 칸 수 불일치</p><p class="fix"><span>해결</span>공백 2칸으로 통일하고 <code>sam validate --lint</code> 로 줄 번호 확인</p></div><div class="sam-err"><b>Transform 줄 누락</b><code>Error: ... Unrecognized resource types: [AWS::Serverless::Function]</code><p><span>원인</span><code>Transform: AWS::Serverless-2016-10-31</code> 가 없어 SAM 타입을 모름</p><p class="fix"><span>해결</span>템플릿 두 번째 줄에 Transform 선언 추가</p></div><div class="sam-err"><b>CodeUri 폴더가 없음</b><code>Error: ... CodeUri hello_world/ ... does not exist</code><p><span>원인</span><code>CodeUri</code> 경로와 실제 폴더명이 다름 (템플릿 위치 기준 상대경로)</p><p class="fix"><span>해결</span><code>ls hello_world/app.py</code> 로 경로 확인 후 CodeUri 수정</p></div><div class="sam-err"><b>Handler 이름 불일치 (호출 시 드러남)</b><code>Unable to import module 'app': No module named 'app'</code><p><span>원인</span><code>Handler: app.lambda_handler</code> 는 <code>app.py</code> 의 <code>lambda_handler</code> 를 뜻하는데 파일·함수 이름이 다름</p><p class="fix"><span>해결</span>파일명.함수명 형식으로 Handler 를 실제 코드에 맞춤</p></div></aside></div></article>
+        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>STEP 3</span><h3>검증과 빌드</h3><p>모든 <code>sam</code> 명령은 <code>template.yaml</code>이 있는 프로젝트 폴더(<code>sam-app-01</code>) 안에서 실행합니다. 템플릿의 함수 이름과 코드 위치를 확인한 뒤 검증하고 Lambda 실행 구조로 빌드합니다. 빌드가 <code>Binary validation failed for python</code>으로 실패하면 템플릿 Runtime과 로컬 Python 버전이 다른 것이므로 아래 블록의 해결 A~C 중 하나를 따릅니다.</p></div><div class="sam-split"><div class="sam-split-code"><section class="lambda-code"><header><span>템플릿 확인</span><button type="button" data-copy-code>복사</button></header><pre><code># STEP 2 에서 이동한 프로젝트 루트(~/sam-app-01)에서 계속합니다
+pwd                        # /home/.../sam-app-01
+
+# 1) 템플릿의 함수 이름과 코드 위치 확인
+grep -n -E "HelloWorldFunction|CodeUri|Handler|Runtime" template.yaml
+# CodeUri: hello_world/  +  Handler: app.lambda_handler
+#  → hello_world/app.py 안의 lambda_handler 함수가 실행됩니다
+sed -n 1,40p hello_world/app.py</code></pre></section><section class="lambda-code"><header><span>validate → build</span><button type="button" data-copy-code>복사</button></header><pre><code># 2) 템플릿 검증 (samconfig.toml 에 lint = true 가 있어 --lint 생략 가능)
+sam validate --lint
+# 다른 폴더에서 실행할 때는 -t 로 템플릿 경로를 지정합니다
+# sam validate --lint -t ~/sam-app-01/template.yaml
+
+# 3) 빌드 → .aws-sam/build/ 아래에 함수별 산출물 생성
+#    (samconfig.toml 의 cached/parallel 옵션이 자동 적용됩니다)
+sam build
+
+# 빌드가 "Binary validation failed for python" 으로 실패하면 → 우측 오류 패널 (Runtime 불일치)
+# 네이티브 패키지(예: psycopg2, numpy)가 있을 때도 Lambda 유사 컨테이너에서 빌드
+# (Docker 가 실행 중이어야 합니다)
+sam build --use-container
+
+# 4) 빌드 결과 확인
+ls .aws-sam/build/
+# HelloWorldFunction/  template.yaml
+ls .aws-sam/build/HelloWorldFunction/      # app.py 와 설치된 패키지가 복사됨
+head -20 .aws-sam/build/template.yaml      # CodeUri 가 빌드 폴더로 바뀐 템플릿
+
+# 이후 sam local invoke / sam deploy 는 .aws-sam/build/ 산출물을 사용합니다
+# 코드를 고쳤다면 다시 sam build 를 실행합니다
+# 산출물을 완전히 지우고 다시 빌드하려면: rm -rf .aws-sam && sam build</code></pre></section><section class="lambda-code sam-transcript"><header><span>실행방법</span></header><pre><code>root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade/sam-app-01# sam build
+Starting Build use cache                                                                                                               
+Manifest file is changed (new hash: 3298f13049d19cffaa37ca931dd4d421) or dependency folder                                             
+(.aws-sam/deps/35295f47-7d6e-433e-a49b-d8e1cb8d1f81) is missing for (HelloWorldFunction), downloading dependencies and copying/building
+source                                                                                                                                 
+Building codeuri: /home/ubuntu/stock-coin-trade/sam-app-01/hello_world runtime: python3.12 architecture: x86_64 functions:             
+HelloWorldFunction                                                                                                                     
+ Running PythonPipBuilder:CleanUp                                                                                                      
+ Running PythonPipBuilder:ResolveDependencies                                                                                          
+ Running PythonPipBuilder:CopySource                                                                                                   
+ Running PythonPipBuilder:CopySource                                                                                                   
+
+Build Succeeded
+
+Built Artifacts  : .aws-sam/build
+Built Template   : .aws-sam/build/template.yaml
+
+Commands you can use next
+=========================
+[*] Validate SAM template: sam validate
+[*] Invoke Function: sam local invoke
+[*] Test Function in the Cloud: sam sync --stack-name {{stack-name}} --watch
+[*] Deploy: sam deploy --guided
+root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade/sam-app-01# sam build --use-container
+Starting Build use cache                                                                                                               
+Starting Build inside a container                                                                                                      
+Cache is invalid, running build and copying resources for following functions (HelloWorldFunction)                                     
+Building codeuri: /home/ubuntu/stock-coin-trade/sam-app-01/hello_world runtime: python3.12 architecture: x86_64 functions:             
+HelloWorldFunction                                                                                                                     
+
+Fetching public.ecr.aws/sam/build-python3.12:latest-x86_64 Docker container image.......................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+Mounting /home/ubuntu/stock-coin-trade/sam-app-01/hello_world as /tmp/samcli/source:ro,delegated, inside runtime container             
+SAM_CONTAINER_ID: ea7839acc942e2d20bf9d3a86097b8a41581bb7d8c202963ea0ce6d0e1630840                                                     
+ Running PythonPipBuilder:ResolveDependencies
+ Running PythonPipBuilder:CopySource
+
+Build Succeeded
+
+Built Artifacts  : .aws-sam/build
+Built Template   : .aws-sam/build/template.yaml
+
+Commands you can use next
+=========================
+[*] Validate SAM template: sam validate
+[*] Invoke Function: sam local invoke
+[*] Test Function in the Cloud: sam sync --stack-name {{stack-name}} --watch
+[*] Deploy: sam deploy --guided</code></pre></section></div><aside class="sam-errors"><header><i>⚠</i> 발생할 수 있는 오류</header><div class="sam-feature"><header><i>ℹ</i> 기능 설명 — sam build 와 sam build --use-container 의 차이</header>
+<table class="sam-table sam-feature-table"><thead><tr><th>항목</th><th><code>sam build</code></th><th><code>sam build --use-container</code></th></tr></thead><tbody>
+<tr><td>의존성 설치 위치</td><td>내 WSL 의 로컬 Python(<code>/usr/bin/python3</code>)과 pip 로 설치. 그래서 템플릿 Runtime 과 로컬 버전이 같아야 합니다.</td><td>Lambda 와 같은 OS·Python 이 들어 있는 <b>빌드 컨테이너</b> 안에서 pip 로 설치. 로컬 Python 버전과 무관합니다.</td></tr>
+<tr><td>이미지를 받는 곳</td><td>이미지 없음 (Docker 불필요)</td><td>AWS 공개 ECR <code>public.ecr.aws/sam/build-python3.12:latest-x86_64</code> 에서 pull. 템플릿의 Runtime·Architectures 로 태그가 정해집니다.</td></tr>
+<tr><td>이미지가 저장되는 곳</td><td>—</td><td>내 PC 의 Docker 이미지 저장소(WSL 의 Docker 데이터 디렉터리). <code>docker images | grep sam/build</code> 로 확인. 첫 pull 만 오래 걸리고(수백 MB) 이후 재사용됩니다.</td></tr>
+<tr><td>소스가 컨테이너에 들어가는 방식</td><td>—</td><td><code>hello_world/</code> 를 컨테이너의 <code>/tmp/samcli/source</code> 에 <b>읽기 전용</b> 으로 마운트. 컨테이너는 빌드가 끝나면 삭제되고 이미지만 남습니다(<code>SAM_CONTAINER_ID</code> 는 그 임시 컨테이너 ID).</td></tr>
+<tr class="both"><td>산출물이 생기는 곳</td><td colspan="2">둘 다 같습니다. <code>.aws-sam/build/HelloWorldFunction/</code> (코드 + 설치된 패키지), <code>.aws-sam/build/template.yaml</code> (CodeUri 가 빌드 폴더로 바뀐 템플릿), <code>.aws-sam/deps/&lt;hash&gt;/</code> (requirements 해시별 의존성 캐시 — 로그의 "Manifest file is changed (new hash …)" 가 이 캐시 갱신). 이후 <code>sam local invoke</code>·<code>sam deploy</code> 는 이 폴더를 씁니다.</td></tr>
+<tr><td>언제 쓰나</td><td>순수 Python 패키지만 있고 로컬 Python 버전이 Runtime 과 같을 때. 가장 빠릅니다.</td><td>로컬 Python 버전이 다를 때, 또는 psycopg·numpy 처럼 네이티브 바이너리가 있는 패키지를 Lambda(Amazon Linux) 에 맞게 빌드해야 할 때. Docker 데몬이 켜져 있어야 합니다.</td></tr>
+</tbody></table>
+<p>로그 읽기: <code>Running PythonPipBuilder:ResolveDependencies</code> = pip 설치, <code>CopySource</code> = 코드 복사, <code>Starting Build inside a container</code> = 컨테이너 모드, <code>Cache is invalid</code> = 이전 캐시를 버리고 다시 설치.</p></div>
+<div class="sam-err"><b>Runtime 과 로컬 Python 버전 불일치 (가장 흔함)</b><code>Build Failed
+Error: PythonPipBuilder:Validation - Binary validation failed for python, searched for python in following locations : ['/usr/bin/python3', '/bin/python3'] which did not satisfy constraints for runtime: python3.14. Do you have python for runtime: python3.14 on your PATH?</code><p><span>원인</span>컨테이너 없는 <code>sam build</code> 는 템플릿 Runtime(python3.14)과 같은 버전의 로컬 Python 으로 pip 의존성을 설치합니다. <code>sam init</code> 이 고른 3.14 와 달리 Ubuntu 에는 3.12 만 있어 검증에서 멈춥니다. <code>python3 --version</code> 과 <code>grep Runtime template.yaml</code> 로 확인합니다.</p><p class="fix"><span>해결</span><b>A (권장)</b> <code>sam build --use-container</code> — 템플릿 수정 없이 python3.14 빌드 이미지에서 설치 (Docker 필요) · <b>B</b> <code>sed -i 's/Runtime: python3.14/Runtime: python3.12/' template.yaml</code> 후 <code>sam validate --lint &amp;&amp; sam build</code> — 로컬 실습만 할 때 가장 간단 · <b>C</b> deadsnakes PPA 또는 pyenv 로 Python 3.14 설치 — 3.14 를 꼭 유지할 때만</p></div><div class="sam-err"><b>Docker 가 꺼져 있음 (--use-container)</b><code>Error: Docker is unreachable. Docker needs to be running to build inside a container.</code><p><span>원인</span>Docker Desktop/데몬이 실행 중이 아니거나 현재 사용자에게 소켓 권한이 없음</p><p class="fix"><span>해결</span>Docker 를 시작하고 <code>docker info</code> 가 성공하는지 확인. 권한 오류면 <code>sudo usermod -aG docker $USER</code> 후 재로그인</p></div><div class="sam-err"><b>lint 규칙 위반</b><code>E3012 Property Resources/HelloWorldFunction/Properties/Timeout should be of type Integer</code><p><span>원인</span>값 타입·허용 목록이 CloudFormation 스키마와 다름</p><p class="fix"><span>해결</span>메시지의 규칙 코드(E/W 번호)와 경로대로 값을 고침. 경고(W)는 배포를 막지 않음</p></div><div class="sam-err"><b>pip 의존성 설치 실패</b><code>Error: PythonPipBuilder:ResolveDependencies - {package} ... No matching distribution found</code><p><span>원인</span>requirements.txt 의 패키지명·버전 오타 또는 네트워크 차단</p><p class="fix"><span>해결</span>패키지명 확인, 프록시 환경이면 <code>pip config</code> 설정, 컨테이너 빌드면 Docker 네트워크 확인</p></div><div class="sam-err"><b>오래된 캐시로 이상 동작</b><p><span>원인</span><code>cached = true</code> 상태에서 파일을 바꿨는데 반영이 안 됨</p><p class="fix"><span>해결</span><code>rm -rf .aws-sam &amp;&amp; sam build</code> 로 전체 재빌드</p></div></aside></div></article>
+        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>STEP 4</span><h3>로컬 단일 호출</h3><p>이벤트 JSON을 핸들러에 전달합니다. 로컬 컨테이너 호출에는 Docker가 실행 중이어야 합니다.</p></div><div class="sam-split"><div class="sam-split-code"><section class="lambda-code"><header><span>local invoke</span><button type="button" data-copy-code>복사</button></header><pre><code># sam init 이 만들어 둔 샘플 이벤트 사용
+sam local invoke HelloWorldFunction \
+  --event events/event.json
+
+# 직접 만든 이벤트로 호출
+printf '{"message":"hello"}\n' &gt; events/basic.json
+sam local invoke HelloWorldFunction \
+  --event events/basic.json
+
+# API 이벤트가 있으므로 로컬 API 서버로도 확인 가능
+sam local start-api
+# curl http://127.0.0.1:3000/hello</code></pre></section><section class="lambda-code sam-transcript"><header><span>실행방법</span></header><pre><code>root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade/sam-app-01# sam local invoke HelloWorldFunction \
+  --event events/event.json
+No current session found, using default AWS::AccountId                              
+Invoking app.lambda_handler (python3.12)                                            
+Local image was not found.                                                          
+Removing rapid images for repo public.ecr.aws/sam/emulation-python3.12              
+Building image....................................................................................................................................................
+Using local image: public.ecr.aws/lambda/python:3.12-rapid-x86_64.                  
+                                                                                    
+Mounting /home/ubuntu/stock-coin-trade/sam-app-01/.aws-sam/build/HelloWorldFunction 
+as /var/task:ro,delegated, inside runtime container                                 
+SAM_CONTAINER_ID: 4d76f684dc648c23a3d8d23eed3f57c451743bc8fd2e28e7e9192bd087f7d391  
+END RequestId: 05d31d4a-2a38-4857-a7fc-882c91acc2c9
+REPORT RequestId: 05d31d4a-2a38-4857-a7fc-882c91acc2c9  Init Duration: 0.04 ms  Duration: 89.35 ms  Billed Duration: 90 ms  Memory Size: 128 MB     Max Memory Used: 128 MB
+{"statusCode": 200, "body": "{\"message\": \"hello world\"}"}</code></pre></section><section class="lambda-code sam-transcript"><header><span>실행방법 — 직접 만든 이벤트 (두 번째 호출: 이미지 재사용)</span></header><pre><code>root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade/sam-app-01# printf '{"message":"hello"}\n' &gt; events/basic.json
+root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade/sam-app-01# cat events/basic.json
+{"message":"hello"}
+root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade/sam-app-01# sam local invoke HelloWorldFunction \
+  --event events/basic.json
+No current session found, using default AWS::AccountId
+Invoking app.lambda_handler (python3.12)
+Local image is up-to-date
+Using local image: public.ecr.aws/lambda/python:3.12-rapid-x86_64.
+
+Mounting /home/ubuntu/stock-coin-trade/sam-app-01/.aws-sam/build/HelloWorldFunction as /var/task:ro,delegated, inside runtime container
+SAM_CONTAINER_ID: 0f569ec71cb538a5e239f03dfb1cc64998b0afaec5250313e845716019c9384f
+START RequestId: fff02abe-a5dc-4306-ae72-09b4eb61f5ce Version: $LATEST
+END RequestId: fff02abe-a5dc-4306-ae72-09b4eb61f5ce
+REPORT RequestId: fff02abe-a5dc-4306-ae72-09b4eb61f5ce	Init Duration: 0.06 ms	Duration: 54.23 ms	Billed Duration: 55 ms	Memory Size: 128 MB	Max Memory Used: 128 MB	
+{"statusCode": 200, "body": "{\"message\": \"hello world\"}"}</code></pre></section><section class="lambda-code sam-transcript"><header><span>실행방법 — 로컬 API 서버 (터미널 1: sam local start-api)</span></header><pre><code>root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade/sam-app-01# sam local start-api
+No current session found, using default AWS::AccountId                             
+Initializing the lambda functions containers.                                      
+Local image is up-to-date                                                          
+Using local image: public.ecr.aws/lambda/python:3.12-rapid-x86_64.                 
+                                                                                   
+Mounting /home/ubuntu/stock-coin-trade/sam-app-01/.aws-sam/build/HelloWorldFunction
+as /var/task:ro,delegated, inside runtime container                                
+SAM_CONTAINER_ID: 3fab3f770d6a012a826c01a1d225f6b75c9a3a653626f205c0b6ac8142763bcf 
+Containers created. Waiting for readiness...                                       
+Waiting for 1 containers to be running...                                          
+All 1 containers running after 0.0 seconds                                         
+All containers are ready.                                                          
+Mounting HelloWorldFunction at http://127.0.0.1:3000/hello [GET]                   
+You can now browse to the above endpoints to invoke your functions. You do not need
+to restart/reload SAM CLI while working on your functions, changes will be         
+reflected instantly/automatically. If you used sam build before running local      
+commands, you will need to re-run sam build for the changes to be picked up. You   
+only need to restart SAM CLI if you update your AWS SAM template                   
+2026-09-27 16:25:30 WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on http://127.0.0.1:3000
+2026-09-27 16:25:30 Press CTRL+C to quit
+Invoking app.lambda_handler (python3.12)                   
+Lambda function 'HelloWorldFunction' is already running    
+START RequestId: e237b94a-9ce4-4c83-974c-a299d2cef170 Version: $LATEST
+END RequestId: e237b94a-9ce4-4c83-974c-a299d2cef170
+REPORT RequestId: e237b94a-9ce4-4c83-974c-a299d2cef170  Init Duration: 0.03 ms     Duration: 44.26 ms      Billed Duration: 45 ms     Memory Size: 128 MB     Max Memory Used: 128 MB
+
+No Content-Type given. Defaulting to 'application/json'.   
+2026-09-27 16:25:50 127.0.0.1 - - [27/Sep/2026 16:25:50] "GET /hello HTTP/1.1" 200 -</code></pre></section><p class="lambda-sam-note"><b>확인은 터미널을 하나 더 열어서:</b> <code>sam local start-api</code>는 종료(<code>Ctrl+C</code>)할 때까지 터미널 1을 점유한 채 <code>http://127.0.0.1:3000</code>에서 요청을 기다립니다. 그래서 WSL 터미널을 <b>새로 하나 더</b> 열고(Windows Terminal 의 새 탭, 또는 VS Code 터미널 <code>+</code>) 거기서 <code>curl</code>로 호출합니다. 호출할 때 폴더는 어디든 상관없습니다(아래는 저장소 루트에서 실행). 호출 순간 터미널 1에는 <code>Invoking app.lambda_handler</code> → <code>REPORT … Duration</code> → <code>"GET /hello HTTP/1.1" 200</code> 로그가 찍히고, 터미널 2에는 응답 본문이 출력됩니다. 첫 줄처럼 응답 뒤에 프롬프트가 바로 붙는 것은 응답 JSON 끝에 줄바꿈이 없기 때문이며, <code>; echo</code>를 붙이거나 <code>-w '\n'</code> 옵션을 주면 깔끔하게 보입니다. 확인이 끝나면 터미널 1에서 <code>Ctrl+C</code>로 서버를 종료합니다.</p><section class="lambda-code sam-transcript"><header><span>실행방법 — 확인 (터미널 2: curl)</span></header><pre><code>root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade# curl http://127.0.0.1:3000/hello
+{"message": "hello world"}root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade#
+root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade# curl -s http://127.0.0.1:3000/hello; echo
+{"message": "hello world"}
+root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade# curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3000/hello
+200</code></pre></section></div><aside class="sam-errors"><header><i>⚠</i> 발생할 수 있는 오류</header><div class="sam-err"><b>Docker 가 꺼져 있음</b><code>Error: Running AWS SAM projects locally requires Docker. Have you got it installed and running?</code><p><span>원인</span><code>sam local</code> 은 함수를 Docker 컨테이너에서 실행함</p><p class="fix"><span>해결</span>Docker 시작 후 <code>docker info</code> 확인</p></div><div class="sam-err"><b>첫 호출이 매우 느림</b><code>Fetching public.ecr.aws/lambda/python:3.14-x86_64 Docker container image......</code><p><span>원인</span>Lambda 런타임 이미지를 처음 내려받는 중</p><p class="fix"><span>해결</span>정상 동작. 한 번 받은 뒤에는 수 초 안에 응답</p></div><div class="sam-err"><b>이벤트 파일을 찾지 못함</b><code>Error: Invalid value for '--event': Path 'events/basic.json' does not exist.</code><p><span>원인</span>파일을 만들지 않았거나 프로젝트 루트가 아닌 곳에서 실행</p><p class="fix"><span>해결</span><code>pwd</code> 로 위치 확인, <code>ls events/</code> 로 파일 확인</p></div><div class="sam-err"><b>함수 논리 ID 오타</b><code>Error: Function HelloWorldFunction not found in template</code><p><span>원인</span>템플릿 <code>Resources</code> 의 키와 다른 이름으로 호출</p><p class="fix"><span>해결</span><code>grep -n "Type: AWS::Serverless::Function" -B1 template.yaml</code> 로 논리 ID 확인</p></div><div class="sam-err"><b>핸들러 import 실패</b><code>{"errorMessage": "Unable to import module 'app': No module named 'app'", "errorType": "Runtime.ImportModuleError"}</code><p><span>원인</span>Handler 설정과 파일명 불일치, 또는 코드 수정 후 <code>sam build</code> 를 안 해서 빌드 산출물이 옛날 것</p><p class="fix"><span>해결</span>Handler 확인 후 <code>sam build</code> 다시 실행</p></div><div class="sam-err"><b>로컬 API 포트 충돌 (start-api)</b><code>OSError: [Errno 98] Address already in use</code><p><span>원인</span>3000 포트를 다른 프로세스가 사용 중</p><p class="fix"><span>해결</span><code>sam local start-api --port 3001</code> 처럼 다른 포트 지정</p></div><div class="sam-err"><b>응답이 errorMessage 로 옴</b><code>{"errorMessage": "'message'", "errorType": "KeyError", "stackTrace": [...]}</code><p><span>원인</span>핸들러 코드에서 예외 발생 (이벤트 키 없음 등)</p><p class="fix"><span>해결</span>출력의 stackTrace 줄 번호로 코드 수정 → <code>sam build</code> → 재호출</p></div></aside></div></article>
+      </div>
+    </section>
+  </main>
+  <div id="lambda-toast" class="lambda-toast" role="status" aria-live="polite"></div>
+  <script src="/js/config.js"></script>
+  <script src="/js/common.js?v=20260927-sam-split-f13"></script>
+  <script src="/js/sam-guide.js?v=20260927-1-f13"></script>
+  <script src="/js/tech-glossary.js?v=20260927-3" data-glossary-root="main"></script>
+</body>
+</html>

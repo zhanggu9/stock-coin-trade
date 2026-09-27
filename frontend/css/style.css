@@ -78,7 +78,7 @@ html { font-size: 17px; }
     border-radius: 999px;
     color: #075f9b;
     background: #e8f6ff;
-    font-size: 11px;
+    font-size: 13.5px;
     font-weight: 800;
     line-height: 1.2;
     vertical-align: middle;
@@ -133,7 +133,7 @@ body.app-shell-layout > footer {
     color: #CBD5E1;
 }
 body.app-shell-layout > footer:not(#site-footer) { padding: 12px clamp(16px, 2vw, 36px); }
-#site-footer { padding: 12px clamp(16px, 2vw, 36px); font-size: 12px; line-height: 1.45; }
+#site-footer { padding: 12px clamp(16px, 2vw, 36px); font-size: 13.5px; line-height: 1.45; }
 
 /* Korean UI text never falls below the readable desktop/mobile baseline. */
 body.app-shell-layout > main :is(p, span, a, button, input, select, textarea, label, li, td, th),
@@ -343,7 +343,7 @@ body.alternatives-layout > main :is(p, span, a, button, input, select, textarea,
 .gnb-brand i { margin-right:6px; }
 .gnb-nav { display:flex; align-items:stretch; gap:2px; min-width:0; flex:1; overflow-x:auto; scrollbar-width:thin; }
 .gnb-link,.gnb-group summary { display:flex; align-items:center; gap:6px; height:58px; padding:0 10px; color:var(--fg-2); text-decoration:none; font-size:14.3px; font-weight:750; white-space:nowrap; cursor:pointer; list-style:none; }
-.gnb-group summary::-webkit-details-marker { display:none; }.gnb-group summary i { font-size:11px; transition:transform .15s; }.gnb-group[open] summary i { transform:rotate(180deg); }
+.gnb-group summary::-webkit-details-marker { display:none; }.gnb-group summary i { font-size:13.5px; transition:transform .15s; }.gnb-group[open] summary i { transform:rotate(180deg); }
 .gnb-link:hover,.gnb-group summary:hover { color:var(--accent-dark); background:var(--accent-light); }
 .gnb-group { position:relative; flex:0 0 auto; }.gnb-dropdown { position:fixed; z-index:220; display:grid; min-width:210px; padding:6px; border:1px solid var(--border); border-radius:9px; background:#fff; box-shadow:var(--shadow-md); }
 .gnb-dropdown a { display:flex; align-items:center; gap:8px; padding:9px 10px; border-radius:6px; color:var(--fg-2); text-decoration:none; font-size:14.3px; font-weight:650; white-space:nowrap; }.gnb-dropdown a:hover { background:var(--accent-light); color:var(--accent-dark); }
@@ -384,7 +384,7 @@ body.alternatives-layout > main :is(p, span, a, button, input, select, textarea,
 .dark-table thead th {
     background: var(--surface-2);
     color: var(--muted);
-    font-size: 12px; font-weight: 700;
+    font-size: 13.5px; font-weight: 700;
     letter-spacing: 0.04em; text-transform: uppercase;
     border-bottom: 1px solid var(--border);
     padding: 8px 12px; white-space: nowrap;
@@ -486,7 +486,7 @@ body.alternatives-layout > main :is(p, span, a, button, input, select, textarea,
 /* ── Badges ─────────────────────────────────────────────────────────────── */
 .badge {
     border-radius: 4px; padding: 0.18rem 0.65rem;
-    font-size: 11px; font-weight: 700;
+    font-size: 13.5px; font-weight: 700;
     display: inline-flex; align-items: center; letter-spacing: 0.03em;
 }
 .badge-gold  { background: var(--accent); color: #FFFFFF; border: none; }
@@ -563,7 +563,7 @@ td, th { vertical-align: middle; }
     box-shadow: var(--shadow-sm);
 }
 .stat-card .stat-label {
-    font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+    font-size: 13.5px; font-weight: 700; letter-spacing: 0.06em;
     text-transform: uppercase; color: var(--muted); margin-bottom: 0.2rem;
 }
 .stat-card .stat-value { font-size: 22px; font-weight: 900; color: var(--fg); line-height: 1.2; }
@@ -576,7 +576,7 @@ td, th { vertical-align: middle; }
 
 /* ── Section label ──────────────────────────────────────────────────────── */
 .section-label {
-    font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+    font-size: 13.5px; font-weight: 700; letter-spacing: 0.08em;
     text-transform: uppercase; color: var(--muted);
 }
 
@@ -671,7 +671,7 @@ body[data-exchange] .row button:disabled { opacity: .6; }
 @keyframes composer-in { from { opacity:0; transform:translateY(12px) scale(.985); } to { opacity:1; transform:none; } }
 .dataset-composer-dialog header { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; padding:26px 32px 22px; border-bottom:1px solid #d9e6ff; background:linear-gradient(135deg,#e6f0ff,#fafcff); }
 .dataset-composer-heading { min-width:0; }
-.dataset-composer-eyebrow { color:var(--accent-dark); font-size:11px; font-weight:900; letter-spacing:.1em; }
+.dataset-composer-eyebrow { color:var(--accent-dark); font-size:13.5px; font-weight:900; letter-spacing:.1em; }
 .dataset-composer-dialog h2 { margin:6px 0 6px; color:var(--fg); font-size:24px; font-weight:900; line-height:1.25; }
 .dataset-composer-dialog header p { margin:0; color:var(--fg-2); font-size:13.5px; line-height:1.6; }
 .dataset-composer-close { flex:0 0 auto; width:36px; height:36px; border:1px solid #c9daff; border-radius:9px; color:var(--muted); background:#fff; font-size:24px; line-height:1; cursor:pointer; transition:background .12s ease, color .12s ease; }
@@ -689,7 +689,7 @@ body[data-exchange] .row button:disabled { opacity: .6; }
 .dataset-composer-body textarea:focus { outline:none; border-color:var(--accent) !important; box-shadow:0 0 0 3px rgba(37,99,235,.15); }
 .dataset-composer-body textarea { min-height:340px; resize:vertical; }
 .dataset-composer-meta { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-top:-8px; }
-.dataset-composer-count { color:var(--muted); font-size:12.5px; font-variant-numeric:tabular-nums; }
+.dataset-composer-count { color:var(--muted); font-size:14px; font-variant-numeric:tabular-nums; }
 .dataset-composer-count.near-limit { color:#dc2626; font-weight:800; }
 .dataset-composer-msg { flex:1 1 auto; margin:0 !important; text-align:right; font-size:13.5px; font-weight:700; }
 .dataset-composer-footer { display:flex; align-items:center; justify-content:flex-end; gap:10px; padding:16px 32px 20px; border-top:1px solid var(--border); background:var(--surface-2); }
@@ -715,14 +715,17 @@ body[data-exchange] .row button:disabled { opacity: .6; }
 /* API 테스트 화면: 실제 호출 범위와 성공 기준을 화면 안에서 확인한다. */
 .api-test-guide { margin-top:20px; border:1px solid #BFDBFE; border-radius:11px; background:#F8FBFF; color:var(--fg); }
 .api-test-guide summary { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 16px; cursor:pointer; font-size:14px; font-weight:900; }
-.api-test-guide summary span { color:var(--accent-dark); font-size:12px; font-weight:700; }
-.api-test-guide-rate { margin:0; padding:11px 14px; border-top:1px solid #DBEAFE; border-bottom:1px solid #DBEAFE; background:#FFF8E8; color:#854D0E; font-size:12px; line-height:1.65; }
+.api-test-guide summary span { color:var(--accent-dark); font-size:13.5px; font-weight:700; }
+.api-test-guide-rate { margin:0; padding:11px 14px; border-top:1px solid #DBEAFE; border-bottom:1px solid #DBEAFE; background:#FFF8E8; color:#854D0E; font-size:13.5px; line-height:1.65; }
 .api-test-guide-scroll { overflow-x:auto; border-top:1px solid #DBEAFE; }
-.api-test-guide table { width:100%; min-width:820px; border-collapse:collapse; font-size:12px; line-height:1.55; }
+.api-test-guide table { width:100%; min-width:820px; border-collapse:collapse; font-size:13.5px; line-height:1.55; }
 .api-test-guide th,.api-test-guide td { padding:10px 12px; border-bottom:1px solid #DBEAFE; text-align:left; vertical-align:top; }
 .api-test-guide thead th { color:#1E3A8A; background:#EFF6FF; font-weight:850; }
 .api-test-guide tbody th { color:var(--fg); font-weight:800; white-space:nowrap; }
-.api-test-guide code { overflow-wrap:anywhere; color:#1D4ED8; font-size:11px; }
-.api-test-guide-note { margin:0; padding:11px 14px; color:#475569; font-size:12px; line-height:1.65; }
+.api-test-guide code { overflow-wrap:anywhere; color:#1D4ED8; font-size:13.5px; }
+.api-test-guide-note { margin:0; padding:11px 14px; color:#475569; font-size:13.5px; line-height:1.65; }
 .api-test-guide-note + .api-test-guide-note { padding-top:0; }
-@media(max-width:600px) { .api-test-guide summary { align-items:flex-start; flex-direction:column; }.api-test-guide summary span { font-size:11px; } }
+@media(max-width:600px) { .api-test-guide summary { align-items:flex-start; flex-direction:column; }.api-test-guide summary span { font-size:13.5px; } }
+
+/* min-text-floor: 시스템 전역 최소 글자 크기 — 브라우저 기본 smaller 크기 금지 */
+small,sub,sup{font-size:max(13px,.9em)!important}

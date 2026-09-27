@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>AWS Secrets Manager 실제 연동 가이드</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="/css/style.css?v=20260920-chart">
+  <link rel="stylesheet" href="/css/style.css?v=20260920-chart-f13">
   <style>
     .guide{max-width:1180px;margin:0 auto;padding:32px 20px 56px}
     .hero,.card{border:1px solid var(--border);border-radius:14px;background:var(--surface);box-shadow:var(--shadow-sm)}
     .hero{padding:30px;border-color:#c9daff;background:linear-gradient(135deg,#e6f0ff,#fafcff)}
-    .hero small{color:var(--accent-dark);font-size:12px;font-weight:900;letter-spacing:.08em}
+    .hero small{color:var(--accent-dark);font-size:13.5px;font-weight:900;letter-spacing:.08em}
     .hero h1{margin:7px 0;font-size:30px;font-weight:900}
     .hero p,.card p,.card li{color:var(--fg-2);line-height:1.75}
     .card{margin-top:16px;padding:24px}
@@ -18,10 +18,10 @@
     .card h3{margin:20px 0 5px;font-size:15px;font-weight:900;color:var(--fg)}
     .steps,.status-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:16px}
     .step,.status{padding:15px;border:1px solid #c9daff;border-radius:10px;background:#f8fbff}
-    .step b{display:block;color:var(--accent);font-size:12px}.step strong,.status strong{display:block;margin:5px 0;color:var(--fg)}
-    .status{border-color:#a7e5cb;background:#ecfdf5}.status span{color:#047857;font-size:12px;font-weight:800}
-    .code{margin:12px 0 0;padding:15px;overflow:auto;border-radius:9px;background:#131722;color:#dbeafe;font:12px/1.7 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre}
-    .table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse;font-size:13px}.table th,.table td{padding:11px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}.table th{color:var(--muted);background:var(--surface-2);font-size:12px}.table code{white-space:nowrap}
+    .step b{display:block;color:var(--accent);font-size:13.5px}.step strong,.status strong{display:block;margin:5px 0;color:var(--fg)}
+    .status{border-color:#a7e5cb;background:#ecfdf5}.status span{color:#047857;font-size:13.5px;font-weight:800}
+    .code{margin:12px 0 0;padding:15px;overflow:auto;border-radius:9px;background:#131722;color:#dbeafe;font:13.5px/1.7 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre}
+    .table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse;font-size:13px}.table th,.table td{padding:11px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}.table th{color:var(--muted);background:var(--surface-2);font-size:13.5px}.table code{white-space:nowrap}
     .flow{margin:14px 0;padding:15px;border-radius:9px;background:var(--surface-2);color:var(--fg);font:600 13px/2 ui-monospace,SFMono-Regular,Consolas,monospace}
     .notice{margin-top:13px;padding:13px;border-left:4px solid #f59e0b;border-radius:0 8px 8px 0;background:#fff8e8;color:#854d0e;font-size:13px;line-height:1.7}
     .notice.ok{border-left-color:#10b981;background:#ecfdf5;color:#065f46}
@@ -175,7 +175,7 @@ secretsmanager:GetSecretValue</div>
     </section>
   </main>
   <script src="/js/config.js"></script>
-  <script src="/js/common.js?v=20260926-navstate4"></script>
+  <script src="/js/common.js?v=20260926-navstate4-f13"></script>
   <script>document.addEventListener('DOMContentLoaded',()=>initPage())</script>
 </body>
 </html>

@@ -1,0 +1,115 @@
+/* SAM 활용 1~3 전용 오버라이드: 큰 글자 + 밝은 회색 코드 블록 */
+.sam-guide-body{font-size:15px}
+.sam-guide-body .lambda-hero h1{font-size:32px}
+.sam-guide-body .lambda-hero p{max-width:960px;font-size:15.5px;line-height:1.75}
+.sam-guide-body .lambda-hero>div>span{font-size:13px}
+.sam-guide-body .lambda-hero-badge b{font-size:17px}.sam-guide-body .lambda-hero-badge small{font-size:13px}
+.sam-guide-body .lambda-boundary b{font-size:15px}.sam-guide-body .lambda-boundary span{font-size:14px}
+.sam-guide-body .lambda-sam-head span,.sam-guide-body .lambda-sam-section-title>span{font-size:13px}
+.sam-guide-body .lambda-sam-head h2{font-size:24px}
+.sam-guide-body .lambda-sam-head>a{padding:9px 13px;font-size:14px}
+.sam-guide-body .lambda-sam-summary b{font-size:16px}.sam-guide-body .lambda-sam-summary p{font-size:14.5px;line-height:1.7}
+.sam-guide-body .lambda-sam-flow small{font-size:13px}.sam-guide-body .lambda-sam-flow b{font-size:14px}
+.sam-guide-body .lambda-sam-section-title h3{font-size:18px}
+.sam-guide-body .lambda-sam-section-title p{font-size:14.5px;line-height:1.7}
+.sam-guide-body .lambda-sam-note{padding:13px 15px;font-size:14.5px;line-height:1.7}
+.sam-guide-body .lambda-repo-map div{grid-template-columns:190px 1fr;padding:10px 12px}
+.sam-guide-body .lambda-repo-map dt{font-size:14px}.sam-guide-body .lambda-repo-map dd{font-size:14.5px;line-height:1.6}
+.sam-guide-body .lambda-sam-links a{padding:9px 11px;font-size:14px}
+.sam-guide-body .lambda-command-list code{padding:12px 14px;font-size:14px}
+.sam-guide-body .lambda-checkpoint h2,.sam-guide-body .lambda-official h2{font-size:17px}
+.sam-guide-body .lambda-checkpoint span,.sam-guide-body .lambda-official a{padding:9px 11px;font-size:14px}
+.sam-guide-body .lambda-server-result h3{font-size:16px}
+.sam-guide-body .lambda-server-result>span{padding:8px 10px;font-size:14px}
+.sam-guide-body .lambda-server-result p{font-size:14.5px;line-height:1.65}
+.sam-guide-body .lambda-toast{font-size:14px}
+.sam-guide-body .lambda-sam-details .lambda-code pre{max-height:560px}
+
+/* 코드 블록: 회색 배경 + 검정 글씨 */
+.sam-guide-body .lambda-code{border:1px solid #d3dae4;background:#f3f5f8;color:#111827}
+.sam-guide-body .lambda-code header{padding:9px 13px;border-bottom:1px solid #d3dae4;background:#e7ebf1;color:#2f3a4a;font-size:13.5px}
+.sam-guide-body .lambda-code button{padding:5px 10px;border:1px solid #b6c0cd;border-radius:5px;background:#fff;color:#1f2937;font-size:13px}
+.sam-guide-body .lambda-code button:hover{background:#dfe5ee}
+.sam-guide-body .lambda-code pre{padding:15px 16px;color:#111827;font:14px/1.7 "JetBrains Mono","Cascadia Code","Fira Code",Menlo,Consolas,"DejaVu Sans Mono","Liberation Mono",monospace}
+.sam-guide-body .lambda-sam-summary code,.sam-guide-body .lambda-sam-note code,.sam-guide-body .lambda-sam-section-title code,.sam-guide-body .sam-mission code,.sam-guide-body .sam-table code,.sam-guide-body .lambda-server-result code{padding:1px 5px;border-radius:4px;background:#eceff4;color:#111827;font-size:.94em}
+.sam-guide-body .lambda-code pre code{padding:0;border-radius:0;background:transparent;color:inherit;font:inherit}
+
+
+/* 타깃·비교 표 */
+.sam-table{width:100%;margin:10px 0;border-collapse:collapse;font-size:14.5px}
+.sam-table th,.sam-table td{padding:9px 11px;border:1px solid #dbe3ee;text-align:left;vertical-align:top;line-height:1.55}
+.sam-table th{background:#f0f4f9;color:#2f3a4a;font-size:13.5px}
+.sam-table td{color:#3d4b5e}
+.sam-table .ok{color:#0f8a62;font-weight:800}.sam-table .warn{color:#b45309;font-weight:800}
+
+/* 자기주도 미션 카드 */
+.sam-missions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin-top:11px}
+.sam-mission{padding:16px 18px;border:1px solid #bfe3d4;border-left:5px solid #0f8a62;border-radius:0 10px 10px 0;background:#f2fbf7}
+.sam-mission>span{color:#0f8a62;font-size:13px;font-weight:900;letter-spacing:.08em}
+.sam-mission h3{margin:4px 0 8px;font-size:17px}
+.sam-mission p,.sam-mission li{color:#3d4b5e;font-size:14.5px;line-height:1.65}
+.sam-mission ol,.sam-mission ul{margin:6px 0 0;padding-left:20px}
+.sam-mission .sam-check{display:block;margin-top:10px;padding:10px 12px;border-radius:7px;background:#fff;color:#1f5a45;font-size:14px}
+.sam-mission .sam-check b{margin-right:5px}
+.sam-mission .lambda-code{margin-top:10px}
+@media(max-width:900px){.sam-missions{grid-template-columns:1fr}.sam-guide-body .lambda-repo-map div{grid-template-columns:1fr}.sam-table{display:block;overflow-x:auto}}
+
+/* STEP 구성: 좌측 코드 · 우측 발생할 수 있는 오류 */
+.sam-step-wide{grid-column:1/-1}
+.sam-split{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:12px;align-items:start}
+.sam-split-code{min-width:0}
+.sam-split-code .lambda-code{margin:0 0 10px}
+.sam-split-code .lambda-code:last-child{margin-bottom:0}
+.sam-errors{min-width:0;padding:12px 14px 6px;border:1px solid #efd3d3;border-left:5px solid #d73c50;border-radius:0 10px 10px 0;background:#fff7f7}
+.sam-errors>header{display:flex;align-items:center;gap:8px;margin-bottom:4px;color:#b3323f;font-size:14px;font-weight:900;letter-spacing:.06em}
+.sam-errors>header i{font-style:normal}
+.sam-err{padding:10px 0;border-top:1px dashed #ebc7c7}
+.sam-err:first-of-type{border-top:0}
+.sam-err>b{display:block;color:#1f2f45;font-size:15px}
+.sam-err>code{display:block;margin:6px 0;padding:8px 10px;border:1px solid #e5d3d3;border-radius:6px;background:#f7f2f2;color:#111827;font:13.5px/1.55 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+.sam-err>p{margin:4px 0;color:#3d4b5e;font-size:14.5px;line-height:1.6}
+.sam-err>p>span{display:inline-block;min-width:34px;margin-right:6px;padding:1px 6px;border-radius:4px;background:#fde4e7;color:#9f1239;font-size:13px;font-weight:900}
+.sam-err>p.fix>span{background:#dcfce7;color:#0f6e4b}
+.sam-err>p code{padding:1px 5px;border-radius:4px;background:#eceff4;color:#111827;font-size:.94em}
+@media(max-width:1000px){.sam-split{grid-template-columns:1fr}}
+
+/* 실행방법 (대화형 sam init 기록): 연한 파랑 배경 + 진한 파랑 글씨, 복사 버튼 없음 */
+.sam-guide-body .lambda-code.sam-transcript{border-color:#b9d3f3;background:#e8f1fd;color:#0b3d91}
+.sam-guide-body .lambda-code.sam-transcript header{border-bottom-color:#b9d3f3;background:#d6e6fa;color:#0b3d91}
+.sam-guide-body .lambda-code.sam-transcript pre{color:#0b3d91}
+.sam-guide-body .lambda-code.sam-transcript pre code{color:inherit}
+
+/* 오류 패널 안 기능 설명 블록 */
+.sam-feature{margin:6px 0 10px;padding:10px 12px 8px;border:1px solid #b9d3f3;border-left:5px solid #1760d8;border-radius:0 8px 8px 0;background:#eef4fd}
+.sam-feature>header{margin-bottom:6px;color:#0b3d91;font-size:14.5px;font-weight:900}
+.sam-feature>header i{margin-right:6px;font-style:normal}
+.sam-feature-table{margin:6px 0 8px;font-size:13.5px;background:#fff}
+.sam-feature-table th{background:#dfeafb;color:#0b3d91;font-size:13px}
+.sam-feature-table td{padding:7px 9px;color:#2f3f55;line-height:1.55}
+.sam-feature-table td:first-child{width:118px;color:#0b3d91;font-weight:800;background:#f5f8fe}
+.sam-feature>p{margin:0;color:#2f3f55;font-size:13.5px;line-height:1.6}
+.sam-feature code{padding:1px 5px;border-radius:4px;background:#e3ecfa;color:#0b3d91;font-size:.94em}
+/* 기능 설명 표: 좁은 패널에서는 항목별 카드로 세로 배치 */
+.sam-feature-table,.sam-feature-table tbody,.sam-feature-table tr,.sam-feature-table td{display:block;width:auto}
+.sam-feature-table thead{display:none}
+.sam-feature-table tr{margin:0 0 8px;border:1px solid #cddbea;border-radius:7px;overflow:hidden}
+.sam-feature-table td{border:0;border-top:1px solid #e4ecf7}
+.sam-feature-table td:first-child{width:auto;padding:7px 10px;border-top:0;font-size:14px}
+.sam-feature-table td:nth-child(2)::before,.sam-feature-table td:nth-child(3)::before{display:inline-block;margin:0 6px 4px 0;padding:1px 7px;border-radius:4px;font:800 12.5px/1.5 ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+.sam-feature-table td:nth-child(2)::before{content:"sam build";background:#e3ecfa;color:#0b3d91}
+.sam-feature-table td:nth-child(3)::before{content:"sam build --use-container";background:#dcfce7;color:#0f6e4b}
+.sam-feature-table tr.both td:nth-child(2)::before{content:"공통";background:#fde9c7;color:#8a5a13}
+/* 파란 실행설명 창 안의 설명문 (코드가 아닌 문장) */
+.sam-guide-body .sam-transcript .sam-transcript-prose{padding:12px 16px 4px;color:#0b3d91;font-size:14.5px;line-height:1.7}
+.sam-guide-body .sam-transcript .sam-transcript-prose p{margin:0 0 8px}
+.sam-guide-body .sam-transcript .sam-transcript-prose>b{display:block;margin:10px 0 4px;font-size:15px}
+.sam-guide-body .sam-transcript .sam-transcript-prose ul{margin:0 0 8px;padding-left:20px}
+.sam-guide-body .sam-transcript .sam-transcript-prose li{margin:3px 0}
+.sam-guide-body .sam-transcript .sam-transcript-prose+pre{border-top:1px solid #b9d3f3}
+.sam-guide-body .sam-transcript header button{border-color:#9dbbe6;background:#fff;color:#0b3d91}
+/* DB 접속 오류 시 큰 안내 */
+.sam-alert-big{margin:10px 0;padding:16px 20px;border:2px solid #d73c50;border-radius:10px;background:#fff1f2;color:#7f1d1d}
+.sam-alert-big>span{display:block;font-size:16px;font-weight:900;letter-spacing:.04em;color:#b3323f}
+.sam-alert-big>b{display:block;margin:4px 0 8px;font-size:22px;line-height:1.35;color:#111827}
+.sam-alert-big>b code,.sam-alert-big>small code{padding:2px 7px;border-radius:5px;background:#fde4e7;color:#9f1239;font-size:.95em}
+.sam-alert-big>small{display:block;font-size:14.5px;line-height:1.65;color:#5b3a3a}

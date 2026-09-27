@@ -22,6 +22,9 @@ Resources:
       Environment:
         Variables:
           QDRANT_SECRET_ARN: !Ref QdrantSecretArn
+          # sam local의 env.json이 이 값을 덮어쓴다. AWS에서는 빈 값이므로 Secret을 사용한다.
+          QDRANT_URL: ""
+          QDRANT_API_KEY: ""
           QDRANT_COLLECTION: market_knowledge
       # 외부 Qdrant면 HTTPS egress가 필요하다. Lambda를 DB VPC에 넣었다면
       # private subnet의 NAT 게이트웨이 또는 적절한 VPC 엔드포인트를 확인한다.

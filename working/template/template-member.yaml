@@ -44,6 +44,8 @@ Resources:
       Environment:
         Variables:
           DATABASE_SECRET_ARN: !Ref DatabaseSecretArn
+          # sam local의 env.json이 이 값을 덮어쓴다. AWS에서는 빈 값이므로 Secret을 사용한다.
+          DATABASE_URL: ""
       VpcConfig:
         SecurityGroupIds: !Ref VpcSecurityGroupIds
         SubnetIds: !Ref VpcSubnetIds

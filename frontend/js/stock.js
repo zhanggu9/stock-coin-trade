@@ -146,7 +146,7 @@ function updatePortfolioMini(positions, cash) {
     <div style="display:flex;height:9px;border-radius:4px;overflow:hidden;gap:1px;margin-top:4px;">${stockBars.join('')}</div>
     <div style="font-size:13px;font-weight:700;color:var(--muted);margin-top:10px;">섹터별 비중</div>
     <div style="display:flex;height:9px;border-radius:4px;overflow:hidden;gap:1px;margin-top:4px;">${sectorBars.join('')}</div>
-    <div style="font-size:12px;line-height:1.6;color:var(--muted);margin-top:6px;">${sectorLabels || '보유 주식 없음'}${sectorLabels ? ` · 현금 ${cashPct}%` : ''}</div>`;
+    <div style="font-size:13.5px;line-height:1.6;color:var(--muted);margin-top:6px;">${sectorLabels || '보유 주식 없음'}${sectorLabels ? ` · 현금 ${cashPct}%` : ''}</div>`;
 }
 
 /* ── 포맷터 ──────────────────────────────────────────────────────────────── */
@@ -331,12 +331,12 @@ function renderStockMarketList() {
     return `<tr onclick="selectStockFromList('${position.symbol}')"
               style="cursor:pointer;border-bottom:1px solid var(--border);">
       <td style="padding:6px 10px;">
-        <div style="font-weight:700;color:var(--fg);font-size:12px;">${position.name}</div>
-        <div style="font-size:10px;color:var(--muted);">${position.symbol} · ${position.sector || '기타'}</div>
+        <div style="font-weight:700;color:var(--fg);font-size:13.5px;">${position.name}</div>
+        <div style="font-size:13px;color:var(--muted);">${position.symbol} · ${position.sector || '기타'}</div>
       </td>
-      <td style="padding:6px 10px;text-align:right;font-weight:700;color:var(--fg);font-size:12px;">${price ? fmtKrw(price) : '-'}</td>
-      <td style="padding:6px 10px;text-align:right;font-size:11px;color:var(--fg);">${Number(position.quantity).toLocaleString('ko-KR')}주</td>
-      <td style="padding:6px 5px;text-align:right;font-size:11px;font-weight:800;color:${color};">${pnl >= 0 ? '+' : ''}${fmtKrw(pnl)}</td>
+      <td style="padding:6px 10px;text-align:right;font-weight:700;color:var(--fg);font-size:13.5px;">${price ? fmtKrw(price) : '-'}</td>
+      <td style="padding:6px 10px;text-align:right;font-size:13.5px;color:var(--fg);">${Number(position.quantity).toLocaleString('ko-KR')}주</td>
+      <td style="padding:6px 5px;text-align:right;font-size:13.5px;font-weight:800;color:${color};">${pnl >= 0 ? '+' : ''}${fmtKrw(pnl)}</td>
     </tr>`;
   }).join('');
 }
@@ -615,7 +615,7 @@ async function loadPositions() {
     const pnl   = Number(pos.pnl ?? 0);
     const color = colorByVal(pnl);
     return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
-      <td style="padding:9px 12px;font-weight:700;color:var(--fg);font-size:15px;">${pos.name}<br><span style="font-size:12px;color:var(--accent-dark);">${pos.symbol}</span></td>
+      <td style="padding:9px 12px;font-weight:700;color:var(--fg);font-size:15px;">${pos.name}<br><span style="font-size:13.5px;color:var(--accent-dark);">${pos.symbol}</span></td>
       <td style="padding:9px 12px;font-size:13px;color:var(--muted);white-space:nowrap;">${pos.sector || '기타'}</td>
       <td style="padding:9px 12px;text-align:right;font-size:15px;color:var(--fg);">${pos.quantity}</td>
       <td style="padding:9px 12px;text-align:right;font-size:15px;color:rgba(255,255,255,0.7);">${fmtKrw(pos.avgPrice)}</td>
@@ -646,7 +646,7 @@ async function loadHistory() {
       const dt    = new Date(h.ts).toLocaleTimeString('ko-KR', { hour12: false });
       return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
         <td style="padding:8px 12px;color:var(--muted);font-size:13px;">${dt}</td>
-        <td style="padding:8px 12px;font-weight:700;color:var(--fg);font-size:15px;">${h.name}<br><span style="font-size:12px;color:var(--accent-dark);">${h.symbol}</span></td>
+        <td style="padding:8px 12px;font-weight:700;color:var(--fg);font-size:15px;">${h.name}<br><span style="font-size:13.5px;color:var(--accent-dark);">${h.symbol}</span></td>
         <td style="padding:8px 12px;text-align:center;font-weight:800;font-size:15px;color:${color};">${isBuy ? '매수' : '매도'}</td>
         <td style="padding:8px 12px;text-align:right;color:rgba(255,255,255,0.7);font-size:15px;">${Number(h.quantity).toLocaleString('ko-KR')}주</td>
         <td style="padding:8px 12px;text-align:right;color:var(--accent-dark);font-weight:700;font-size:15px;">${fmtKrw(h.amount)}</td>

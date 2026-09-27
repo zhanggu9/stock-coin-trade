@@ -46,11 +46,11 @@ if (!document.getElementById('gnb-core-style')) {
     .gnb-brand{flex:0 0 auto;color:#0d47a1!important;text-decoration:none!important;font-size:18px!important;font-weight:900!important;white-space:nowrap}.gnb-brand i{margin-right:6px}
     .gnb-nav{display:flex!important;align-items:stretch!important;gap:2px;min-width:0;flex:1;overflow-x:auto;scrollbar-width:thin}
     .gnb-link,.gnb-group summary{display:flex!important;align-items:center!important;gap:6px;height:58px;padding:0 10px;color:#334155!important;text-decoration:none!important;font-size:14.3px!important;font-weight:750!important;white-space:nowrap;cursor:pointer;list-style:none}
-    .gnb-group{position:relative;flex:0 0 auto}.gnb-group summary::-webkit-details-marker{display:none}.gnb-group summary i{font-size:11px}.gnb-link:hover,.gnb-group summary:hover{color:#0d47a1!important;background:#edf3ff}
+    .gnb-group{position:relative;flex:0 0 auto}.gnb-group summary::-webkit-details-marker{display:none}.gnb-group summary i{font-size:13.5px}.gnb-link:hover,.gnb-group summary:hover{color:#0d47a1!important;background:#edf3ff}
     .gnb-dropdown{position:absolute;z-index:220;display:grid;min-width:210px;padding:6px;border:1px solid #dce3ef;border-radius:9px;background:#fff;box-shadow:0 10px 25px rgba(0,0,0,.12)}.gnb-dropdown a{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:6px;color:#334155!important;text-decoration:none!important;font-size:14.3px!important;font-weight:650!important;white-space:nowrap}.gnb-dropdown a:hover{background:#edf3ff;color:#0d47a1!important}.gnb-user{flex:0 0 auto;white-space:nowrap}
     .gnb-shortcuts{display:flex;align-items:center;gap:6px;min-width:0;overflow-x:auto}.gnb-shortcuts a{padding:8px 12px;border-radius:6px;color:#1e53e5!important;text-decoration:none!important;font-size:16px!important;font-weight:800!important;white-space:nowrap}.gnb-shortcuts a:hover{background:#e3f0ff}
     .site-header-inner{display:grid!important;grid-template-columns:minmax(220px,1fr) auto minmax(220px,1fr);align-items:center!important;gap:16px;min-height:56px;padding:0 18px}.site-header-left,.site-header-actions{display:flex;align-items:center;gap:12px;min-width:0}.site-header-actions{justify-self:end}.header-menu-label{display:inline}
-    #oc-panel .oc-group-toggle,#ai-panel .oc-group-toggle{font-size:15.4px!important;line-height:1.4!important}#oc-panel .oc-nav-item,#ai-panel .oc-nav-item{font-size:15.4px!important;line-height:1.4!important}#oc-panel .oc-nav-item--sub,#ai-panel .oc-nav-item--sub{font-size:14.3px!important}#oc-panel .oc-header,#ai-panel .oc-header{font-size:16.5px!important}#oc-panel .oc-footer,#ai-panel .oc-footer{font-size:12.1px!important}
+    #oc-panel .oc-group-toggle,#ai-panel .oc-group-toggle{font-size:15.4px!important;line-height:1.4!important}#oc-panel .oc-nav-item,#ai-panel .oc-nav-item{font-size:15.4px!important;line-height:1.4!important}#oc-panel .oc-nav-item--sub,#ai-panel .oc-nav-item--sub{font-size:14.3px!important}#oc-panel .oc-header,#ai-panel .oc-header{font-size:16.5px!important}#oc-panel .oc-footer,#ai-panel .oc-footer{font-size:14px!important}
     /* 메뉴 3단계(패널 제목 → 그룹 → 항목)를 캐시와 무관하게 구분한다. */
     #oc-panel .oc-header{background:linear-gradient(135deg,#1746B5,#2962FF)!important;border-bottom-color:#123D91!important;color:#fff!important}
     #oc-panel .oc-header .brand-logo-text{background:none!important;color:#fff!important;-webkit-text-fill-color:#fff!important}
@@ -255,7 +255,9 @@ function renderHeader(user) {
     ]},
     { type: 'group', label: 'Data Base / API', items: [
       { href: '/quant.html?tab=schema', label: 'DB 스키마', icon: 'fa-solid fa-sitemap' },
-      { href: '/sam-guide.html', label: 'SAM 활용', icon: 'fa-brands fa-aws' },
+      { href: '/sam-guide-1.html', label: 'SAM 활용 1 · 설치·Hello World', icon: 'fa-brands fa-aws' },
+      { href: '/sam-guide-2.html', label: 'SAM 활용 2 · 저장소 Lambda 로컬 실행', icon: 'fa-brands fa-aws' },
+      { href: '/sam-guide-3.html', label: 'SAM 활용 3 · AWS 배포·운영', icon: 'fa-brands fa-aws' },
       { href: '/lambda-db-practice.html', label: 'Lambda/API', icon: 'fa-solid fa-cloud-arrow-up' },
       { href: '/ohlcv-db.html', label: 'OHLCV DB', icon: 'fa-brands fa-docker' },
       { href: '/db-backup-policy.html', label: 'DB 백업 정책', icon: 'fa-solid fa-database' },
@@ -368,7 +370,7 @@ function renderHeader(user) {
       <nav class="oc-nav" aria-label="외부 3rd-party API 실습 메뉴">
         ${isLoggedIn ? ocNavAuthed : ocNavGuest}
       </nav>
-      <div class="oc-footer" style="font-size:12.1px;color:var(--muted);">
+      <div class="oc-footer" style="font-size:14px;color:var(--muted);">
         <div>3rd-party API · Paper/Testbed</div>
         <a href="https://www.edumgt.co.kr" target="_blank" style="color:var(--accent-dark);text-decoration:none;font-weight:600;">www.edumgt.co.kr</a>
       </div>
@@ -622,11 +624,11 @@ async function runAiAnalysis() {
       listEl.innerHTML = ragDocs.map((doc, i) => `
         <div style="border-left:3px solid #6366F1;padding:.45rem .7rem;margin-bottom:.5rem;background:white;border-radius:0 6px 6px 0;">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:.2rem;">
-            <span style="font-size:10px;font-weight:700;background:#EEF2FF;color:#4F46E5;padding:1px 6px;border-radius:99px;">${_catLabel(doc.category)}</span>
-            <span style="font-size:11px;font-weight:700;color:#1F2937;">${doc.title}</span>
-            <span style="font-size:10px;color:#9CA3AF;margin-left:auto;">유사도 ${(doc.score * 100).toFixed(0)}%</span>
+            <span style="font-size:13px;font-weight:700;background:#EEF2FF;color:#4F46E5;padding:1px 6px;border-radius:99px;">${_catLabel(doc.category)}</span>
+            <span style="font-size:13.5px;font-weight:700;color:#1F2937;">${doc.title}</span>
+            <span style="font-size:13px;color:#9CA3AF;margin-left:auto;">유사도 ${(doc.score * 100).toFixed(0)}%</span>
           </div>
-          <p style="font-size:11px;color:#6B7280;margin:0;line-height:1.5;">${doc.text.substring(0,120)}...</p>
+          <p style="font-size:13.5px;color:#6B7280;margin:0;line-height:1.5;">${doc.text.substring(0,120)}...</p>
         </div>`).join('');
     }
   }
@@ -699,11 +701,11 @@ async function runQdrantSearch() {
     res.innerHTML = hits.map(h => `
       <div style="border:1px solid #E0E7FF;border-radius:10px;padding:.8rem .95rem;margin-bottom:.6rem;background:white;box-shadow:0 1px 4px rgba(99,102,241,.06);">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:.4rem;">
-          <span style="font-size:10px;font-weight:700;background:#EEF2FF;color:#4F46E5;padding:1px 7px;border-radius:99px;">${_catLabel(h.category)}</span>
-          <span style="font-size:12.5px;font-weight:800;color:#1F2937;flex:1;">${h.title}</span>
-          <div style="font-size:10px;font-weight:700;color:white;background:${_scoreColor(h.score)};border-radius:99px;padding:1px 7px;">${(h.score*100).toFixed(0)}%</div>
+          <span style="font-size:13px;font-weight:700;background:#EEF2FF;color:#4F46E5;padding:1px 7px;border-radius:99px;">${_catLabel(h.category)}</span>
+          <span style="font-size:14px;font-weight:800;color:#1F2937;flex:1;">${h.title}</span>
+          <div style="font-size:13px;font-weight:700;color:white;background:${_scoreColor(h.score)};border-radius:99px;padding:1px 7px;">${(h.score*100).toFixed(0)}%</div>
         </div>
-        <p style="font-size:12px;color:#4B5563;margin:0;line-height:1.65;">${h.text}</p>
+        <p style="font-size:13.5px;color:#4B5563;margin:0;line-height:1.65;">${h.text}</p>
       </div>`).join('');
   } catch (err) {
     if (res) res.innerHTML = `<p style="color:#F87171;font-size:13px;">오류: ${err.message}</p>`;
@@ -725,10 +727,10 @@ async function loadDataset() {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;">
         <div><span style="color:var(--muted);">컬렉션</span><br><strong style="color:var(--accent-dark);font-size:14px;">${data.collection}</strong></div>
         <div><span style="color:var(--muted);">문서 수</span><br><strong style="color:var(--accent-dark);font-size:14px;">${data.count}개</strong></div>
-        <div style="grid-column:1/-1;"><span style="color:var(--muted);">임베딩 모델</span><br><code style="font-size:11px;color:var(--fg-2);">${data.model}</code></div>
+        <div style="grid-column:1/-1;"><span style="color:var(--muted);">임베딩 모델</span><br><code style="font-size:13.5px;color:var(--fg-2);">${data.model}</code></div>
       </div>`;
   } catch (e) {
-    if (statsEl) statsEl.innerHTML = `<span style="color:#F87171;font-size:12px;">통계 불러오기 실패</span>`;
+    if (statsEl) statsEl.innerHTML = `<span style="color:#F87171;font-size:13.5px;">통계 불러오기 실패</span>`;
   }
 
   // 문서 목록
@@ -739,12 +741,12 @@ async function loadDataset() {
     if (listEl) listEl.innerHTML = docs.length
       ? docs.map(d => `
         <div style="display:flex;align-items:baseline;gap:6px;padding:.35rem .5rem;border-radius:6px;margin-bottom:.2rem;background:white;border:1px solid #F3F4F6;">
-          <span style="font-size:11px;font-weight:700;background:var(--accent-light);color:var(--accent-dark);padding:2px 6px;border-radius:99px;white-space:nowrap;">${_catLabel(d.category)}</span>
+          <span style="font-size:13.5px;font-weight:700;background:var(--accent-light);color:var(--accent-dark);padding:2px 6px;border-radius:99px;white-space:nowrap;">${_catLabel(d.category)}</span>
           <span style="font-size:13px;font-weight:600;color:var(--fg);flex:1;">${d.title}</span>
         </div>`).join('')
-      : '<p style="color:var(--muted);font-size:12px;text-align:center;">문서가 없습니다.</p>';
+      : '<p style="color:var(--muted);font-size:13.5px;text-align:center;">문서가 없습니다.</p>';
   } catch (e) {
-    if (listEl) listEl.innerHTML = `<span style="color:#F87171;font-size:12px;">목록 불러오기 실패</span>`;
+    if (listEl) listEl.innerHTML = `<span style="color:#F87171;font-size:13.5px;">목록 불러오기 실패</span>`;
   }
 }
 
@@ -821,7 +823,7 @@ async function loadKrxNews() {
     if (badgeEl) badgeEl.textContent = news.length ? `총 ${data.total}건` : '';
 
     if (!news.length) {
-      listEl.innerHTML = '<p style="color:var(--muted);text-align:center;font-size:12px;margin-top:1.5rem;">뉴스가 없습니다.</p>';
+      listEl.innerHTML = '<p style="color:var(--muted);text-align:center;font-size:13.5px;margin-top:1.5rem;">뉴스가 없습니다.</p>';
       return;
     }
 
@@ -832,18 +834,18 @@ async function loadKrxNews() {
         <a href="${href}" target="_blank" rel="noopener noreferrer"
           style="display:block;padding:.45rem 1rem;border-bottom:1px solid #E0E7FF;text-decoration:none;transition:background .12s;"
           onmouseover="this.style.background='#EEF2FF'" onmouseout="this.style.background='transparent'">
-          <div style="font-size:12px;font-weight:600;color:#1E1B4B;line-height:1.45;margin-bottom:3px;">${n.title}</div>
+          <div style="font-size:13.5px;font-weight:600;color:#1E1B4B;line-height:1.45;margin-bottom:3px;">${n.title}</div>
           <div style="display:flex;align-items:center;gap:6px;">
-            <span style="font-size:10px;color:#6366F1;background:#EEF2FF;border-radius:99px;padding:0 5px;">PDF</span>
-            <span style="font-size:10.5px;color:#9CA3AF;">${dateStr}</span>
-            <span style="font-size:10px;color:#C4B5FD;margin-left:auto;">조회 ${n.view_cnt}</span>
+            <span style="font-size:13px;color:#6366F1;background:#EEF2FF;border-radius:99px;padding:0 5px;">PDF</span>
+            <span style="font-size:13px;color:#9CA3AF;">${dateStr}</span>
+            <span style="font-size:13px;color:#C4B5FD;margin-left:auto;">조회 ${n.view_cnt}</span>
           </div>
         </a>`;
     }).join('');
 
     _krxNewsLoaded = true;
   } catch (err) {
-    listEl.innerHTML = `<p style="color:#F87171;text-align:center;font-size:12px;margin-top:1rem;">오류: ${err.message}</p>`;
+    listEl.innerHTML = `<p style="color:#F87171;text-align:center;font-size:13.5px;margin-top:1rem;">오류: ${err.message}</p>`;
   } finally {
     if (refreshBtn) { refreshBtn.disabled = false; refreshBtn.textContent = '↻ 새로고침'; }
   }
@@ -1047,7 +1049,7 @@ function mountCredentialSourceNote() {
   const el = document.createElement('div');
   el.id = 'credSourceNote';
   el.setAttribute('role', 'note');
-  el.style.cssText = 'margin:0 0 16px;padding:11px 14px;border-radius:9px;border:1px solid #bfdbfe;background:#eff6ff;color:#1e3a5f;font-size:12.5px;line-height:1.65';
+  el.style.cssText = 'margin:0 0 16px;padding:11px 14px;border-radius:9px;border:1px solid #bfdbfe;background:#eff6ff;color:#1e3a5f;font-size:14px;line-height:1.65';
   el.innerHTML = `<b style="color:#1d4ed8">🔑 ${title}</b><br>${body}`;
   main.insertBefore(el, main.firstChild);
 }

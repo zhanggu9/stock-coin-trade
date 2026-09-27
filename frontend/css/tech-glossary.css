@@ -1,0 +1,33 @@
+/* 기술 용어 모달 사전 (tech-glossary.js) */
+.tg-term{all:unset;cursor:help;color:inherit;font:inherit;border-bottom:1.5px dotted #1760d8;color:#0d4ebb;font-weight:700;padding-bottom:1px;transition:background .12s}
+.tg-term:hover,.tg-term:focus-visible{background:#e3f0ff;border-bottom-style:solid;outline:none;border-radius:3px}
+b .tg-term,strong .tg-term,h2 .tg-term,h3 .tg-term{font-weight:inherit}
+
+.tg-index-btn{position:fixed;left:18px;bottom:18px;z-index:1190;display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border:1px solid #cddbea;border-radius:999px;background:#fff;color:#1f2f45;font:700 13.5px/1 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans KR",sans-serif;box-shadow:0 6px 20px rgba(16,40,74,.15);cursor:pointer}
+.tg-index-btn b{display:inline-grid;min-width:20px;height:20px;place-items:center;padding:0 5px;border-radius:999px;background:#1760d8;color:#fff;font-size:13.5px}
+.tg-index-btn:hover{border-color:#1760d8;background:#f3f8ff}
+
+.tg-modal{position:fixed;inset:0;z-index:1200}
+.tg-modal[hidden]{display:none}
+.tg-backdrop{position:absolute;inset:0;background:rgba(9,20,38,.55);backdrop-filter:blur(2px)}
+.tg-dialog{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(680px,calc(100vw - 32px));max-height:calc(100vh - 48px);overflow:auto;border-radius:14px;background:#fff;color:#11233d;box-shadow:0 24px 64px rgba(9,20,38,.35);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans KR",sans-serif}
+.tg-dialog header{position:sticky;top:0;display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:18px 22px 12px;border-bottom:1px solid #e3eaf3;background:#fff}
+.tg-cat{grid-column:1;color:#1760d8;font-size:14px;font-weight:900;letter-spacing:.08em}
+.tg-dialog h2{grid-column:1;margin:0;font-size:22px;line-height:1.3}
+.tg-close{grid-column:2;grid-row:1/3;align-self:start;width:34px;height:34px;border:1px solid #d3dae4;border-radius:8px;background:#f5f7fa;color:#334;font-size:22px;line-height:1;cursor:pointer}
+.tg-close:hover{background:#e7ebf1}
+.tg-body{padding:16px 22px 6px}
+.tg-body p{margin:0;color:#2f3f55;font-size:15.5px;line-height:1.8}
+.tg-body b{padding:1px 5px;border-radius:4px;background:#eef1f5;color:#111827;font-weight:700;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.93em}
+.tg-links{display:flex;flex-wrap:wrap;gap:7px;padding:10px 22px}
+.tg-links:empty{display:none}
+.tg-links a{padding:8px 11px;border:1px solid #cedced;border-radius:7px;color:#0d4ebb;font-size:14px;font-weight:800;text-decoration:none}
+.tg-links a:hover{background:#edf4ff}
+.tg-related{padding:6px 22px 20px}
+.tg-related:empty{display:none}
+.tg-related small{display:block;margin:10px 0 6px;color:#63758c;font-size:14px;font-weight:900;letter-spacing:.06em}
+.tg-related div{display:flex;flex-wrap:wrap;gap:6px}
+.tg-related button{padding:6px 10px;border:1px solid #d9e3ef;border-radius:999px;background:#f8fafc;color:#2f3f55;font:600 13.5px system-ui,sans-serif;cursor:pointer}
+.tg-related button:hover{border-color:#1760d8;color:#0d4ebb;background:#fff}
+body.tg-open{overflow:hidden}
+@media(max-width:600px){.tg-dialog{width:calc(100vw - 16px);border-radius:12px}.tg-dialog header,.tg-body,.tg-links,.tg-related{padding-left:14px;padding-right:14px}.tg-index-btn{left:10px;bottom:10px}}

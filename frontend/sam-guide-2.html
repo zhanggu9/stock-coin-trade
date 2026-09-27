@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SAM 활용 2 — 저장소 Lambda 로컬 실행 — EDUMGT</title>
+  <link rel="icon" href="/img/favicon.png">
+  <link rel="stylesheet" href="/css/style.css?v=20260920-chart-f13">
+  <link rel="stylesheet" href="/css/lambda-db-practice.css?v=20260927-split1-f13">
+  <link rel="stylesheet" href="/css/sam-guide.css?v=20260927-guide2d">
+  <link rel="stylesheet" href="/css/tech-glossary.css?v=20260927-1-f13">
+</head>
+<body class="lambda-practice-body sam-guide-body">
+  <div id="header-mount"></div>
+  <main class="lambda-practice-shell">
+    <section class="lambda-hero">
+      <div><span>SAM × STOCK-COIN-TRADE · LOCAL</span><h1>SAM 활용 2 — 저장소 Lambda 로컬 실행</h1><p><code>sam init</code>으로 만든 기본 프로젝트에 <code>working/</code>의 DB Lambda 소스를 이식해, 컨테이너 빌드와 Docker Compose 네트워크로 로컬 DB에 붙여 호출합니다.</p></div>
+      <div class="lambda-hero-badge"><i class="fa-brands fa-aws" aria-hidden="true"></i><b>SAM 2 / 3</b><small>init → working/ → local DB</small></div>
+    </section>
+
+    <section class="lambda-boundary" aria-label="SAM 활용 2 흐름">
+      <div><b>sam init</b><span>sam-app-02 기본 골격</span></div><i>→</i>
+      <div><b>working/ 소스 이식</b><span>quant/ · template.yaml · env.json</span></div><i>→</i>
+      <div><b>컨테이너 빌드</b><span>psycopg 네이티브 휠</span></div><i>→</i>
+      <div><b>로컬 DB 호출</b><span>invoke · start-api · curl</span></div>
+    </section>
+
+    <section class="lambda-sam-guide" aria-labelledby="sam2-ws-title">
+      <header class="lambda-sam-head"><div><span>01 · WORKSPACE</span><h2 id="sam2-ws-title">working/ 디렉터리 지도 — 이식할 소스가 있는 곳</h2></div><a href="/sam-guide-1.html">복습: SAM 활용 1</a></header>
+      <dl class="lambda-repo-map">
+        <div><dt>lambda/&lt;target&gt;/</dt><dd><code>lambda_*.py</code> 핸들러(이벤트 파싱·HTTP 응답) · <code>*_service.py</code> Flask에 의존하지 않는 DB 함수 · <code>secret_config.py</code> 로컬 환경변수 우선, 없으면 Secrets Manager · <code>event.json</code> invoke 입력 · <code>requirements.txt</code>. 이 문서는 <b>quant</b> 를 이식하고 STEP 7 에서 나머지로 확장합니다.</dd></div>
+        <div><dt>template/</dt><dd>타깃별 배포용 <code>template-&lt;target&gt;.yaml</code> 5개(Secrets Manager·VPC·JWT 파라미터 포함)와 <code>samconfig.toml</code>. 로컬 실습에서는 이를 참고해 단순화한 템플릿을 씁니다.</dd></div>
+        <div><dt>env/</dt><dd><code>local-env.json</code> 로컬 환경변수 자리표시자 · <code>lambda.env.example</code> 배포 파라미터 예시. 실제 값은 커밋하지 않습니다.</dd></div>
+        <div><dt>scripts/</dt><dd><code>preflight-check.sh</code> · <code>sam-build.sh</code> · <code>sam-local-invoke.sh</code> · <code>sam-local-start-api.sh</code> · <code>sam-deploy.sh</code>. 복사 없이 저장소 템플릿을 그대로 실행하는 대안 경로(STEP 7).</dd></div>
+        <div><dt>sql/</dt><dd>서비스 함수가 쓰는 읽기 SQL. Redis(session)·Qdrant(knowledge)는 SQL 대신 TTL 조회·벡터 검색.</dd></div>
+      </dl>
+      <table class="sam-table">
+        <thead><tr><th>타깃</th><th>핸들러 · API 경로</th><th>저장소 · 로컬 접속 주소(컨테이너 안에서)</th><th>지금 상태</th></tr></thead>
+        <tbody>
+          <tr><td><b>quant</b> (이 문서)</td><td><code>lambda_quant.lambda_handler</code> · <code>GET /quant/prices?symbol=&amp;limit=</code></td><td>PostgreSQL <code>postgresql+psycopg://quant:quant@postgres:5432/quant_research</code></td><td class="ok">바로 가능</td></tr>
+          <tr><td><b>member</b></td><td><code>lambda_member.lambda_handler</code> · <code>GET /members/{member_id}</code></td><td>MariaDB <code>mysql+pymysql://mockinv:PW@mariadb:3306/mockinv</code></td><td class="ok">바로 가능</td></tr>
+          <tr><td><b>session</b></td><td><code>lambda_session_check.lambda_handler</code> · <code>GET /internal/session-check?sid=</code></td><td>Redis <code>redis://redis:6379/0</code></td><td class="ok">가능 (세션 키는 로그인 후 생성)</td></tr>
+          <tr><td><b>ohlcv</b></td><td><code>lambda_ohlcv_summary.lambda_handler</code> · <code>GET /ohlcv/summary</code></td><td>PostgreSQL <code>…@pg-stock:5432/admin</code></td><td class="warn">pg-stock 오버레이 기동 필요</td></tr>
+          <tr><td><b>knowledge</b></td><td><code>lambda_knowledge_search.lambda_handler</code> · <code>POST /knowledge/search</code></td><td>Qdrant <code>http://qdrant:6333</code></td><td class="warn">별도 Qdrant 서버 필요</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="lambda-sam-guide" aria-labelledby="sam2-quick-title">
+      <header class="lambda-sam-head"><div><span>02 · QUICK START</span><h2 id="sam2-quick-title">sam init 기본 프로젝트에 working/ 소스 이식하기</h2></div><a href="/sam-guide-3.html">다음: SAM 활용 3</a></header>
+      <div class="lambda-sam-details">
+        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>STEP 1</span><h3>sam init 으로 기본 프로젝트 만들기</h3><p>SAM 활용 1 의 Hello World 와 같은 골격을 <code>sam-app-02</code> 라는 새 이름으로 만듭니다. 이번에는 옵션을 모두 지정해 비대화형으로 만들며, 런타임은 WSL Python(3.12)에 맞춥니다.</p></div><div class="sam-split"><div class="sam-split-code"><section class="lambda-code"><header><span>sam init (비대화형) → 구조 확인</span><button type="button" data-copy-code>복사</button></header><pre><code>cd /home/ubuntu/stock-coin-trade
+# SAM 활용 1 과 같은 Hello World 골격을 새 이름으로 만듭니다 (sam-app-01 은 그대로 둡니다)
+# 여러 종류의 프로젝트를 계속 만들기 위해 sam-app-01 ~ sam-app-nn 으로 각자 만들면서 테스트합니다.
+sam init --name sam-app-02 --runtime python3.12 --dependency-manager pip \
+  --app-template hello-world --package-type Zip --no-tracing --no-application-insights --no-interactive
+#  --runtime 은 PRECHECK 에서 확인한 WSL Python 버전(3.12)과 맞춥니다
+#  대화형으로 하려면 SAM 활용 1 STEP 1 처럼 sam init 만 실행해 같은 값을 고릅니다
+
+cd sam-app-02
+find . -path ./.aws-sam -prune -o -type f -print | sort
+# hello_world/ 는 곧 quant/ 로 대체되고, events/ · template.yaml · samconfig.toml 은 재사용합니다</code></pre></section><section class="lambda-code sam-transcript"><header><span>실행방법</span></header><pre><code>root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade# sam init --name sam-app-02 --runtime python3.12 --dependency-manager pip \
+  --app-template hello-world --package-type Zip --no-tracing --no-application-insights --no-interactive
+
+    -----------------------
+    Generating application:
+    -----------------------
+    Name: sam-app-02
+    Runtime: python3.12
+    Architectures: x86_64
+    Dependency Manager: pip
+    Application Template: hello-world
+    Output Directory: .
+    Configuration file: sam-app-02/samconfig.toml
+
+    Next steps can be found in the README file at sam-app-02/README.md
+
+Commands you can use next
+=========================
+[*] Create pipeline: cd sam-app-02 &amp;&amp; sam pipeline init --bootstrap
+[*] Validate SAM template: cd sam-app-02 &amp;&amp; sam validate
+[*] Test Function in the Cloud: cd sam-app-02 &amp;&amp; sam sync --stack-name {stack-name} --watch
+root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade# cd sam-app-02
+root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade/sam-app-02# find . -path ./.aws-sam -prune -o -type f -print | sort
+./.gitignore
+./README.md
+./__init__.py
+./events/event.json
+./hello_world/__init__.py
+./hello_world/app.py
+./hello_world/requirements.txt
+./samconfig.toml
+./template.yaml
+./tests/__init__.py
+./tests/integration/__init__.py
+./tests/integration/test_api_gateway.py
+./tests/requirements.txt
+./tests/unit/__init__.py
+./tests/unit/test_handler.py</code></pre></section></div><aside class="sam-errors"><header><i>⚠</i> 발생할 수 있는 오류</header><div class="sam-err"><b>sam 명령이 없음</b><code>bash: sam: command not found</code><p><span>원인</span>SAM CLI 미설치 또는 PATH 문제</p><p class="fix"><span>해결</span>SAM 활용 1 의 02 INSTALL 로 설치 후 <code>sam --version</code></p></div><div class="sam-err"><b>비대화형 옵션 오타</b><code>Error: No such option: --no-structured-logging</code><p><span>원인</span>SAM CLI 버전마다 지원 옵션이 다름</p><p class="fix"><span>해결</span><code>sam init --help</code> 로 옵션 확인. 모르면 옵션 없이 <code>sam init</code> 을 대화형으로 실행</p></div><div class="sam-err"><b>폴더가 이미 있음</b><code>Error: Directory sam-app-02 already exists</code><p><span>원인</span>이전 실습 폴더가 남아 있음</p><p class="fix"><span>해결</span>다른 번호(sam-app-03)를 쓰거나 <code>rm -rf sam-app-02</code> 후 재실행</p></div><div class="sam-err"><b>저장소 안에 만들면 git 에 잡힘?</b><p><span>원인</span>실습 폴더가 저장소 루트에 생김</p><p class="fix"><span>해결</span><code>.gitignore</code> 에 <code>/sam-app*</code> 가 있어 커밋되지 않습니다. <code>git status</code> 로 확인</p></div></aside></div></article>
+        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>STEP 2</span><h3>working/ 소스 살펴보기</h3><p>이식할 <code>working/lambda/quant</code> 의 다섯 파일과 참고 템플릿을 읽고, 로컬 PostgreSQL 이 떠 있는지 확인합니다. Hello World 와 무엇이 달라지는지 아래 표로 정리했습니다.</p></div><div class="sam-split"><div class="sam-split-code"><section class="lambda-code"><header><span>working/lambda/quant 살펴보기</span><button type="button" data-copy-code>복사</button></header><pre><code>cd /home/ubuntu/stock-coin-trade
+ls working/lambda/quant/
+# event.json  lambda_quant.py  quant_service.py  requirements.txt  secret_config.py
+
+cat working/lambda/quant/lambda_quant.py     # 핸들러: 쿼리 파라미터 검증 → recent_prices() → JSON 응답
+cat working/lambda/quant/quant_service.py    # Flask 에 의존하지 않는 DB 함수 (SQLAlchemy text SQL)
+cat working/lambda/quant/secret_config.py    # 환경변수 우선, 없으면 Secrets Manager
+cat working/lambda/quant/requirements.txt    # SQLAlchemy==2.0.35 / psycopg[binary]==3.2.3
+cat working/lambda/quant/event.json          # {"queryStringParameters":{"symbol":"005930","limit":"30"}}
+
+# 참고 템플릿 (Secrets Manager·VPC 파라미터가 포함된 배포용) — STEP 3 에서 로컬용으로 단순화합니다
+sed -n 1,45p working/template/template-quant.yaml
+
+# 로컬 DB 가 떠 있는지 (Compose 서비스명 postgres, DB quant_research, 계정 quant/quant 기본값)
+docker compose ps postgres --format 'table {{.Service}}\t{{.Status}}'
+docker exec crypto-mock-postgres psql -U quant -d quant_research -c "\dt"
+docker network ls | grep stock-coin-trade_internal</code></pre></section><table class="sam-table"><thead><tr><th>Hello World (sam-app-02 초기)</th><th>working/ 소스로 바꾸면</th><th>왜</th></tr></thead><tbody>
+<tr><td><code>hello_world/app.py</code> · <code>app.lambda_handler</code></td><td><code>quant/lambda_quant.py</code> · <code>lambda_quant.lambda_handler</code></td><td>핸들러 파일·함수 이름이 다르므로 <code>Handler</code> 를 바꿉니다</td></tr>
+<tr><td><code>hello_world/requirements.txt</code> (requests)</td><td><code>quant/requirements.txt</code> (SQLAlchemy, psycopg[binary])</td><td>psycopg 는 네이티브 바이너리 → <code>--use-container</code> 빌드</td></tr>
+<tr><td><code>events/event.json</code> (API GW v1 샘플)</td><td><code>events/quant.json</code> (queryStringParameters 만)</td><td>핸들러가 읽는 키만 있으면 됩니다</td></tr>
+<tr><td>환경변수 없음</td><td><code>QUANT_DATABASE_URL</code> (로컬) / <code>QUANT_SECRET_ARN</code> (AWS)</td><td><code>secret_config.py</code> 의 분기</td></tr>
+<tr><td><code>Type: Api</code> · <code>/hello</code></td><td><code>Type: HttpApi</code> · <code>/quant/prices</code></td><td>저장소 템플릿과 동일한 경로</td></tr>
+</tbody></table><section class="lambda-code sam-transcript"><header><span>실행설명 — 이 표의 작업은 개발자가 직접 하며, working/scripts/graft-target.sh 가 그 역할을 대신합니다</span></header>
+<div class="sam-transcript-prose">
+<p>그 표의 다섯 항목은 개발자가 직접 손으로 바꾸는 작업입니다. 다만 표 자체는 "무엇이 왜 달라지는지"를 이해시키는 설명이고, 실제 작업은 바로 다음 STEP 3 의 명령어들이 그대로 수행합니다.</p>
+<b>STEP 3 에서 각 항목이 어떻게 처리되는지</b>
+<ul>
+<li>핸들러 파일과 requirements 는 cp 명령 한 줄로 quant/ 폴더에 복사됩니다. 코드를 새로 쓰는 것이 아니라 working/lambda/quant 의 파일을 그대로 가져오는 것입니다.</li>
+<li>이벤트 파일도 cp 로 events/quant.json 에 복사됩니다.</li>
+<li>Handler, CodeUri, 환경변수, HttpApi 경로는 모두 template.yaml 안의 값이므로, STEP 3 의 "template.yaml (전체 교체)" 창 내용을 복사 버튼으로 붙여 넣으면 한 번에 반영됩니다.</li>
+<li>env.json 도 같은 방식으로 붙여 넣고 계정만 채웁니다.</li>
+</ul>
+<p>즉 개발자가 실제로 타이핑하는 것은 명령어 몇 줄과 파일 두 개 붙여 넣기이고, 표는 그 붙여 넣기가 Hello World 의 무엇을 대체하는지 알려 주는 대조표입니다.</p>
+<b>왜 자동화하지 않았는지</b>
+<ul>
+<li>SAM 은 프로젝트 골격만 만들어 주고, 어떤 코드를 어떤 경로에 붙일지는 개발자의 설계 영역이라 도구가 대신 정하지 않습니다.</li>
+<li>학습 목적으로는 Handler 와 CodeUri 가 어떻게 연결되는지 직접 바꿔 보는 것이 이해에 도움이 됩니다. SAM 활용 1 의 오류 대부분이 이 연결 실수에서 나옵니다.</li>
+</ul>
+<b>반복이 번거로우면 두 가지 대안이 있습니다</b>
+<ul>
+<li>working/scripts 방식(STEP 7 대안)은 복사 없이 저장소 템플릿을 그대로 빌드·호출하므로 이 표의 작업이 필요 없습니다. 대신 템플릿에 로컬 변수 선언을 추가해야 하는 문제는 남아 있습니다.</li>
+<li><b>working/scripts/graft-target.sh &lt;target&gt; &lt;project-dir&gt;</b> 가 이 다섯 항목을 한 번에 수행합니다. 타깃 이름만 주면 [1] 코드 복사 → [2] 이벤트 복사 → [3] template.yaml 생성 또는 함수 블록 추가(Handler·CodeUri·환경변수 선언·HttpApi 경로) → [4] env.json 병합까지 끝나므로, member·session 으로 확장할 때도 같은 한 줄로 됩니다. 아래는 새 프로젝트 sam-app-03 에 quant 와 member 를 차례로 이식하고 빌드·호출까지 실제로 실행한 기록입니다. env.json 의 USER:PASSWORD 만 직접 채웁니다.</li>
+</ul>
+</div><pre><code>root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade# working/scripts/graft-target.sh quant sam-app-03
+▶ 프로젝트: /home/ubuntu/stock-coin-trade/sam-app-03
+▶ 타깃    : quant  (함수 QuantPricesFunction, GET /quant/prices)
+  [1] 코드 복사      : quant/{lambda_quant.py,quant_service.py,requirements.txt,secret_config.py}
+  [2] 이벤트 복사    : events/quant.json
+  [3] template.yaml  : 새로 생성 (hello_world/, tests/ 제거)
+  [4] env.json       : QuantPricesFunction → QUANT_DATABASE_URL  (USER:PASSWORD 를 실제 값으로 바꾸세요)
+  [5] 완료. 다음 단계:
+      cd /home/ubuntu/stock-coin-trade/sam-app-03
+      sam validate --lint
+      sam build --use-container
+      sam local invoke QuantPricesFunction --event events/quant.json --env-vars env.json --docker-network stock-coin-trade_internal
+root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade# working/scripts/graft-target.sh member sam-app-03
+▶ 프로젝트: /home/ubuntu/stock-coin-trade/sam-app-03
+▶ 타깃    : member  (함수 MemberFunction, GET /members/{member_id})
+  [1] 코드 복사      : member/{lambda_member.py,member_service.py,requirements.txt,secret_config.py}
+  [2] 이벤트 복사    : events/member.json
+  [3] template.yaml  : MemberFunction 함수 블록 추가
+  [4] env.json       : MemberFunction → DATABASE_URL  (USER:PASSWORD 를 실제 값으로 바꾸세요)
+  [5] 완료. 다음 단계:
+      cd /home/ubuntu/stock-coin-trade/sam-app-03
+      sam validate --lint
+      sam build --use-container
+      sam local invoke MemberFunction --event events/member.json --env-vars env.json --docker-network stock-coin-trade_internal
+root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade# cd sam-app-03 &amp;&amp; sam validate --lint
+/home/ubuntu/stock-coin-trade/sam-app-03/template.yaml is a valid SAM Template
+root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade/sam-app-03# cat env.json
+{
+  "QuantPricesFunction": {
+    "QUANT_DATABASE_URL": "postgresql+psycopg://USER:PASSWORD@postgres:5432/quant_research"
+  },
+  "MemberFunction": {
+    "DATABASE_URL": "mysql+pymysql://USER:PASSWORD@mariadb:3306/mockinv"
+  }
+}
+root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade/sam-app-03# sed -i 's#USER:PASSWORD@postgres#quant:quant@postgres#' env.json   # quant 계정 채우기
+root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade/sam-app-03# sam build --use-container
+Building codeuri: /home/ubuntu/stock-coin-trade/sam-app-03/member runtime: python3.12 architecture: x86_64 functions: MemberFunction
+Building codeuri: /home/ubuntu/stock-coin-trade/sam-app-03/quant runtime: python3.12 architecture: x86_64 functions: QuantPricesFunction
+Build Succeeded
+root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade/sam-app-03# sam local invoke QuantPricesFunction --event events/quant.json --env-vars env.json --docker-network stock-coin-trade_internal
+REPORT RequestId: 046d4bf2-14d5-48c4-ab58-5ff92d27ca73	Init Duration: 0.03 ms	Duration: 704.80 ms	Billed Duration: 705 ms	Memory Size: 512 MB	Max Memory Used: 512 MB	
+{"statusCode": 200, "headers": {"content-type": "application/json"}, "body": "{\"rows\": [{\"symbol\": \"005930\", \"trade_time\": \"2026-08-12 00:00:00+00:00\", \"close\": \"58958.3681\", \"volume\": 1544700}, {\"symbol\": \"005930\", \"trade_time\": \"2026-0</code></pre></section></div><aside class="sam-errors"><header><i>⚠</i> 발생할 수 있는 오류</header><div class="sam-err"><b>postgres 컨테이너가 없음</b><code>Error response from daemon: No such container: crypto-mock-postgres</code><p><span>원인</span>저장소 Compose 스택이 내려가 있음</p><p class="fix"><span>해결</span>저장소 루트에서 <code>docker compose up -d postgres mariadb redis</code></p></div><div class="sam-err"><b>테이블이 없음 / 빈 목록</b><code>Did not find any relations.</code><p><span>원인</span>quant_research 스키마가 아직 적재되지 않음</p><p class="fix"><span>해결</span>DB 스키마 페이지의 초기화 절차 또는 python-backend 기동으로 스키마 생성 후 재확인</p></div><div class="sam-err"><b>psql 인증 실패</b><code>psql: error: FATAL:  password authentication failed for user "quant"</code><p><span>원인</span>.env 에서 QUANT_DB_USER/PASSWORD 를 바꿈</p><p class="fix"><span>해결</span><code>grep QUANT_DB .env</code> 로 실제 계정을 확인해 STEP 3 env.json 에 반영</p></div></aside></div></article>
+        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>STEP 3</span><h3>소스 이식 — quant/ 폴더 · template.yaml · env.json</h3><p><b>STEP 2 의 <code>working/scripts/graft-target.sh quant sam-app-02</code> 를 이미 실행했다면 이 STEP 의 복사·템플릿·env.json 생성은 끝난 상태이므로, env.json 의 <code>USER:PASSWORD</code> 만 실제 계정으로 바꾸고 STEP 4 로 넘어갑니다.</b> 스크립트를 쓰지 않았다면 아래는 <b>직접 하는 수정 작업</b>입니다. 핸들러 4개 파일을 <code>quant/</code> 로 복사하고, 템플릿을 로컬용으로 다시 쓰고, DB URL 을 넣을 <code>env.json</code> 을 만듭니다. 템플릿 27행의 <code>QUANT_DATABASE_URL: ''</code> 선언이 핵심입니다(우측 첫 번째 오류).</p></div><div class="sam-split"><div class="sam-split-code"><section class="lambda-code"><header><span>직접 수정 ① 소스 이식 (복사) — 스크립트를 안 썼을 때</span><button type="button" data-copy-code>복사</button></header><pre><code>cd /home/ubuntu/stock-coin-trade/sam-app-02
+
+# 1) 핸들러 폴더 만들고 working/lambda/quant 의 4개 파일 복사 (event.json 은 events/ 로)
+mkdir -p quant events
+cp ../working/lambda/quant/{lambda_quant.py,quant_service.py,secret_config.py,requirements.txt} quant/
+cp ../working/lambda/quant/event.json events/quant.json
+
+# 2) Hello World 폴더는 더 이상 쓰지 않으므로 정리 (tests/ 도 hello_world 를 import 하므로 함께 제거)
+rm -rf hello_world tests
+ls quant events</code></pre></section><section class="lambda-code"><header><span>직접 수정 ② template.yaml (전체 교체) — 스크립트를 안 썼을 때</span><button type="button" data-copy-code>복사</button></header><pre><code>AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: sam-app-02 — working/lambda/quant 를 이식한 Quant DB 최근 시세 조회 Lambda
+
+Parameters:
+  QuantSecretArn:
+    Type: String
+    Default: ''
+    Description: QUANT_DATABASE_URL 키를 가진 Secrets Manager secret ARN (로컬에서는 비워 둠)
+
+Globals:
+  Function:
+    Timeout: 15
+    MemorySize: 512
+
+Resources:
+  QuantPricesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: quant/                        # working/lambda/quant 에서 복사한 폴더
+      Handler: lambda_quant.lambda_handler   # quant/lambda_quant.py 의 lambda_handler
+      Runtime: python3.12                    # 로컬 WSL Python 과 같은 버전
+      Architectures: [x86_64]
+      Environment:
+        Variables:
+          QUANT_SECRET_ARN: !Ref QuantSecretArn
+          QUANT_DATABASE_URL: ''               # 로컬 전용: env.json 이 이 값을 덮어씀 (템플릿에 선언돼야 전달됨)
+      Events:
+        QuantPrices:
+          Type: HttpApi
+          Properties:
+            Path: /quant/prices
+            Method: GET
+
+Outputs:
+  ApiUrl:
+    Value: !Sub 'https://${ServerlessHttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/quant/prices'
+  FunctionArn:
+    Value: !GetAtt QuantPricesFunction.Arn</code></pre></section><section class="lambda-code"><header><span>직접 수정 ③ env.json (로컬 전용 · 커밋 금지) — 스크립트를 썼어도 계정은 직접 채움</span><button type="button" data-copy-code>복사</button></header><pre><code>{
+  "QuantPricesFunction": {
+    "QUANT_DATABASE_URL": "postgresql+psycopg://quant:quant@postgres:5432/quant_research"
+  }
+}
+
+# 계정·비밀번호는 .env 의 QUANT_DB_USER / QUANT_DB_PASSWORD (기본 quant / quant)
+# 호스트는 127.0.0.1 이 아니라 Compose 서비스명 postgres
+echo 'sam-app-02/env.json' &gt;&gt; ../.git/info/exclude   # 안전장치 (/sam-app* 는 이미 .gitignore)</code></pre></section><div class="sam-alert-big"><span>DB 접속 오류가 나면</span><b>env.json 의 <code>USER:PASSWORD</code> 를 <code>quant:quant</code> 로 수정하세요</b><small>로그에 <code>password authentication failed for user "USER"</code> 가 보이면 자리표시자를 아직 안 바꾼 것입니다. 명령: <code>sed -i 's#USER:PASSWORD@postgres#quant:quant@postgres#' env.json</code> — 재빌드 불필요, 바로 다시 invoke</small></div></div><aside class="sam-errors"><header><i>⚠</i> 발생할 수 있는 오류</header><div class="sam-err"><b>env.json 값이 함수에 전달되지 않음 (실제로 겪은 오류)</b><code>[ERROR] RuntimeError: QUANT_SECRET_ARN 또는 로컬 환경변수 QUANT_DATABASE_URL가 필요합니다.</code><p><span>원인</span><code>sam local</code> 은 <b>템플릿에 선언된 환경변수만</b> 컨테이너에 넘기고, <code>--env-vars</code> 는 그 값을 덮어쓸 뿐입니다. 템플릿에 <code>QUANT_DATABASE_URL</code> 이 없으면 env.json 에 있어도 무시됩니다.</p><p class="fix"><span>해결</span>템플릿 <code>Environment.Variables</code> 에 <code>QUANT_DATABASE_URL: ''</code> 처럼 빈 값으로 선언(위 템플릿 27행). AWS 배포에서는 빈 값이 그대로 올라가므로 <code>secret_config.py</code> 가 ARN 경로로 넘어갑니다</p></div><div class="sam-err"><b>CodeUri 폴더 오타</b><code>Error: ... CodeUri quant/ ... does not exist</code><p><span>원인</span>복사 전에 build 했거나 폴더명이 다름</p><p class="fix"><span>해결</span><code>ls quant/lambda_quant.py</code> 확인 후 재빌드</p></div><div class="sam-err"><b>Handler 불일치</b><code>Unable to import module 'app': No module named 'app'</code><p><span>원인</span>Hello World 의 <code>app.lambda_handler</code> 가 남아 있음</p><p class="fix"><span>해결</span><code>Handler: lambda_quant.lambda_handler</code> 로 수정</p></div><div class="sam-err"><b>secret_config 가 boto3 로 감</b><code>botocore.exceptions.NoCredentialsError: Unable to locate credentials</code><p><span>원인</span>env.json 이 안 넘어가 ARN 경로로 빠졌는데 ARN 도 비어 있지 않음</p><p class="fix"><span>해결</span>로컬에서는 <code>QuantSecretArn</code> 기본값을 빈 문자열로 두고 env.json 이 URL 을 채우는지 확인</p></div></aside></div></article>
+        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>STEP 4</span><h3>검증 → 컨테이너 빌드</h3><p>네이티브 휠(psycopg)이 있으므로 <code>--use-container</code> 로 빌드합니다. SAM 활용 1 에서 받아 둔 build-python3.12 이미지를 재사용합니다.</p></div><div class="sam-split"><div class="sam-split-code"><section class="lambda-code"><header><span>validate → build --use-container</span><button type="button" data-copy-code>복사</button></header><pre><code>cd /home/ubuntu/stock-coin-trade/sam-app-02
+sam validate --lint
+
+# psycopg[binary] 는 네이티브 휠 → Lambda(Amazon Linux) 와 같은 빌드 컨테이너에서 설치해야 합니다
+# (SAM 활용 1 은 순수 Python 이라 sam build 만으로 충분했습니다)
+sam build --use-container
+
+ls .aws-sam/build/QuantPricesFunction/ | head      # lambda_quant.py, sqlalchemy/, psycopg/ ...
+grep -n "CodeUri\|QUANT_DATABASE_URL" .aws-sam/build/template.yaml</code></pre></section><section class="lambda-code sam-transcript"><header><span>실행방법</span></header><pre><code>root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade/sam-app-02# sam validate --lint
+/home/ubuntu/stock-coin-trade/sam-app-02/template.yaml is a valid SAM Template
+root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade/sam-app-02# sam build --use-container
+Starting Build use cache
+Starting Build inside a container
+Cache is invalid, running build and copying resources for following functions (QuantPricesFunction)
+Building codeuri: /home/ubuntu/stock-coin-trade/sam-app-02/quant runtime: python3.12 architecture: x86_64 functions: QuantPricesFunction
+
+Fetching public.ecr.aws/sam/build-python3.12:latest-x86_64 Docker container image......
+Mounting /home/ubuntu/stock-coin-trade/sam-app-02/quant as /tmp/samcli/source:ro,delegated, inside runtime container
+SAM_CONTAINER_ID: 80e3348aaf79d141d468d3b804c03ac44fc22a375ce27927b7d58874035dfa2c
+ Running PythonPipBuilder:ResolveDependencies
+ Running PythonPipBuilder:CopySource
+
+Build Succeeded
+
+Built Artifacts  : .aws-sam/build
+Built Template   : .aws-sam/build/template.yaml
+
+Commands you can use next
+=========================
+[*] Validate SAM template: sam validate
+[*] Invoke Function: sam local invoke
+[*] Test Function in the Cloud: sam sync --stack-name {{stack-name}} --watch
+[*] Deploy: sam deploy --guided</code></pre></section></div><aside class="sam-errors"><header><i>⚠</i> 발생할 수 있는 오류</header><div class="sam-feature"><header><i>ℹ</i> 기능 설명 — 왜 여기서는 --use-container 인가</header><p><code>psycopg[binary]</code> 와 SQLAlchemy 의 C 확장(greenlet)은 빌드하는 OS·Python 에 맞는 바이너리가 설치됩니다. WSL Ubuntu 에서 <code>sam build</code> 로 설치하면 glibc·Python ABI 가 Lambda 의 Amazon Linux 와 달라 실행 시 <code>ImportError: ... GLIBC_2.xx not found</code> 같은 오류가 날 수 있습니다. <code>--use-container</code> 는 <code>public.ecr.aws/sam/build-python3.12</code> 이미지 안에서 pip 를 실행하므로 로컬 Python 버전과도 무관하고 산출물이 Lambda 와 동일합니다. 이미지는 SAM 활용 1 에서 이미 받았으므로 이번에는 pull 없이 바로 빌드됩니다.</p></div><div class="sam-err"><b>Runtime 과 로컬 Python 불일치 (컨테이너 없이 빌드할 때)</b><code>Error: PythonPipBuilder:Validation - Binary validation failed for python ... runtime: python3.12</code><p><span>원인</span>로컬 Python 이 3.12 가 아님</p><p class="fix"><span>해결</span><code>--use-container</code> 사용 (이 STEP 의 기본). 상세는 SAM 활용 1 STEP 3</p></div><div class="sam-err"><b>Docker 가 꺼져 있음</b><code>Error: Docker is unreachable. Docker needs to be running to build inside a container.</code><p><span>원인</span>Docker 데몬 미실행</p><p class="fix"><span>해결</span>Docker 시작 후 <code>docker info</code></p></div><div class="sam-err"><b>pip 설치 실패 (네트워크)</b><code>Error: PythonPipBuilder:ResolveDependencies - ... Could not find a version that satisfies the requirement psycopg[binary]==3.2.3</code><p><span>원인</span>컨테이너 안에서 PyPI 접근 불가(프록시·오프라인)</p><p class="fix"><span>해결</span>네트워크 확인, 프록시 환경이면 <code>--container-env-var HTTPS_PROXY=...</code></p></div><div class="sam-err"><b>lint 경고: 빈 문자열 기본값</b><code>W2001 Parameter QuantSecretArn not used</code><p><span>원인</span>파라미터가 참조되지 않거나 기본값이 비어 있을 때의 경고</p><p class="fix"><span>해결</span>경고(W)는 빌드를 막지 않습니다. 배포 시 실제 ARN 을 넣으면 사라집니다</p></div></aside></div></article>
+        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>STEP 5</span><h3>로컬 단일 호출 — Compose PostgreSQL 에 연결</h3><p><code>--env-vars</code> 와 <code>--docker-network</code> 두 옵션이 Hello World 와의 차이입니다. 아래 실행방법은 실제로 한 번 실패하고(환경변수 미전달) 고친 뒤 성공한 기록입니다.</p></div><div class="sam-split"><div class="sam-split-code"><div class="sam-alert-big"><span>DB 접속 오류가 나면</span><b>env.json 의 <code>USER:PASSWORD</code> 를 <code>quant:quant</code> 로 수정하세요</b><small>로그에 <code>password authentication failed for user "USER"</code> 가 보이면 자리표시자를 아직 안 바꾼 것입니다. 명령: <code>sed -i 's#USER:PASSWORD@postgres#quant:quant@postgres#' env.json</code> — 재빌드 불필요, 바로 다시 invoke</small></div><section class="lambda-code"><header><span>sam local invoke (Compose DB 에 연결)</span><button type="button" data-copy-code>복사</button></header><pre><code>cd /home/ubuntu/stock-coin-trade/sam-app-02
+
+# --env-vars : 함수 논리 ID(QuantPricesFunction)별 환경변수 → DB URL 주입
+# --docker-network : 함수 컨테이너를 Compose 네트워크에 붙여 'postgres' 이름으로 DNS 해석
+sam local invoke QuantPricesFunction --event events/quant.json \
+  --env-vars env.json --docker-network stock-coin-trade_internal
+
+# 경계값: limit 을 999 로 요청해도 핸들러가 100 으로 캡
+printf '{"queryStringParameters":{"symbol":"005930","limit":"999"}}' &gt; events/quant-big.json
+sam local invoke QuantPricesFunction --event events/quant-big.json \
+  --env-vars env.json --docker-network stock-coin-trade_internal | tail -1 \
+  | python3 -c 'import sys,json; b=json.load(sys.stdin); print(b["statusCode"], len(json.loads(b["body"])["rows"]), "rows")'</code></pre></section><section class="lambda-code sam-transcript"><header><span>실행방법 — 1차 시도 (실패: 환경변수 미전달)</span></header><pre><code>root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade/sam-app-02# sam local invoke QuantPricesFunction --event events/quant.json \
+  --env-vars env.json --docker-network stock-coin-trade_internal
+No current session found, using default AWS::AccountId
+Invoking lambda_quant.lambda_handler (python3.12)
+Local image is up-to-date
+Using local image: public.ecr.aws/lambda/python:3.12-rapid-x86_64.
+
+Mounting /home/ubuntu/stock-coin-trade/sam-app-02/.aws-sam/build/QuantPricesFunction as /var/task:ro,delegated, inside runtime container
+SAM_CONTAINER_ID: 86b54f4e8404024ab74fb55de8c65592272d0838260017f251860b18652e0a41
+START RequestId: 97943be7-fcdf-4939-9407-4ad871164874 Version: $LATEST
+[WARNING]	2026-09-27T07:34:54.776Z		LAMBDA_WARNING: Unhandled exception. The most likely cause is an issue in the function code. However, in rare cases, a Lambda runtime  …(생략)
+
+[ERROR] RuntimeError: QUANT_SECRET_ARN 또는 로컬 환경변수 QUANT_DATABASE_URL가 필요합니다.
+Traceback (most recent call last):
+  File "/var/lang/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "&lt;frozen importlib._bootstrap&gt;", line 1387, in _gcd_import
+  File "&lt;frozen importlib._bootstrap&gt;", line 1360, in _find_and_load
+  File "&lt;frozen importlib._bootstrap&gt;", line 1331, in _find_and_load_unlocked
+  File "&lt;frozen importlib._bootstrap&gt;", line 935, in _load_unlocked
+  File "&lt;frozen importlib._bootstrap_external&gt;", line 999, in exec_module
+  File "&lt;frozen importlib._bootstrap&gt;", line 488, in _call_with_frames_removed
+  File "/var/task/lambda_quant.py", line 6, in &lt;module&gt;
+    config = secret_values(("QUANT_DATABASE_URL",), "QUANT_SECRET_ARN")
+  File "/var/task/secret_config.py", line 11, in secret_values
+    raise RuntimeError(f"{arn_env} 또는 로컬 환경변수 {', '.join(keys)}가 필요합니다.")
+Traceback (most recent call last):
+  ... (awslambdaric 내부 traceback 생략) ...
+  ... (awslambdaric 내부 traceback 생략) ...
+UnicodeEncodeError: 'latin-1' codec can't encode characters in position 35-36: Body ('또는') is not valid Latin-1. Use body.encode('utf-8') if you want to send it encoded i …(생략)
+27 Sep 2026 07:34:54,829 [ERROR] (rapid) Init failed error=Runtime exited with error: exit status 1 InvokeID=
+27 Sep 2026 07:34:54,830 [ERROR] (rapid) Invoke failed error=Runtime exited with error: exit status 1 InvokeID=97943be7-fcdf-4939-9407-4ad871164874
+27 Sep 2026 07:34:54,830 [ERROR] (rapid) Invoke DONE failed: Sandbox.Failure</code></pre></section><p class="lambda-sam-note"><b>위 실패의 원인:</b> 템플릿에 <code>QUANT_DATABASE_URL</code> 이 선언돼 있지 않아 env.json 값이 전달되지 않았고, <code>secret_config.py</code> 가 모듈 로드 시점에 <code>RuntimeError</code> 를 냈습니다. 그 뒤에 붙은 <code>UnicodeEncodeError</code> 는 Lambda 런타임(RIC)이 한글 오류 메시지를 초기화 오류 보고에 담지 못해 생긴 <b>2차 오류</b>이므로 첫 번째 <code>[ERROR] RuntimeError</code> 줄만 보면 됩니다. STEP 3 템플릿 27행처럼 변수를 선언하고 <code>sam build --use-container</code> 를 다시 실행한 결과가 아래입니다.</p><section class="lambda-code sam-transcript"><header><span>실행방법 — 2차 시도 (성공: 실제 market_data 조회)</span></header><pre><code>root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade/sam-app-02# sam local invoke QuantPricesFunction --event events/quant.json \
+  --env-vars env.json --docker-network stock-coin-trade_internal
+No current session found, using default AWS::AccountId
+Invoking lambda_quant.lambda_handler (python3.12)
+Local image is up-to-date
+Using local image: public.ecr.aws/lambda/python:3.12-rapid-x86_64.
+
+Mounting /home/ubuntu/stock-coin-trade/sam-app-02/.aws-sam/build/QuantPricesFunction as /var/task:ro,delegated, inside runtime container
+SAM_CONTAINER_ID: 0099accb6ebe5949fac5cb3dee3d7f3cec47485479a604d314dd04543393df13
+START RequestId: c1176c40-ff2b-4dd1-ae65-28cf8150b680 Version: $LATEST
+END RequestId: c1176c40-ff2b-4dd1-ae65-28cf8150b680
+REPORT RequestId: c1176c40-ff2b-4dd1-ae65-28cf8150b680	Init Duration: 0.04 ms	Duration: 914.67 ms	Billed Duration: 915 ms	Memory Size: 512 MB	Max Memory Used: 512 MB
+{"statusCode": 200, "headers": {"content-type": "application/json"}, "body": "{\"rows\": [{\"symbol\": \"005930\", \"trade_time\": \"2026-08-12 00:00:00+00:00\", \"close\": \"58958.3681\", \"volume\": 1544700}, {\"symbol\": \"005930\", \"trade_time\": \"2026-08-11 00:00:00+00:00\", \"close\": \"59006.3610\", \"volume\": 1543400} …(생략)</code></pre></section></div><aside class="sam-errors"><header><i>⚠</i> 발생할 수 있는 오류</header><div class="sam-err"><b>환경변수 미전달 → RuntimeError (1차 시도)</b><code>[ERROR] RuntimeError: QUANT_SECRET_ARN 또는 로컬 환경변수 QUANT_DATABASE_URL가 필요합니다.</code><p><span>원인</span>템플릿에 변수 미선언 (STEP 3 참고) 또는 env.json 최상위 키가 논리 ID 와 다름</p><p class="fix"><span>해결</span>템플릿에 선언 + env.json 키 = <code>QuantPricesFunction</code> + 재빌드</p></div><div class="sam-err"><b>한글 오류 메시지의 2차 오류</b><code>UnicodeEncodeError: 'latin-1' codec can't encode characters ... Body ('또는') is not valid Latin-1</code><p><span>원인</span>RIC 가 init 오류 본문을 latin-1 로 인코딩</p><p class="fix"><span>해결</span>근본 원인(첫 RuntimeError)을 고치면 사라짐. 메시지를 ASCII 로 바꾸는 것도 방법</p></div><div class="sam-err"><b>Docker 네트워크 없음</b><code>Error: ... network stock-coin-trade_internal not found</code><p><span>원인</span>Compose 스택 다운</p><p class="fix"><span>해결</span><code>docker compose up -d postgres</code> 후 재시도. 이름이 다르면 <code>docker network ls</code></p></div><div class="sam-err"><b>DB 호스트 해석 실패 → 500</b><code>psycopg.OperationalError: ... could not translate host name "postgres" to address</code><p><span>원인</span><code>--docker-network</code> 누락</p><p class="fix"><span>해결</span>옵션 추가. 호스트를 127.0.0.1 로 바꾸면 안 됨(컨테이너 자기 자신)</p></div><div class="sam-err"><b>인증 실패 → 사용자 이름이 "USER" 로 보이면 자리표시자 그대로임</b><code>[ERROR] OperationalError: (psycopg.OperationalError) connection failed: ... FATAL:  password authentication failed for user "USER"</code><p><span>원인</span>env.json 의 <code>USER:PASSWORD</code> 를 아직 실제 계정으로 안 바꿈. 네트워크는 정상(서버 IP 까지 도달해 인증에서 거절). 파이프 끝의 <code>KeyError: 'statusCode'</code> 는 오류 응답에 statusCode 가 없어서 생긴 2차 오류</p><p class="fix"><span>해결</span><b>quant:quant</b> 로 수정 (<code>sed -i 's#USER:PASSWORD@postgres#quant:quant@postgres#' env.json</code>). .env 에 QUANT_DB_* 를 정했다면 그 값으로</p></div><div class="sam-err"><b>빈 rows</b><code>{"rows": []}</code><p><span>원인</span>해당 symbol 데이터 없음</p><p class="fix"><span>해결</span><code>psql -c "SELECT DISTINCT symbol FROM market_data LIMIT 10"</code> 로 존재하는 심볼 확인</p></div></aside></div></article>
+        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>STEP 6</span><h3>로컬 API 서버 + 터미널 2 에서 curl 확인</h3><p><code>start-api</code> 로 경로·메서드·쿼리 파라미터까지 확인합니다. 200 · 400 · 다른 심볼의 세 가지를 검사합니다.</p></div><div class="sam-split"><div class="sam-split-code"><section class="lambda-code"><header><span>터미널 1 — 로컬 API 서버</span><button type="button" data-copy-code>복사</button></header><pre><code>cd /home/ubuntu/stock-coin-trade/sam-app-02
+sam local start-api --env-vars env.json --docker-network stock-coin-trade_internal --port 3010
+# 3000 은 sam-app-01 실습에서 쓸 수 있으므로 3010 사용. 종료는 Ctrl+C</code></pre></section><section class="lambda-code sam-transcript"><header><span>실행방법 — 터미널 1 (sam local start-api)</span></header><pre><code>root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade/sam-app-02# sam local start-api --env-vars env.json --docker-network stock-coin-trade_internal --port 3010
+No current session found, using default AWS::AccountId
+Initializing the lambda functions containers.
+Local image is up-to-date
+Using local image: public.ecr.aws/lambda/python:3.12-rapid-x86_64.
+
+Mounting /home/ubuntu/stock-coin-trade/sam-app-02/.aws-sam/build/QuantPricesFunction as /var/task:ro,delegated, inside runtime container
+SAM_CONTAINER_ID: 951b76e2c5820f72cd7f348de7967394698d648605f5490292aa3ce441031a52
+Containers created. Waiting for readiness...
+Waiting for 1 containers to be running...
+All 1 containers running after 0.0 seconds
+All containers are ready.
+Mounting QuantPricesFunction at http://127.0.0.1:3010/quant/prices [GET]
+You can now browse to the above endpoints to invoke your functions. You do not need to restart/reload SAM CLI while working on your functions, changes will be reflected instantly/automatical …(생략)
+2026-09-27 16:38:02 WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on http://127.0.0.1:3010
+2026-09-27 16:38:02 Press CTRL+C to quit
+Invoking lambda_quant.lambda_handler (python3.12)
+Lambda function 'QuantPricesFunction' is already running
+START RequestId: 54a6b334-00fd-46d1-97b8-a6acb8e2a212 Version: $LATEST
+END RequestId: 54a6b334-00fd-46d1-97b8-a6acb8e2a212
+REPORT RequestId: 54a6b334-00fd-46d1-97b8-a6acb8e2a212	Init Duration: 0.03 ms	Duration: 748.88 ms	Billed Duration: 749 ms	Memory Size: 512 MB	Max Memory Used: 512 MB
+
+2026-09-27 16:38:09 127.0.0.1 - - [27/Sep/2026 16:38:09] "GET /quant/prices?symbol=005930&amp;limit=3 HTTP/1.1" 200 -
+Invoking lambda_quant.lambda_handler (python3.12)
+Lambda function 'QuantPricesFunction' is already running
+START RequestId: 1df274e5-2dcb-4360-8ed9-cadca503acc9 Version: $LATEST
+END RequestId: 1df274e5-2dcb-4360-8ed9-cadca503acc9
+REPORT RequestId: 1df274e5-2dcb-4360-8ed9-cadca503acc9	Duration: 1.35 ms	Billed Duration: 2 ms	Memory Size: 512 MB	Max Memory Used: 512 MB
+
+2026-09-27 16:38:09 127.0.0.1 - - [27/Sep/2026 16:38:09] "GET /quant/prices?limit=abc HTTP/1.1" 400 -
+Invoking lambda_quant.lambda_handler (python3.12)
+Lambda function 'QuantPricesFunction' is already running
+START RequestId: bc525154-ca01-4b56-8bed-b36289094012 Version: $LATEST
+END RequestId: bc525154-ca01-4b56-8bed-b36289094012
+REPORT RequestId: bc525154-ca01-4b56-8bed-b36289094012	Duration: 3.18 ms	Billed Duration: 4 ms	Memory Size: 512 MB	Max Memory Used: 512 MB
+
+2026-09-27 16:38:09 127.0.0.1 - - [27/Sep/2026 16:38:09] "GET /quant/prices?symbol=000660&amp;limit=1 HTTP/1.1" 200 -</code></pre></section><p class="lambda-sam-note"><b>확인은 터미널을 하나 더 열어서:</b> 서버가 터미널 1을 점유하므로 WSL 터미널을 새로 열어 <code>curl</code> 로 호출합니다(폴더 무관). 200 · 400 · 다른 심볼 세 가지를 확인하면 핸들러 검증이 끝납니다. 호출 때마다 터미널 1 에 <code>Invoking lambda_quant.lambda_handler</code> 와 REPORT, 접근 로그가 찍힙니다. 첫 호출만 DB 커넥션 풀 생성 때문에 700ms 정도, 이후는 수 ms 입니다.</p><section class="lambda-code"><header><span>터미널 2 — curl 로 확인</span><button type="button" data-copy-code>복사</button></header><pre><code>curl -s 'http://127.0.0.1:3010/quant/prices?symbol=005930&amp;limit=3' | python3 -m json.tool   # 200
+curl -s -w '\nHTTP %{http_code}\n' 'http://127.0.0.1:3010/quant/prices?limit=abc'             # 400
+curl -s -o /dev/null -w '%{http_code}\n' 'http://127.0.0.1:3010/quant/prices?symbol=000660&amp;limit=1'</code></pre></section><section class="lambda-code sam-transcript"><header><span>실행방법 — 터미널 2 (curl)</span></header><pre><code>root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade# curl -s 'http://127.0.0.1:3010/quant/prices?symbol=005930&amp;limit=3' | python3 -m json.tool
+{
+    "rows": [
+        {
+            "symbol": "005930",
+            "trade_time": "2026-08-12 00:00:00+00:00",
+            "close": "58958.3681",
+            "volume": 1544700
+        },
+        {
+            "symbol": "005930",
+            "trade_time": "2026-08-11 00:00:00+00:00",
+            "close": "59006.3610",
+            "volume": 1543400
+        },
+        {
+            "symbol": "005930",
+            "trade_time": "2026-08-10 00:00:00+00:00",
+            "close": "59054.5100",
+            "volume": 1542100
+        }
+    ]
+}
+root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade# curl -s -w '\nHTTP %{http_code}\n' 'http://127.0.0.1:3010/quant/prices?limit=abc'
+{"message": "limit은 정수여야 합니다."}
+HTTP 400
+root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade# curl -s -o /dev/null -w '%{http_code}\n' 'http://127.0.0.1:3010/quant/prices?symbol=000660&amp;limit=1'
+200</code></pre></section></div><aside class="sam-errors"><header><i>⚠</i> 발생할 수 있는 오류</header><div class="sam-err"><b>포트 충돌</b><code>OSError: [Errno 98] Address already in use</code><p><span>원인</span>같은 포트로 다른 start-api 가 떠 있음</p><p class="fix"><span>해결</span><code>--port</code> 를 바꾸거나 이전 터미널에서 Ctrl+C</p></div><div class="sam-err"><b>502 {"message":"Internal server error"}</b><code>{"message":"Internal server error"}</code><p><span>원인</span>함수 초기화 실패(STEP 5 의 RuntimeError 등). API 서버는 살아 있지만 함수 컨테이너가 죽음</p><p class="fix"><span>해결</span>터미널 1 로그의 <code>[ERROR]</code> 줄 확인 → 수정 → <code>sam build --use-container</code> → 서버 재시작</p></div><div class="sam-err"><b>코드를 고쳤는데 반영 안 됨</b><p><span>원인</span>start-api 는 <code>.aws-sam/build</code> 산출물을 실행함</p><p class="fix"><span>해결</span><code>sam build --use-container</code> 후 재시작. 템플릿을 바꿨을 때도 재시작 필요</p></div><div class="sam-err"><b>curl: (7) Failed to connect</b><p><span>원인</span>서버가 아직 준비 전이거나 종료됨</p><p class="fix"><span>해결</span>터미널 1 에 <code>Running on http://127.0.0.1:3010</code> 이 보인 뒤 호출</p></div></aside></div></article>
+        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>STEP 7</span><h3>다른 타깃으로 확장 · working/scripts 대안</h3><p>같은 절차를 member(MariaDB)·session(Redis)에 반복하거나, 복사 없이 <code>working/scripts</code> 로 저장소 템플릿을 그대로 실행합니다. 어느 쪽이든 "로컬 변수는 템플릿에 선언" 규칙은 같습니다.</p></div><div class="sam-split"><div class="sam-split-code"><section class="lambda-code"><header><span>다른 타깃으로 같은 절차 반복</span><button type="button" data-copy-code>복사</button></header><pre><code>cd /home/ubuntu/stock-coin-trade/sam-app-02
+
+# member (MariaDB, 경로 파라미터, 404 분기)
+# 한 줄로: ../working/scripts/graft-target.sh member sam-app-02   (아래 수동 절차와 동일한 결과)
+mkdir -p member &amp;&amp; cp ../working/lambda/member/{lambda_member.py,member_service.py,secret_config.py,requirements.txt} member/
+cp ../working/lambda/member/event.json events/member.json
+# template.yaml 에 두 번째 함수 추가:
+#   MemberFunction: CodeUri: member/  Handler: lambda_member.lambda_handler
+#     Environment.Variables: DATABASE_URL: ''   ← 로컬용 선언 (env.json 이 덮어씀)
+#     Events: HttpApi  Path: /members/{member_id}  Method: GET
+# env.json 에 "MemberFunction": {"DATABASE_URL": "mysql+pymysql://mockinv:비밀번호@mariadb:3306/mockinv"}
+sam build --use-container
+sam local invoke MemberFunction --event events/member.json --env-vars env.json --docker-network stock-coin-trade_internal
+
+# session (Redis) : lambda/session → REDIS_URL, REDIS_SESSION_KEY_PREFIX 두 변수 선언
+# ohlcv  (pg-stock): docker compose -f docker-compose.yml -f docker-compose.pg-stock.yml up -d pg-stock 후
+#                    --docker-network 를 pg-stock 이 붙은 네트워크로 지정
+# knowledge (Qdrant): 별도 Qdrant 서버가 있어야 함</code></pre></section><section class="lambda-code sam-transcript"><header><span>대안 — working/scripts 로 복사 없이 바로 실행 · AI 도움 받으면서 sh 위주로 실행</span><button type="button" data-copy-code>복사</button></header><pre><code># ★ AI 도움 받으면서 sh 위주로 실행: 각 스크립트가 무엇을 하는지 AI 에게 물어 가며 한 줄씩 실행합니다
+# 이식하지 않고 저장소의 템플릿·스크립트를 그대로 쓰는 방법 (타깃별 빌드 폴더 분리)
+cd /home/ubuntu/stock-coin-trade/working
+scripts/preflight-check.sh
+cp env/local-env.json env/local-env.mine.json      # USER:PASSWORD 를 실제 값으로
+scripts/sam-build.sh quant                          # validate + build --use-container → .aws-sam/quant/
+scripts/sam-local-invoke.sh quant                   # ENV_JSON 을 개인 사본으로 바꾸려면 sam-common.sh 의 ENV_JSON 수정
+scripts/sam-local-start-api.sh quant 3001
+# 주의: working/template/template-*.yaml 도 로컬 변수(QUANT_DATABASE_URL 등)를 선언하지 않으므로
+#       같은 RuntimeError 가 납니다. Environment.Variables 에 빈 값으로 선언해서 쓰세요</code></pre></section></div><aside class="sam-errors"><header><i>⚠</i> 발생할 수 있는 오류</header><div class="sam-err"><b>member: JWT 파라미터 요구</b><code>Error: ... Parameters: [JwtIssuer, JwtAudience] must have values</code><p><span>원인</span>working 의 <code>template-member.yaml</code> 은 JWT Authorizer 파라미터가 필수</p><p class="fix"><span>해결</span>로컬 실습용 템플릿(sam-app-02)에는 Authorizer 를 빼고 함수만 추가. 인증 검증은 SAM 활용 3 에서</p></div><div class="sam-err"><b>member: pymysql 없음</b><code>ModuleNotFoundError: No module named 'pymysql'</code><p><span>원인</span>member/requirements.txt 미복사</p><p class="fix"><span>해결</span>4개 파일 모두 복사했는지 <code>ls member/</code></p></div><div class="sam-err"><b>두 함수의 환경변수가 섞임</b><p><span>원인</span>env.json 최상위 키를 함수별로 나누지 않음</p><p class="fix"><span>해결</span><code>{"QuantPricesFunction": {...}, "MemberFunction": {...}}</code> 처럼 논리 ID 별로 분리</p></div><div class="sam-err"><b>ohlcv: 네트워크 이름 다름</b><code>Error: ... network postgresql_default not found</code><p><span>원인</span>pg-stock 오버레이의 네트워크명이 환경마다 다름</p><p class="fix"><span>해결</span><code>docker network ls</code> 로 확인해 <code>--docker-network</code> 지정</p></div></aside></div></article>
+      </div>
+    </section>
+  </main>
+  <div id="lambda-toast" class="lambda-toast" role="status" aria-live="polite"></div>
+  <script src="/js/config.js"></script>
+  <script src="/js/common.js?v=20260927-sam3-f13"></script>
+  <script src="/js/sam-guide.js?v=20260927-1-f13"></script>
+  <script src="/js/tech-glossary.js?v=20260927-2" data-glossary-root="main"></script>
+</body>
+</html>

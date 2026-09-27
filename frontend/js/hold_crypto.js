@@ -66,10 +66,10 @@ async function loadStockPortfolio() {
       const tradeUrl = `/trade/stock.html?symbol=${encodeURIComponent(pos.symbol)}`;
       return `<tr>
         <td><a href="${tradeUrl}" title="${pos.name} 매수·매도" style="display:inline-block;text-decoration:none;">
-          <div class="font-bold" style="color:var(--fg);">${pos.name} <span style="font-size:10px;color:var(--accent);">매매하기 ↗</span></div>
-          <div class="text-xs" style="color:var(--accent);">${pos.symbol}</div>
+          <div class="font-bold" style="color:var(--fg);">${pos.name} <span style="font-size:13px;color:var(--accent);">매매하기 ↗</span></div>
+          <div class="text-sm" style="color:var(--accent);">${pos.symbol}</div>
         </a></td>
-        <td><span class="badge badge-muted" style="font-size:10px;">${pos.sector || '기타'}</span></td>
+        <td><span class="badge badge-muted" style="font-size:13px;">${pos.sector || '기타'}</span></td>
         <td class="text-right font-semibold" style="color:var(--fg);">${Number(pos.quantity).toLocaleString('ko-KR')}주</td>
         <td class="text-right" style="color:var(--fg);">${fmt(pos.avgPrice)}원</td>
         <td class="text-right" style="color:var(--fg);">${fmt(pos.currentPrice)}원</td>
@@ -97,7 +97,7 @@ async function loadAlternativePortfolio() {
     }
     tbody.innerHTML = positions.map(pos => {
       const pnl = Number(pos.pnl || 0);
-      return `<tr><td><div class="font-bold" style="color:var(--fg);">${pos.name}</div><div class="text-xs" style="color:var(--accent);">${pos.symbol}</div></td><td><span class="badge badge-muted">${pos.category}</span></td><td class="text-right" style="color:var(--fg);">${Number(pos.quantity).toLocaleString('ko-KR')}${pos.unit}</td><td class="text-right" style="color:var(--fg);">${fmt(pos.avgPrice)}원</td><td class="text-right font-bold" style="color:var(--accent);">${fmt(pos.evalAmount)}원</td><td class="text-right font-bold" style="color:${pnl >= 0 ? '#E11D48' : '#2563EB'};">${pnl >= 0 ? '+' : ''}${fmt(pnl)}원</td><td class="text-right">${volatilityBadgeHtml(pos.volatility)}</td></tr>`;
+      return `<tr><td><div class="font-bold" style="color:var(--fg);">${pos.name}</div><div class="text-sm" style="color:var(--accent);">${pos.symbol}</div></td><td><span class="badge badge-muted">${pos.category}</span></td><td class="text-right" style="color:var(--fg);">${Number(pos.quantity).toLocaleString('ko-KR')}${pos.unit}</td><td class="text-right" style="color:var(--fg);">${fmt(pos.avgPrice)}원</td><td class="text-right font-bold" style="color:var(--accent);">${fmt(pos.evalAmount)}원</td><td class="text-right font-bold" style="color:${pnl >= 0 ? '#E11D48' : '#2563EB'};">${pnl >= 0 ? '+' : ''}${fmt(pnl)}원</td><td class="text-right">${volatilityBadgeHtml(pos.volatility)}</td></tr>`;
     }).join('');
   } catch {
     tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center" style="color:var(--muted);">대체자산 포트폴리오를 불러올 수 없습니다.</td></tr>';
@@ -139,25 +139,25 @@ async function loadPortfolioAnalysis() {
           <span style="font-size:22px;font-weight:900;color:${color};">${data.healthScore ?? '-'}</span>
         </div>
         <div>
-          <div class="text-xs font-bold" style="color:var(--muted);">포트폴리오 건강도 · <span style="color:${color};">${data.healthLabel || '-'}</span></div>
+          <div class="text-sm font-bold" style="color:var(--muted);">포트폴리오 건강도 · <span style="color:${color};">${data.healthLabel || '-'}</span></div>
           <div class="mt-1 text-2xl font-black" style="color:var(--fg);">${fmt(data.totalAsset)}원</div>
-          <div class="mt-1 text-xs" style="color:var(--muted);">분산도 ${data.diversification?.score ?? '-'}점(${data.diversification?.label || '-'}) 등 여러 기법을 종합한 점수입니다.</div>
+          <div class="mt-1 text-sm" style="color:var(--muted);">분산도 ${data.diversification?.score ?? '-'}점(${data.diversification?.label || '-'}) 등 여러 기법을 종합한 점수입니다.</div>
         </div>
       </div>
 
       <div class="mt-5"><h3 class="text-sm font-black" style="color:var(--fg);">자산 배분</h3><div class="mt-3 space-y-3">${allocation.map(item => `<div><div class="flex items-center justify-between text-sm"><span class="font-bold" style="color:var(--fg);"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${item.color};margin-right:6px;"></span>${item.name}</span><span style="color:var(--muted);">${fmt(item.value)}원 · <strong style="color:var(--fg);">${item.weight}%</strong></span></div><div style="height:8px;margin-top:7px;border-radius:999px;background:var(--surface-2);overflow:hidden;"><div style="width:${item.weight}%;height:100%;border-radius:inherit;background:${item.color};"></div></div></div>`).join('')}</div></div>
 
       ${stats || leverage.value || data.topSector ? `<div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        ${stats ? `<div class="rounded-lg p-3" style="background:var(--surface-2);"><div class="text-xs font-bold" style="color:var(--muted);">승률 · 평균수익률</div><div class="mt-1 text-base font-black" style="color:var(--fg);">${stats.winRate}%</div><div class="text-xs" style="color:${pnlColor(stats.avgPnlRate)};">${signed(stats.avgPnlRate)}% 평균</div></div>` : ''}
-        ${stats ? `<div class="rounded-lg p-3" style="background:var(--surface-2);"><div class="text-xs font-bold" style="color:var(--muted);">최고 · 최저 포지션</div><div class="mt-1 text-sm font-bold" style="color:${pnlColor(stats.best.pnlRate)};">${stats.best.name} ${signed(stats.best.pnlRate)}%</div><div class="text-sm font-bold" style="color:${pnlColor(stats.worst.pnlRate)};">${stats.worst.name} ${signed(stats.worst.pnlRate)}%</div></div>` : ''}
-        ${leverage.value ? `<div class="rounded-lg p-3" style="background:var(--surface-2);"><div class="text-xs font-bold" style="color:var(--muted);">레버리지 노출 · 현금버퍼</div><div class="mt-1 text-base font-black" style="color:var(--fg);">${leverage.ratio}%</div><div class="text-xs" style="color:var(--muted);">현금/노출 ${leverage.cashBufferRatio}%</div></div>` : (data.topSector ? `<div class="rounded-lg p-3" style="background:var(--surface-2);"><div class="text-xs font-bold" style="color:var(--muted);">최대 업종 비중</div><div class="mt-1 text-base font-black" style="color:var(--fg);">${data.topSector.name}</div><div class="text-xs" style="color:var(--muted);">주식 내 ${data.topSector.weight}%</div></div>` : '')}
+        ${stats ? `<div class="rounded-lg p-3" style="background:var(--surface-2);"><div class="text-sm font-bold" style="color:var(--muted);">승률 · 평균수익률</div><div class="mt-1 text-base font-black" style="color:var(--fg);">${stats.winRate}%</div><div class="text-sm" style="color:${pnlColor(stats.avgPnlRate)};">${signed(stats.avgPnlRate)}% 평균</div></div>` : ''}
+        ${stats ? `<div class="rounded-lg p-3" style="background:var(--surface-2);"><div class="text-sm font-bold" style="color:var(--muted);">최고 · 최저 포지션</div><div class="mt-1 text-sm font-bold" style="color:${pnlColor(stats.best.pnlRate)};">${stats.best.name} ${signed(stats.best.pnlRate)}%</div><div class="text-sm font-bold" style="color:${pnlColor(stats.worst.pnlRate)};">${stats.worst.name} ${signed(stats.worst.pnlRate)}%</div></div>` : ''}
+        ${leverage.value ? `<div class="rounded-lg p-3" style="background:var(--surface-2);"><div class="text-sm font-bold" style="color:var(--muted);">레버리지 노출 · 현금버퍼</div><div class="mt-1 text-base font-black" style="color:var(--fg);">${leverage.ratio}%</div><div class="text-sm" style="color:var(--muted);">현금/노출 ${leverage.cashBufferRatio}%</div></div>` : (data.topSector ? `<div class="rounded-lg p-3" style="background:var(--surface-2);"><div class="text-sm font-bold" style="color:var(--muted);">최대 업종 비중</div><div class="mt-1 text-base font-black" style="color:var(--fg);">${data.topSector.name}</div><div class="text-sm" style="color:var(--muted);">주식 내 ${data.topSector.weight}%</div></div>` : '')}
       </div>` : ''}
 
       <div class="mt-6"><h3 class="text-sm font-black" style="color:var(--fg);">✦ 어드바이저 체크리스트</h3><div class="mt-3 space-y-2">${checks.map(item => {
         const style = CHECK_STATUS_STYLE[item.status] || CHECK_STATUS_STYLE.good;
         return `<div class="rounded-xl p-3" style="border:1px solid ${style.border};background:${style.bg};"><div class="flex items-center gap-2 text-sm font-black" style="color:${style.color};"><span>${style.icon}</span><span>${item.title}</span></div><p class="mt-1 text-sm leading-relaxed" style="color:${style.color};opacity:.9;">${item.message}</p></div>`;
       }).join('')}</div></div>
-      <p class="mt-4 text-xs" style="color:var(--muted);">${data.notice || ''}</p>`;
+      <p class="mt-4 text-sm" style="color:var(--muted);">${data.notice || ''}</p>`;
   } catch {
     content.innerHTML = '<p class="text-sm" style="color:#E11D48;">분석 정보를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.</p>';
   }
@@ -167,7 +167,7 @@ function renderStockSectorSummary(positions, totalEval) {
   const container = document.getElementById('stockSectorSummary');
   if (!container) return;
   if (!positions.length) {
-    container.innerHTML = '<p class="text-xs" style="color:var(--muted);">섹터별 집계는 주식 보유 후 표시됩니다.</p>';
+    container.innerHTML = '<p class="text-sm" style="color:var(--muted);">섹터별 집계는 주식 보유 후 표시됩니다.</p>';
     return;
   }
   const sectors = positions.reduce((result, pos) => {
@@ -180,13 +180,13 @@ function renderStockSectorSummary(positions, totalEval) {
   }, {});
   const palette = ['#2563EB', '#7C3AED', '#059669', '#EA580C', '#DB2777', '#0891B2'];
   const items = Object.entries(sectors).sort((a, b) => b[1].evalAmount - a[1].evalAmount);
-  container.innerHTML = `<div style="font-size:11px;font-weight:800;color:var(--muted);margin-bottom:8px;">섹터별 평가 비중</div><div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">${items.map(([sector, data], index) => {
+  container.innerHTML = `<div style="font-size:13.5px;font-weight:800;color:var(--muted);margin-bottom:8px;">섹터별 평가 비중</div><div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">${items.map(([sector, data], index) => {
     const pct = totalEval ? data.evalAmount / totalEval * 100 : 0;
     const color = palette[index % palette.length];
     return `<div style="border:1px solid var(--border);border-radius:8px;padding:9px 10px;background:var(--surface-2);">
-      <div style="display:flex;justify-content:space-between;gap:8px;font-size:11px;font-weight:800;color:var(--fg);"><span>${sector}</span><span>${pct.toFixed(1)}%</span></div>
+      <div style="display:flex;justify-content:space-between;gap:8px;font-size:13.5px;font-weight:800;color:var(--fg);"><span>${sector}</span><span>${pct.toFixed(1)}%</span></div>
       <div style="height:5px;border-radius:99px;background:var(--border);overflow:hidden;margin:7px 0 5px;"><div style="width:${pct}%;height:100%;background:${color};"></div></div>
-      <div style="font-size:10px;color:var(--muted);">${data.count}종목 · ${fmt(data.evalAmount)}원</div>
+      <div style="font-size:13px;color:var(--muted);">${data.count}종목 · ${fmt(data.evalAmount)}원</div>
     </div>`;
   }).join('')}</div>`;
 }
@@ -235,7 +235,7 @@ function renderStockPortfolioCharts(positions, totalEval) {
     plotOptions: { pie: {
       innerSize: '58%', borderWidth: 2, borderColor: '#FFFFFF',
       dataLabels: { enabled: true, format: '<b>{point.name}</b><br/>{point.percentage:.1f}%', distance: 14,
-        style: { color: '#334155', fontSize: '11px', fontWeight: '700', textOutline: 'none' },
+        style: { color: '#334155', fontSize: '13.5px', fontWeight: '700', textOutline: 'none' },
         filter: { property: 'percentage', operator: '>', value: 4 } },
     } },
     credits: { enabled: false },
@@ -246,14 +246,14 @@ function renderStockPortfolioCharts(positions, totalEval) {
     chart: { type: 'bar', backgroundColor: 'transparent', height: 270, style: { fontFamily: "'Pretendard', sans-serif" }, marginLeft: 105 },
     title: { text: null },
     xAxis: { categories: sectorData.map(([name]) => name), lineColor: '#CBD5E1', tickLength: 0,
-      labels: { style: { color: '#475569', fontSize: '11px', fontWeight: '700' } } },
+      labels: { style: { color: '#475569', fontSize: '13.5px', fontWeight: '700' } } },
     yAxis: { min: 0, title: { text: null }, gridLineColor: '#E2E8F0',
-      labels: { style: { color: '#64748B', fontSize: '10px' }, formatter() { return Highcharts.numberFormat(this.value, 0, '.', ','); } } },
+      labels: { style: { color: '#64748B', fontSize: '13px' }, formatter() { return Highcharts.numberFormat(this.value, 0, '.', ','); } } },
     tooltip: { ...sharedTooltip, pointFormat: '<b>{point.y:,.0f}원</b><br/>전체의 {point.percentage:.1f}%' },
     legend: { enabled: false },
     plotOptions: { series: { borderRadius: 4, pointPadding: 0.12, groupPadding: 0.08,
       dataLabels: { enabled: true, format: '{point.percentage:.1f}%', align: 'right', inside: false,
-        style: { color: '#475569', fontSize: '10px', fontWeight: '700', textOutline: 'none' } } } },
+        style: { color: '#475569', fontSize: '13px', fontWeight: '700', textOutline: 'none' } } } },
     credits: { enabled: false },
     series: [{ name: '평가금액', colorByPoint: true, data: sectorData.map(([name, value], index) => ({
       name, y: value, percentage: value / totalEval * 100, color: palette[index % palette.length],
@@ -275,34 +275,34 @@ function renderHoldTable(holdCryptoList) {
           <img src="https://static.upbit.com/logos/${h.marketCodeOnlySymbol}.png" alt="" class="h-9 w-9 rounded-full" style="border:1px solid var(--border);">
           <div>
             <p class="font-bold" style="color:var(--fg);">${h.koreanName}</p>
-            <p class="text-xs font-semibold" style="color:var(--accent);">${h.marketCodeOnlySymbol}</p>
+            <p class="text-sm font-semibold" style="color:var(--accent);">${h.marketCodeOnlySymbol}</p>
           </div>
         </div>
       </td>
       <td class="text-right">
         <span class="font-semibold" style="color:var(--fg);" id="${h.marketCode}-hold-count">${fmtDec(h.holdCount, 8)}</span>
-        <span class="ml-1 text-xs" style="color:var(--muted);">${h.marketCodeOnlySymbol}</span>
+        <span class="ml-1 text-sm" style="color:var(--muted);">${h.marketCodeOnlySymbol}</span>
       </td>
       <td class="text-right">
         <span class="font-semibold" style="color:var(--fg);" id="${h.marketCode}-buy-average">${fmtDec(h.buyAverage, 4)}</span>
-        <span class="ml-1 text-xs" style="color:var(--muted);">KRW</span>
+        <span class="ml-1 text-sm" style="color:var(--muted);">KRW</span>
       </td>
       <td class="text-right">
         <span class="font-semibold" style="color:var(--fg);" id="${h.marketCode}-buy-total-krw">${fmt(h.buyTotalKrw)}</span>
-        <span class="ml-1 text-xs" style="color:var(--muted);">KRW</span>
+        <span class="ml-1 text-sm" style="color:var(--muted);">KRW</span>
       </td>
       <td class="text-right" style="background:var(--accent-light);">
         <span class="font-bold" style="color:var(--accent);" id="${h.marketCode}-evaluation-krw">-</span>
-        <span class="ml-1 text-xs" style="color:var(--muted);">KRW</span>
+        <span class="ml-1 text-sm" style="color:var(--muted);">KRW</span>
       </td>
       <td class="text-right">
         <p class="mb-1">
           <span class="font-bold" id="${h.marketCode}-krw-of-return">-</span>
-          <span class="ml-1 text-xs" style="color:var(--muted);">KRW</span>
+          <span class="ml-1 text-sm" style="color:var(--muted);">KRW</span>
         </p>
         <p>
           <span class="font-black text-base" id="${h.marketCode}-rate-of-return">-</span>
-          <span class="ml-1 text-xs" style="color:var(--muted);">%</span>
+          <span class="ml-1 text-sm" style="color:var(--muted);">%</span>
         </p>
       </td>
       <td class="text-right" id="${h.marketCode}-volatility">
@@ -401,7 +401,7 @@ async function renderPortfolioChart(holdCryptoList, marketArrayList, memberAsset
       tooltip: { backgroundColor:'#1A1A2E', borderColor:'rgba(124,92,252,0.3)', style:{ color:'#fff' }, pointFormat:'{series.name}: <b>{point.percentage:.1f}%</b>' },
       plotOptions: { pie: { cursor:'pointer', colors:accentPalette, borderWidth:2, borderColor:'rgba(255,255,255,0.06)', borderRadius:4,
         dataLabels:{ enabled:true, format:'<b style="color:rgba(255,255,255,0.85)">{point.name}</b><br><span style="color:#A78BFA">{point.percentage:.1f}%</span>',
-          distance:-45, style:{ fontSize:'12px', fontWeight:'700', textOutline:'none' }, filter:{ property:'percentage', operator:'>', value:4 } } } },
+          distance:-45, style:{ fontSize:'13.5px', fontWeight:'700', textOutline:'none' }, filter:{ property:'percentage', operator:'>', value:4 } } } },
       credits: { enabled:false },
       series: [{ name:'비중', data:chartData }],
     });
@@ -425,7 +425,7 @@ function volatilityBadgeHtml(vol, [low, mid] = [20, 50]) {
   if (vol == null) return '<span style="color:var(--muted);">-</span>';
   const { label, color } = vol < low ? { label: '낮음', color: '#059669' }
     : vol < mid ? { label: '보통', color: '#D97706' } : { label: '높음', color: '#DC2626' };
-  return `<span class="font-bold" style="color:${color};">${vol.toFixed(1)}%</span><br><span style="font-size:10px;color:${color};">${label}</span>`;
+  return `<span class="font-bold" style="color:${color};">${vol.toFixed(1)}%</span><br><span style="font-size:13px;color:${color};">${label}</span>`;
 }
 async function loadCryptoVolatility(holdCryptoList) {
   await Promise.all(holdCryptoList.map(async h => {

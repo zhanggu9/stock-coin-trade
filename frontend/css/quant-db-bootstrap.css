@@ -1,0 +1,125 @@
+.bootstrap-file-grid,
+.bootstrap-data-grid,
+.bootstrap-errors {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.bootstrap-file-grid article,
+.bootstrap-data-grid article,
+.bootstrap-errors article {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--quant-line);
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.bootstrap-file-grid b,
+.bootstrap-data-grid b,
+.bootstrap-errors b {
+  display: block;
+  margin-bottom: 7px;
+  color: #0d4ebb;
+  font-size: 13.5px;
+}
+
+.bootstrap-file-grid code {
+  display: block;
+  margin: 3px 0;
+  color: #193b69;
+  font-size: 13.5px;
+  overflow-wrap: anywhere;
+}
+
+.bootstrap-file-grid p,
+.bootstrap-data-grid p,
+.bootstrap-errors p {
+  margin: 7px 0 0;
+  color: #60738b;
+  font-size: 13.5px;
+  line-height: 1.65;
+}
+
+.bootstrap-step {
+  padding: 17px;
+  border: 1px solid #dce6f2;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.bootstrap-step > span {
+  color: #0d4ebb;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+.bootstrap-step h3 {
+  margin: 4px 0 7px;
+  color: var(--quant-ink);
+  font-size: 16px;
+}
+
+.bootstrap-step > p {
+  margin: 0 0 11px;
+  color: #60738b;
+  font-size: 13.5px;
+  line-height: 1.7;
+}
+
+.bootstrap-step pre {
+  margin: 9px 0;
+  padding: 15px 16px;
+  overflow: auto;
+  border: 1px solid #d3dae4;
+  border-radius: 8px;
+  background: #f3f5f8;
+  color: #111827;
+  font: 13.5px/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre;
+}
+
+.bootstrap-step pre code {
+  color: inherit;
+  font: inherit;
+}
+
+.bootstrap-link a {
+  color: #0d4ebb;
+  font-weight: 800;
+}
+
+.bootstrap-errors article {
+  border-left: 4px solid #d73c50;
+  background: #fff8f8;
+}
+
+.bootstrap-errors article > code {
+  display: block;
+  margin-top: 8px;
+  padding: 8px;
+  border-radius: 6px;
+  background: #f3f5f8;
+  color: #26384f;
+  font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 850px) {
+  .bootstrap-file-grid,
+  .bootstrap-data-grid,
+  .bootstrap-errors {
+    grid-template-columns: 1fr;
+  }
+
+  .bootstrap-step {
+    padding: 13px;
+  }
+
+  .bootstrap-step pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+}

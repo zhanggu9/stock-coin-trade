@@ -67,3 +67,6 @@ deploy.md
 
 # Locally-cloned KIS MCP server (third-party, not part of this project) + its secrets
 /mcp/
+
+/sam-installation
+/sam-app*

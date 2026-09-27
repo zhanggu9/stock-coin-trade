@@ -16,7 +16,7 @@
   </style>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config={theme:{extend:{fontFamily:{sans:['Pretendard','-apple-system','BlinkMacSystemFont','Segoe UI','Apple SD Gothic Neo','Malgun Gothic','sans-serif']}}}}</script>
-  <link rel="stylesheet" href="/css/style.css?v=20260920-chart">
+  <link rel="stylesheet" href="/css/style.css?v=20260920-chart-f13">
 </head>
 <body class="min-h-screen">
 <div id="header-mount"></div>
@@ -59,10 +59,10 @@
       <table style="width:100%;border-collapse:collapse;font-size:13px;">
         <thead>
           <tr style="background:var(--surface-2);">
-            <th style="padding:6px 12px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;">종목</th>
-            <th style="padding:6px 12px;text-align:right;color:var(--muted);font-size:10px;font-weight:700;">현재가</th>
-            <th style="padding:6px 12px;text-align:right;color:var(--muted);font-size:10px;font-weight:700;">등락</th>
-            <th style="padding:6px 12px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;">시장</th>
+            <th style="padding:6px 12px;text-align:left;color:var(--muted);font-size:13px;font-weight:700;text-transform:uppercase;">종목</th>
+            <th style="padding:6px 12px;text-align:right;color:var(--muted);font-size:13px;font-weight:700;">현재가</th>
+            <th style="padding:6px 12px;text-align:right;color:var(--muted);font-size:13px;font-weight:700;">등락</th>
+            <th style="padding:6px 12px;text-align:left;color:var(--muted);font-size:13px;font-weight:700;">시장</th>
           </tr>
         </thead>
         <tbody id="stockTop10Body">
@@ -81,10 +81,10 @@
       <table style="width:100%;border-collapse:collapse;font-size:13px;">
         <thead>
           <tr style="background:var(--surface-2);">
-            <th style="padding:6px 12px;text-align:left;color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;">코인</th>
-            <th style="padding:6px 12px;text-align:right;color:var(--muted);font-size:10px;font-weight:700;">현재가</th>
-            <th style="padding:6px 12px;text-align:right;color:var(--muted);font-size:10px;font-weight:700;">등락</th>
-            <th style="padding:6px 12px;text-align:right;color:var(--muted);font-size:10px;font-weight:700;">거래대금</th>
+            <th style="padding:6px 12px;text-align:left;color:var(--muted);font-size:13px;font-weight:700;text-transform:uppercase;">코인</th>
+            <th style="padding:6px 12px;text-align:right;color:var(--muted);font-size:13px;font-weight:700;">현재가</th>
+            <th style="padding:6px 12px;text-align:right;color:var(--muted);font-size:13px;font-weight:700;">등락</th>
+            <th style="padding:6px 12px;text-align:right;color:var(--muted);font-size:13px;font-weight:700;">거래대금</th>
           </tr>
         </thead>
         <tbody id="cryptoTop10Body">
@@ -99,11 +99,11 @@
 <footer id="site-footer">
   <div class="w-full px-4 py-3 flex items-center justify-between">
     <span class="brand-logo-text" style="font-size:13px;letter-spacing:1.5px;">EDUMGT</span>
-      <p style="font-size:12px;color:var(--muted);">(주)에듀엠지티 &nbsp;|&nbsp; <a href="https://www.edumgt.co.kr" target="_blank" style="color:var(--accent-dark);text-decoration:none;font-weight:600;">www.edumgt.co.kr</a> &nbsp;|&nbsp; © 2025</p>
+      <p style="font-size:13.5px;color:var(--muted);">(주)에듀엠지티 &nbsp;|&nbsp; <a href="https://www.edumgt.co.kr" target="_blank" style="color:var(--accent-dark);text-decoration:none;font-weight:600;">www.edumgt.co.kr</a> &nbsp;|&nbsp; © 2025</p>
   </div>
 </footer>
 <script src="/js/config.js"></script>
-<script src="/js/common.js?v=20260926-navstate4"></script>
+<script src="/js/common.js?v=20260926-navstate4-f13"></script>
 <script>
 (async () => {
   await initPage();
@@ -122,12 +122,12 @@
         <td style="padding:8px 12px;">
           <div style="display:flex;align-items:baseline;gap:6px;white-space:nowrap;">
             <span style="font-weight:700;color:var(--fg);">${m.koreanName}</span>
-            <span style="font-size:10px;color:var(--muted);font-weight:600;">${m.market}</span>
+            <span style="font-size:13px;color:var(--muted);font-weight:600;">${m.market}</span>
           </div>
         </td>
         <td id="${m.market}-idx-price" style="padding:8px 12px;text-align:right;font-weight:700;color:var(--fg);">-</td>
-        <td id="${m.market}-idx-rate"  style="padding:8px 12px;text-align:right;font-size:12px;font-weight:700;">-</td>
-        <td id="${m.market}-idx-vol"   style="padding:8px 12px;text-align:right;font-size:11px;color:var(--muted);">-</td>
+        <td id="${m.market}-idx-rate"  style="padding:8px 12px;text-align:right;font-size:13.5px;font-weight:700;">-</td>
+        <td id="${m.market}-idx-vol"   style="padding:8px 12px;text-align:right;font-size:13.5px;color:var(--muted);">-</td>
       </tr>`).join('');
 
     // WebSocket
@@ -183,8 +183,8 @@
         return `<tr style="border-bottom:1px solid var(--border);cursor:pointer;" onclick="location.href='/trade/stock.html?symbol=${encodeURIComponent(s.sym)}'">
           <td style="padding:8px 12px;font-weight:700;color:var(--fg);">${s.name}</td>
           <td style="padding:8px 12px;text-align:right;font-weight:700;color:var(--fg);">${Number(s.price).toLocaleString('ko-KR')}</td>
-          <td style="padding:8px 12px;text-align:right;font-size:12px;font-weight:700;color:${color};">${rateStr}</td>
-          <td style="padding:8px 12px;font-size:10px;font-weight:700;${mktColor}">${s.market}</td>
+          <td style="padding:8px 12px;text-align:right;font-size:13.5px;font-weight:700;color:${color};">${rateStr}</td>
+          <td style="padding:8px 12px;font-size:13px;font-weight:700;${mktColor}">${s.market}</td>
         </tr>`;
       }).join('');
     } catch {}

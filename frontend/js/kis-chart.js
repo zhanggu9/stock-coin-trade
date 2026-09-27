@@ -90,7 +90,7 @@
         <span style="font-size:18px;font-weight:900;color:var(--fg)">${esc(s.name || symbol)} <small style="color:var(--muted);font-weight:700">${esc(symbol)}</small></span>
         <span class="price-big ${cls}">${fmt(s.price)}</span>
         <span class="${cls}" style="font-weight:800">${s.change >= 0 ? '+' : ''}${fmt(s.change)} (${s.changeRate >= 0 ? '+' : ''}${fmt(s.changeRate, 2)}%)</span>
-        <span style="font-size:12px;color:var(--muted)">KIS Testbed · 기준 시점의 현재가</span>
+        <span style="font-size:13.5px;color:var(--muted)">KIS Testbed · 기준 시점의 현재가</span>
       </div>
       <div class="q-grid">
         <div class="q"><small>시가 / 고가 / 저가</small><b>${fmt(s.open)} / ${fmt(s.high)} / ${fmt(s.low)}</b></div>
