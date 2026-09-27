@@ -382,6 +382,186 @@ root@DESKTOP-CLQV18N:/home/ubuntu/stock-coin-trade# curl -s -o /dev/null -w '%{h
 200</code></pre></section></div><aside class="sam-errors"><header><i>⚠</i> 발생할 수 있는 오류</header><div class="sam-err"><b>Docker 가 꺼져 있음</b><code>Error: Running AWS SAM projects locally requires Docker. Have you got it installed and running?</code><p><span>원인</span><code>sam local</code> 은 함수를 Docker 컨테이너에서 실행함</p><p class="fix"><span>해결</span>Docker 시작 후 <code>docker info</code> 확인</p></div><div class="sam-err"><b>첫 호출이 매우 느림</b><code>Fetching public.ecr.aws/lambda/python:3.14-x86_64 Docker container image......</code><p><span>원인</span>Lambda 런타임 이미지를 처음 내려받는 중</p><p class="fix"><span>해결</span>정상 동작. 한 번 받은 뒤에는 수 초 안에 응답</p></div><div class="sam-err"><b>이벤트 파일을 찾지 못함</b><code>Error: Invalid value for '--event': Path 'events/basic.json' does not exist.</code><p><span>원인</span>파일을 만들지 않았거나 프로젝트 루트가 아닌 곳에서 실행</p><p class="fix"><span>해결</span><code>pwd</code> 로 위치 확인, <code>ls events/</code> 로 파일 확인</p></div><div class="sam-err"><b>함수 논리 ID 오타</b><code>Error: Function HelloWorldFunction not found in template</code><p><span>원인</span>템플릿 <code>Resources</code> 의 키와 다른 이름으로 호출</p><p class="fix"><span>해결</span><code>grep -n "Type: AWS::Serverless::Function" -B1 template.yaml</code> 로 논리 ID 확인</p></div><div class="sam-err"><b>핸들러 import 실패</b><code>{"errorMessage": "Unable to import module 'app': No module named 'app'", "errorType": "Runtime.ImportModuleError"}</code><p><span>원인</span>Handler 설정과 파일명 불일치, 또는 코드 수정 후 <code>sam build</code> 를 안 해서 빌드 산출물이 옛날 것</p><p class="fix"><span>해결</span>Handler 확인 후 <code>sam build</code> 다시 실행</p></div><div class="sam-err"><b>로컬 API 포트 충돌 (start-api)</b><code>OSError: [Errno 98] Address already in use</code><p><span>원인</span>3000 포트를 다른 프로세스가 사용 중</p><p class="fix"><span>해결</span><code>sam local start-api --port 3001</code> 처럼 다른 포트 지정</p></div><div class="sam-err"><b>응답이 errorMessage 로 옴</b><code>{"errorMessage": "'message'", "errorType": "KeyError", "stackTrace": [...]}</code><p><span>원인</span>핸들러 코드에서 예외 발생 (이벤트 키 없음 등)</p><p class="fix"><span>해결</span>출력의 stackTrace 줄 번호로 코드 수정 → <code>sam build</code> → 재호출</p></div></aside></div></article>
       </div>
     </section>
+
+    <section class="lambda-sam-guide" aria-labelledby="sam-deploy-title">
+      <div class="lambda-sam-head"><div><span>05 · AWS DEPLOY</span><h2 id="sam-deploy-title">Lambda · API Gateway 배포와 ALB 확장</h2></div><a href="https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-getting-started-hello-world.html" target="_blank" rel="noopener noreferrer">AWS 공식 배포 안내 ↗</a></div>
+      <p class="lambda-sam-note"><b>먼저 구성을 구분합니다.</b> <code>sam init</code>의 <b>Hello World Example</b>은 프로젝트 골격을 만들 뿐 AWS에 리소스를 등록하지 않습니다. <code>sam deploy</code>를 실행해야 CloudFormation이 Lambda·API Gateway·IAM 역할을 생성합니다. ALB까지 모두 만드는 기본 Quick Start 템플릿은 없으므로 아래처럼 CloudFormation 리소스를 <code>template.yaml</code>에 추가합니다. 최종 구조는 <code>API Gateway → Lambda</code>와 <code>ALB → 같은 Lambda</code>인 병렬 진입점입니다. <code>API Gateway → ALB → Lambda</code> 순서가 아닙니다.</p>
+      <div class="lambda-sam-flow"><span><small>프로젝트 생성</small><b>sam init</b></span><i>→</i><span><small>패키징</small><b>sam build</b></span><i>→</i><span><small>AWS 생성</small><b>sam deploy</b></span><i>→</i><span><small>두 진입점</small><b>API GW · ALB</b></span></div>
+      <div class="lambda-sam-details">
+        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>STEP 5</span><h3>Lambda + API Gateway를 먼저 AWS에 배포</h3><p>앞 단계에서 만든 <code>sam-app-01</code>을 그대로 사용합니다. AWS CLI 자격증명과 리전을 확인하고 빌드한 뒤 최초 한 번은 안내형 배포를 실행합니다. 화면에 비용 또는 보안 관련 변경 승인이 나오면 내용을 확인하고 진행합니다.</p></div><div class="sam-split"><div class="sam-split-code"><section class="lambda-code"><header><span>AWS 계정 확인 → 빌드 → 최초 배포</span><button type="button" data-copy-code>복사</button></header><pre><code>cd /home/ubuntu/stock-coin-trade/sam-app-01
+
+# 현재 자격증명과 기본 리전 확인
+aws sts get-caller-identity
+aws configure get region
+
+# Lambda 배포 파일 생성
+sam validate --lint
+sam build --use-container
+
+# 최초 배포: 스택명·리전·변경 승인 여부를 대화형으로 저장
+sam deploy --guided</code></pre></section><section class="lambda-code sam-transcript"><header><span>입력 예시 — sam deploy --guided</span></header><pre><code>Stack Name [sam-app]: sam-app-01
+AWS Region [us-east-1]: ap-northeast-2
+Confirm changes before deploy [y/N]: y
+Allow SAM CLI IAM role creation [Y/n]: Y
+Disable rollback [y/N]: n
+HelloWorldFunction has no authentication. Is this okay? [y/N]: y
+Save arguments to configuration file [Y/n]: Y
+SAM configuration file [samconfig.toml]:
+SAM configuration environment [default]:
+
+Successfully created/updated stack - sam-app-01 in ap-northeast-2</code></pre></section><section class="lambda-code"><header><span>CloudFormation 결과와 API Gateway 실제 호출</span><button type="button" data-copy-code>복사</button></header><pre><code># 스택 리소스 확인
+aws cloudformation describe-stack-resources \
+  --stack-name sam-app-01 \
+  --query 'StackResources[].{Type:ResourceType,Id:PhysicalResourceId}' \
+  --output table
+
+# template.yaml의 OutputKey가 HelloWorldApi이면 URL 조회
+API_URL=$(aws cloudformation describe-stacks \
+  --stack-name sam-app-01 \
+  --query "Stacks[0].Outputs[?OutputKey=='HelloWorldApi'].OutputValue" \
+  --output text)
+
+echo "$API_URL"
+curl -i "$API_URL"</code></pre></section><section class="lambda-code sam-transcript"><header><span>응답 예시 — API Gateway → Lambda</span></header><pre><code>HTTP/2 200
+content-type: application/json
+
+{"message": "hello world"}</code></pre></section></div><aside class="sam-errors"><header><i>⚠</i> 발생할 수 있는 오류</header><div class="sam-err"><b>AWS 자격증명이 없음</b><code>Unable to locate credentials</code><p><span>원인</span>AWS CLI 프로필이 없거나 만료됨</p><p class="fix"><span>해결</span><code>aws configure</code> 또는 조직의 SSO 로그인 후 <code>aws sts get-caller-identity</code> 재확인</p></div><div class="sam-err"><b>리전이 설정되지 않음</b><code>You must specify a region</code><p><span>원인</span>기본 프로필과 <code>samconfig.toml</code>에 리전이 없음</p><p class="fix"><span>해결</span><code>aws configure set region ap-northeast-2</code> 또는 배포 시 리전 입력</p></div><div class="sam-err"><b>CloudFormation 권한 부족</b><code>CREATE_FAILED ... is not authorized to perform ...</code><p><span>원인</span>사용자·역할에 CloudFormation, Lambda, API Gateway, IAM, S3 관련 권한이 부족함</p><p class="fix"><span>해결</span>오류 메시지의 거부된 작업을 관리자에게 전달해 실습 계정 정책 보완</p></div><div class="sam-err"><b>API URL 변수가 비어 있음</b><p><span>원인</span>템플릿의 OutputKey가 <code>HelloWorldApi</code>가 아니거나 스택명이 다름</p><p class="fix"><span>해결</span><code>aws cloudformation describe-stacks --stack-name sam-app-01 --query 'Stacks[0].Outputs' --output table</code>로 실제 키 확인</p></div></aside></div></article>
+
+        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>STEP 6</span><h3>같은 Lambda에 인터넷 공개 ALB 연결</h3><p>ALB는 최소 두 가용 영역의 퍼블릭 서브넷이 필요하고 실행 시간 동안 비용이 발생합니다. 아래 예제는 기존 VPC와 퍼블릭 서브넷 두 개를 입력받아 ALB·보안 그룹·리스너·Lambda 대상 그룹·호출 권한을 생성합니다. 기존 <code>template.yaml</code>을 백업한 뒤 전체 내용을 교체합니다.</p></div><div class="sam-split"><div class="sam-split-code"><section class="lambda-code"><header><span>사용할 VPC와 서로 다른 AZ의 서브넷 확인</span><button type="button" data-copy-code>복사</button></header><pre><code># 기본 VPC 확인. 결과가 None이면 사용할 VPC ID를 직접 정합니다.
+aws ec2 describe-vpcs \
+  --filters Name=is-default,Values=true \
+  --query 'Vpcs[0].VpcId' --output text
+
+# 위 VPC의 서브넷과 가용 영역 확인
+VPC_ID=vpc-0123456789abcdef0
+aws ec2 describe-subnets \
+  --filters Name=vpc-id,Values="$VPC_ID" \
+  --query 'Subnets[].{SubnetId:SubnetId,AZ:AvailabilityZone,PublicIp:MapPublicIpOnLaunch}' \
+  --output table
+
+# 서로 다른 AZ의 퍼블릭 서브넷 두 개를 기록합니다.
+# 예: subnet-aaa... (ap-northeast-2a), subnet-bbb... (ap-northeast-2b)</code></pre></section><section class="lambda-code"><header><span>template.yaml — API Gateway + Lambda + ALB 전체 예제</span><button type="button" data-copy-code>복사</button></header><pre><code>AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: One Lambda exposed by API Gateway and an internet-facing ALB
+
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+  PublicSubnetA:
+    Type: AWS::EC2::Subnet::Id
+  PublicSubnetB:
+    Type: AWS::EC2::Subnet::Id
+
+Resources:
+  HelloWorldFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: hello_world/
+      Handler: app.lambda_handler
+      Runtime: python3.12
+      Architectures:
+        - x86_64
+      Timeout: 10
+      Events:
+        HelloWorldApiEvent:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: get
+
+  AlbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow public HTTP for the SAM ALB example
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Scheme: internet-facing
+      Type: application
+      SecurityGroups:
+        - !Ref AlbSecurityGroup
+      Subnets:
+        - !Ref PublicSubnetA
+        - !Ref PublicSubnetB
+
+  AlbInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref HelloWorldFunction
+      Principal: elasticloadbalancing.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+
+  LambdaTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    DependsOn: AlbInvokePermission
+    Properties:
+      TargetType: lambda
+      Targets:
+        - Id: !GetAtt HelloWorldFunction.Arn
+
+  HttpListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref LambdaTargetGroup
+
+Outputs:
+  HelloWorldApi:
+    Description: API Gateway endpoint
+    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/hello/'
+  AlbUrl:
+    Description: ALB endpoint
+    Value: !Sub 'http://${ApplicationLoadBalancer.DNSName}/'</code></pre></section><p class="lambda-sam-note"><b>권한 범위:</b> 예제의 <code>SourceAccount</code>는 같은 AWS 계정의 ELB 서비스만 Lambda를 호출하도록 제한하면서 Target Group과 Permission 사이의 순환 참조를 피합니다. 운영 환경에서는 HTTPS 리스너, ACM 인증서, 더 제한적인 인바운드 CIDR, WAF와 애플리케이션 인증을 함께 설계해야 합니다.</p><section class="lambda-code"><header><span>재빌드 → ALB 포함 배포 → 두 URL 호출</span><button type="button" data-copy-code>복사</button></header><pre><code>sam validate --lint
+sam build --use-container
+
+# 저장된 배포 설정을 사용하되 새 파라미터는 실제 ID로 전달
+sam deploy \
+  --parameter-overrides \
+    VpcId=vpc-0123456789abcdef0 \
+    PublicSubnetA=subnet-aaaaaaaaaaaaaaaaa \
+    PublicSubnetB=subnet-bbbbbbbbbbbbbbbbb
+
+# 출력값 확인
+aws cloudformation describe-stacks \
+  --stack-name sam-app-01 \
+  --query 'Stacks[0].Outputs' --output table
+
+API_URL=$(aws cloudformation describe-stacks --stack-name sam-app-01 \
+  --query "Stacks[0].Outputs[?OutputKey=='HelloWorldApi'].OutputValue" --output text)
+ALB_URL=$(aws cloudformation describe-stacks --stack-name sam-app-01 \
+  --query "Stacks[0].Outputs[?OutputKey=='AlbUrl'].OutputValue" --output text)
+
+curl -i "$API_URL"
+curl -i "$ALB_URL"</code></pre></section><section class="lambda-code sam-transcript"><header><span>응답 예시 — 두 주소가 같은 Lambda 응답 반환</span></header><pre><code>$ curl -s "$API_URL"
+{"message": "hello world"}
+
+$ curl -s "$ALB_URL"
+{"message": "hello world"}</code></pre></section></div><aside class="sam-errors"><header><i>⚠</i> 발생할 수 있는 오류</header><div class="sam-err"><b>ALB는 두 AZ가 필요함</b><code>At least two subnets in two different Availability Zones must be specified</code><p><span>원인</span>같은 가용 영역의 서브넷을 두 번 지정했거나 하나만 지정함</p><p class="fix"><span>해결</span><code>describe-subnets</code> 결과에서 AZ가 서로 다른 서브넷 두 개 선택</p></div><div class="sam-err"><b>VPC와 서브넷이 서로 다름</b><code>ValidationError: Security group and subnet belong to different networks</code><p><span>원인</span><code>VpcId</code>에 속하지 않는 서브넷을 지정함</p><p class="fix"><span>해결</span><code>--filters Name=vpc-id,Values="$VPC_ID"</code>로 조회한 서브넷만 사용</p></div><div class="sam-err"><b>ALB DNS 호출 시간 초과</b><p><span>원인</span>서브넷 라우팅에 Internet Gateway 경로가 없거나 보안 그룹 80번 인바운드가 차단됨</p><p class="fix"><span>해결</span>퍼블릭 서브넷의 라우트 테이블에 <code>0.0.0.0/0 → igw-...</code>가 있는지 확인</p></div><div class="sam-err"><b>ALB가 502를 반환</b><code>HTTP/1.1 502 Bad Gateway</code><p><span>원인</span>Lambda 오류 또는 ALB가 요구하는 응답 형식에 맞지 않음</p><p class="fix"><span>해결</span><code>sam logs -n HelloWorldFunction --stack-name sam-app-01 --tail</code>로 로그 확인. 응답에 정수 <code>statusCode</code>와 문자열 <code>body</code> 사용</p></div><div class="sam-err"><b>ELB 호출 권한 오류</b><code>elasticloadbalancing principal does not have permission to invoke ...</code><p><span>원인</span><code>AWS::Lambda::Permission</code>이 없거나 대상 함수가 다름</p><p class="fix"><span>해결</span><code>AlbInvokePermission</code>의 FunctionName과 Principal을 확인한 뒤 다시 배포</p></div></aside></div></article>
+
+        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>STEP 7</span><h3>실습 종료 후 유료 리소스 정리</h3><p>ALB는 요청이 없어도 실행 시간에 따른 비용이 발생할 수 있습니다. 실습을 마치면 SAM 스택을 삭제하고 CloudFormation에서 제거됐는지 확인합니다. 이 명령은 해당 스택이 만든 Lambda·API Gateway·ALB·보안 그룹을 함께 삭제합니다.</p></div><div class="sam-split"><div class="sam-split-code"><section class="lambda-code"><header><span>스택 삭제와 확인</span><button type="button" data-copy-code>복사</button></header><pre><code># 삭제 대상 계정·리전·스택 이름을 먼저 확인
+aws sts get-caller-identity
+aws configure get region
+aws cloudformation describe-stacks --stack-name sam-app-01
+
+# 확인 질문에 y를 입력하면 스택 삭제
+sam delete --stack-name sam-app-01
+
+# Stack with id sam-app-01 does not exist가 나오면 삭제 완료
+aws cloudformation describe-stacks --stack-name sam-app-01</code></pre></section></div><aside class="sam-errors"><header><i>⚠</i> 삭제 전 확인</header><div class="sam-err"><b>공용 개발 스택인지 확인</b><p><span>원인</span><code>sam delete</code>는 CloudFormation 스택 리소스를 실제로 삭제함</p><p class="fix"><span>해결</span>개인 실습 스택 <code>sam-app-01</code>이 맞는지 계정 ID·리전·스택명을 확인하고 실행</p></div><div class="sam-err"><b>DELETE_FAILED</b><p><span>원인</span>스택 밖에서 리소스를 변경했거나 보안 그룹 등에 의존 리소스가 남아 있음</p><p class="fix"><span>해결</span>CloudFormation 스택 이벤트에서 실패 리소스와 사유를 확인한 뒤 외부 의존성을 먼저 정리</p></div></aside></div></article>
+      </div>
+    </section>
   </main>
   <div id="lambda-toast" class="lambda-toast" role="status" aria-live="polite"></div>
   <script src="/js/config.js"></script>

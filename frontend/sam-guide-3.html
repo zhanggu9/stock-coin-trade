@@ -373,34 +373,179 @@ rows?market=KOSPI&amp;min_close=100000&amp;sort=volume&amp;order=asc&amp;limit=3
     </section>
 
     <section class="lambda-sam-guide" aria-labelledby="pg-step6">
-      <header class="lambda-sam-head"><div><span>06 · MOVE TO EC2</span><h2 id="pg-step6">마지막 — 동일 코드를 EC2 Docker DB 주소로 변경</h2></div></header>
+      <header class="lambda-sam-head"><div><span>06 · MOVE TO EC2 · DEPLOY · ALB</span><h2 id="pg-step6">마지막 — 동일 코드를 EC2 Docker DB 주소로 바꿔 AWS 에 배포하고 ALB 까지 붙이기</h2></div></header>
+      <p class="lambda-sam-note"><b>이 단계의 목표:</b> 로컬에서 200 을 확인한 <em>같은</em> 코드가 <code>sam deploy</code> 로 실제 AWS 에 Lambda + HTTP API 로 올라가고, 그 앞에 ALB 가 붙어 <code>http://&lt;ALB DNS&gt;/ohlcv/health</code> 가 200 을 돌려주는 것입니다. AWS 에서의 DB 연동 검증은 범위 밖입니다. 그래서 DB 없이 200 을 주는 <code>/ohlcv/health</code> 경로를 추가했고, DB 경로는 SG 를 열기 전까지 5초 안에 503 으로 끝나도록 <code>connect_timeout=5</code> 를 넣었습니다. 비밀번호는 문서에 적지 않고 <code>&lt;DB_PASSWORD&gt;</code> 로 표시합니다.</p>
       <div class="lambda-sam-details">
-        <article class="sam-step-wide"><div class="sam-split"><div class="sam-split-code">
-          <section class="lambda-code"><header><span>로컬 → EC2 값 변경</span><button type="button" data-copy-code>복사</button></header><pre><code># 로컬 Docker
-postgresql+psycopg://admin:admin1234@172.30.0.3:5432/admin
+        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>A · VALUES</span><h3>로컬 값 → EC2 값 (working/env/lambda.env)</h3><p>실제 EC2 <code>ubuntu-26-stock-coin-trade</code> 를 CLI 로 조회해 채운 값입니다. 보안그룹은 더 이상 손으로 만들지 않습니다. 스택이 Lambda SG 를 만들고 Outputs 로 ID 를 돌려줍니다.</p></div><div class="sam-split"><div class="sam-split-code">
+          <section class="lambda-code"><header><span>값 조회 (읽기 전용)</span><button type="button" data-copy-code>복사</button></header><pre><code>export AWS_PROFILE=sagemaker-admin AWS_REGION=ap-northeast-2
 
-# AWS Lambda → EC2 Docker
-# 10.0.1.10은 예시이며 실제 EC2 private IP로 교체
-LAMBDA_OHLCV_DATABASE_URL='postgresql+psycopg://admin:admin1234@10.0.1.10:55432/admin'
-VPC_SECURITY_GROUP_IDS='sg-lambda-id'
-VPC_SUBNET_IDS='subnet-private-a,subnet-private-b'</code></pre></section>
-          <section class="lambda-code"><header><span>EC2와 배포</span><button type="button" data-copy-code>복사</button></header><pre><code># EC2 .env: pg-stock 호스트 publish 포트
-DB_EXTERNAL_BIND=0.0.0.0
-OHLCV_EXTERNAL_PORT=55432
+# EC2 → VPC · 서브넷 · private IP
+aws ec2 describe-instances --filters "Name=ip-address,Values=&lt;EC2_PUBLIC_IP&gt;" \
+  --query 'Reservations[].Instances[].{Vpc:VpcId,Subnet:SubnetId,AZ:Placement.AvailabilityZone,PrivIp:PrivateIpAddress}' --output table
+#  Vpc vpc-… · Subnet subnet-… · AZ ap-northeast-2a · PrivIp 172.31.x.x
 
-# EC2 SG: 55432 inbound source는 Lambda SG만 허용
-# 값 입력
-cp working/env/lambda.env.example working/env/lambda.env
+# 이 VPC 의 서브넷은 하나뿐 (172.31.0.0/24, 퍼블릭). ALB 는 AZ 2개가 필요 → 스택이 하나 더 만든다
+aws ec2 describe-subnets --filters "Name=vpc-id,Values=$OHLCV_VPC_ID" \
+  --query 'Subnets[].[SubnetId,AvailabilityZone,CidrBlock,MapPublicIpOnLaunch]' --output table
 
-# 배포
-./working/scripts/sam-deploy.sh ohlcv</code></pre></section>
+# 배포 주체가 ALB·SG·로그 리소스를 만들 수 있는지
+aws iam simulate-principal-policy --policy-source-arn "$(aws sts get-caller-identity --query Arn --output text)" \
+  --action-names elasticloadbalancing:CreateLoadBalancer elasticloadbalancing:CreateTargetGroup \
+    elasticloadbalancing:CreateListener lambda:AddPermission ec2:CreateSecurityGroup ec2:CreateSubnet \
+    logs:CreateLogGroup logs:PutRetentionPolicy \
+  --query 'EvaluationResults[].[EvalActionName,EvalDecision]' --output table       # 모두 allowed</code></pre></section>
+          <section class="lambda-code"><header><span>working/env/lambda.env (ohlcv 부분)</span><button type="button" data-copy-code>복사</button></header><pre><code># 로컬 Docker                         → AWS Lambda → EC2 Docker
+# postgresql+psycopg://admin:&lt;DB_PASSWORD&gt;@172.30.0.3:5432/admin
+LAMBDA_OHLCV_DATABASE_URL='postgresql+psycopg://admin:&lt;DB_PASSWORD&gt;@&lt;EC2_PRIVATE_IP&gt;:55432/admin'
+OHLCV_VPC_ID=vpc-…
+OHLCV_SUBNET_IDS=subnet-…                          # Lambda ENI = EC2 와 같은 서브넷
+# ALB: 1번째 서브넷은 OHLCV_SUBNET_IDS 의 첫 값, 2번째는 스택이 만든다
+OHLCV_CREATE_ALB=true
+OHLCV_ALB_SECOND_SUBNET_CIDR=172.31.1.0/24
+OHLCV_ALB_SECOND_SUBNET_AZ=ap-northeast-2c</code></pre></section>
         </div><aside class="sam-errors"><header><i>!</i> EC2 전환 때 달라지는 것</header>
-          <div class="sam-err"><b>바뀌는 값</b><p><span>해결</span>DB host는 컨테이너 IP에서 EC2 private IP로, port는 5432에서 host publish 포트 55432로 변경</p></div>
-          <div class="sam-err"><b>그대로인 코드</b><p><span>해결</span>Lambda handler, SQL, API 경로 <code>/ohlcv/summary</code>는 변경 없음</p></div>
-          <div class="sam-err"><b>외부 공개 금지</b><code>0.0.0.0/0 → 55432 금지</code><p><span>원인</span>PostgreSQL이 인터넷 전체에 노출됨</p><p class="fix"><span>해결</span>EC2 보안 그룹 source를 Lambda 보안 그룹으로 제한</p></div>
+          <div class="sam-err"><b>바뀌는 값</b><p><span>해결</span>DB host 는 컨테이너 IP 에서 EC2 private IP 로, port 는 5432 에서 host publish 포트 55432 로</p></div>
+          <div class="sam-err"><b>그대로인 코드</b><p><span>해결</span>핸들러·SQL·경로 6개는 변경 없음. 추가된 것은 <code>/ohlcv/health</code> 와 ALB 이벤트 형식 처리뿐</p></div>
+          <div class="sam-err"><b>보안그룹은 스택이 소유</b><code>Outputs.LambdaSecurityGroupId</code><p class="fix"><span>해결</span>EC2 SG 인바운드 55432 의 source 를 이 값으로 지정. <code>0.0.0.0/0 → 55432</code> 는 금지</p></div>
+          <div class="sam-err"><b>EC2 SG 현재 상태</b><code>All traffic 0.0.0.0/0 · 22 0.0.0.0/0</code><p><span>원인</span>인스턴스 SG 가 전체 오픈이라 지금은 어떤 source 든 55432 에 닿음</p><p class="fix"><span>해결</span>All traffic 규칙을 지우고 80/443 과 Lambda SG → 55432 만 남기는 것이 다음 정리 과제</p></div>
         </aside></div></article>
+
+        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>B · TEMPLATE</span><h3>template-ohlcv.yaml 에 추가된 리소스</h3><p><code>CreateAlb=false</code>(기본) 면 Lambda·HTTP API·SG·로그 그룹만, <code>true</code> 면 ALB 묶음까지 한 스택으로 만듭니다. <code>sam local</code> 은 파라미터를 몰라도 되므로 STEP 4·5 는 그대로 동작합니다.</p></div>
+        <table class="sam-table" aria-label="추가 리소스"><thead><tr><th>리소스</th><th>타입</th><th>왜 필요한가</th></tr></thead><tbody>
+<tr><td><code>LambdaSecurityGroup</code></td><td>EC2::SecurityGroup</td><td>Lambda ENI 용. 인바운드 없음. EC2 DB SG 의 source 로 쓸 ID 를 Outputs 로 노출</td></tr>
+<tr><td><code>FunctionLogGroup</code></td><td>Logs::LogGroup (14일)</td><td>보존 기간 없이 영구 보관되는 것을 막고, <code>sam delete</code> 때 로그 그룹도 같이 지워지게</td></tr>
+<tr><td><code>HealthApi</code> 이벤트</td><td>HttpApi GET /ohlcv/health</td><td>DB 없이 200. 배포·ALB 연결의 확인 기준</td></tr>
+<tr><td><code>AlbSecondSubnet</code></td><td>EC2::Subnet 172.31.1.0/24 · 2c</td><td>ALB 는 서로 다른 AZ 의 서브넷 2개가 필수인데 VPC 에 하나뿐. main 라우트 테이블(IGW)을 따르므로 퍼블릭</td></tr>
+<tr><td><code>AlbSecurityGroup</code></td><td>EC2::SecurityGroup</td><td>80 인바운드 0.0.0.0/0</td></tr>
+<tr><td><code>Alb</code> · <code>AlbListener</code></td><td>ELBv2 LoadBalancer · Listener 80</td><td>internet-facing. 서브넷은 <code>!Select [0, VpcSubnetIds]</code> + 새 서브넷</td></tr>
+<tr><td><code>AlbInvokePermission</code></td><td>Lambda::Permission</td><td><code>elasticloadbalancing.amazonaws.com</code> 이 함수를 호출하도록 허용. 타깃 그룹보다 먼저(DependsOn)</td></tr>
+<tr><td><code>AlbTargetGroup</code></td><td>ELBv2 TargetGroup TargetType lambda</td><td>타깃 = 함수 ARN. 헬스체크는 기본 off(켜면 35초마다 호출·과금)</td></tr>
+</tbody></table>
+        <div class="sam-split"><div class="sam-split-code">
+          <section class="lambda-code"><header><span>핸들러에 추가된 부분</span><button type="button" data-copy-code>복사</button></header><pre><code># DB 없이 200 (배포 확인용)
+"/ohlcv/health": lambda args: {"ok": True, "service": "ohlcv",
+                               "routes": sorted(p for p in ROUTES if p != "/ohlcv/health")},
+
+# HTTP API v2 는 rawPath, ALB 는 path 로 온다. ALB 는 쿼리값이 URL 인코딩된 채로 오므로 풀어준다
+path = event.get("rawPath") or event.get("path") \
+    or event.get("requestContext", {}).get("http", {}).get("path", "")
+args = event.get("queryStringParameters") or {}
+if "elb" in event.get("requestContext", {}):
+    args = {k: unquote_plus(v) for k, v in args.items()}
+
+# 응답에 isBase64Encoded 를 넣어야 ALB 타깃 형식에 맞는다 (HTTP API 에는 무해)
+return {"statusCode": status, "headers": {...}, "isBase64Encoded": False, "body": ...}
+
+# DB 에 못 닿을 때 15초 타임아웃 대신 5초 안에 503
+engine = create_engine(url, pool_pre_ping=True, connect_args={"connect_timeout": 5})</code></pre></section>
+          <section class="lambda-code sam-transcript"><header><span>로컬 invoke 로 확인한 /ohlcv/health (실행 결과)</span></header><pre><code>$ sam local invoke DatabasePracticeFunction --template-file working/.aws-sam/ohlcv/template.yaml \
+    --event health.json --env-vars working/env/pg-stock-local.json --docker-network postgresql_default
+{"statusCode": 200, "headers": {"content-type": "application/json"}, "isBase64Encoded": false,
+ "body": "{\"ok\": true, \"service\": \"ohlcv\", \"routes\": [\"/ohlcv/markets\", \"/ohlcv/quality\", \"/ohlcv/rows\", \"/ohlcv/summary\", \"/ohlcv/tickers\", \"/ohlcv/yearly\"]}"}
+
+$ sam validate --lint --template-file working/template/template-ohlcv.yaml
+working/template/template-ohlcv.yaml is a valid SAM Template</code></pre></section>
+        </div><aside class="sam-errors"><header><i>⚠</i> 템플릿 작성 중 만난 오류 (실제 발생)</header>
+          <div class="sam-err"><b>YAML 파싱 실패</b><code>Error: Failed to parse template: while parsing a block mapping</code><p><span>원인</span><code>Description: 'true' 면 …</code> 처럼 따옴표 스칼라 뒤에 글자가 이어짐</p><p class="fix"><span>해결</span>문장 전체를 큰따옴표로 감싼다</p></div>
+          <div class="sam-err"><b>cfn-lint E3031</b><code>GroupDescription … does not match '^([a-z,A-Z,0-9,. _\-:/()#,@[\]+=&amp;;{}!$*])*$'</code><p><span>원인</span>SecurityGroup 설명에 한글 불가</p><p class="fix"><span>해결</span>GroupDescription 은 영문으로</p></div>
+          <div class="sam-err"><b>cfn-lint W1030</b><code>{'Ref': 'AlbPublicSubnetId'} is not a 'AWS::EC2::Subnet.Id'</code><p><span>원인</span>기본값 '' 인 String 파라미터를 서브넷 ID 자리에 Ref</p><p class="fix"><span>해결</span>파라미터를 없애고 <code>!Select [0, !Ref VpcSubnetIds]</code> 로 Lambda 서브넷을 재사용</p></div>
+        </aside></div></article>
+
+        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>C · DEPLOY</span><h3>sam deploy → Outputs → health 200 (HTTP API · ALB)</h3><p>samconfig 의 <code>[ohlcv]</code> 환경(스택 <code>stock-coin-trade-ohlcv-practice</code>, CAPABILITY_IAM, resolve_s3)을 쓰고 비밀값은 lambda.env 에서 읽어 <code>--parameter-overrides</code> 로만 넘깁니다. 자동화 셸에서는 <code>--no-confirm-changeset</code> 이 없으면 프롬프트에서 멈춥니다.</p></div>
+        <div class="sam-feature"><header>배포 전 상태와 실행 주체 — 왜 이 단계는 터미널에서 직접 실행하는가</header>
+          <p><b>현재 AWS 상태:</b> 이 문서를 정리한 시점에 스택·Lambda·API Gateway·ALB 는 <em>아직 없습니다</em>. 아래 A·B 까지의 작업은 모두 로컬에서 끝났고, <code>sam deploy</code> 만 남아 있습니다.</p>
+          <section class="lambda-code sam-transcript"><header><span>실행 결과 · 배포 전 확인</span></header><pre><code>$ aws cloudformation describe-stacks --stack-name stock-coin-trade-ohlcv-practice --query 'Stacks[0].StackStatus'
+An error occurred (ValidationError) when calling the DescribeStacks operation: Stack with id stock-coin-trade-ohlcv-practice does not exist
+$ aws lambda list-functions --query 'Functions[?contains(FunctionName, `ohlcv`)].FunctionName' --output text
+(없음)
+$ aws elbv2 describe-load-balancers --query 'LoadBalancers[].LoadBalancerName' --output text
+(없음)</code></pre></section>
+          <p><b>배포 직전까지 완료된 것:</b></p>
+          <table class="sam-table" aria-label="배포 전 완료 항목"><thead><tr><th>항목</th><th>상태</th><th>확인 방법</th></tr></thead><tbody>
+<tr><td>템플릿</td><td>ALB 묶음 · Lambda SG · 로그 그룹 · <code>/ohlcv/health</code> 추가, cfn-lint 통과</td><td><code>sam validate --lint --template-file working/template/template-ohlcv.yaml</code> → valid SAM Template</td></tr>
+<tr><td>핸들러</td><td>ALB 이벤트 형식 처리 · health 경로 · DB 5초 타임아웃</td><td>로컬 invoke <code>/ohlcv/health</code> → statusCode 200 (B 의 실행 결과)</td></tr>
+<tr><td>빌드</td><td><code>sam build --use-container</code> 완료</td><td><code>working/.aws-sam/ohlcv/template.yaml</code> 에 <code>AlbTargetGroup</code> 이 있음</td></tr>
+<tr><td>입력값</td><td>EC2 조회로 VPC · 서브넷 · private IP:55432 접속 URL 을 <code>working/env/lambda.env</code> 에 기록</td><td><code>set -a; . working/env/lambda.env; set +a; echo $OHLCV_VPC_ID</code></td></tr>
+<tr><td>권한</td><td>ALB · SG · 서브넷 · 로그 생성 권한 simulate 결과 모두 allowed</td><td>A 의 <code>simulate-principal-policy</code></td></tr>
+</tbody></table>
+          <p><b>왜 직접 실행하는가:</b> <code>sam deploy</code> 는 실제 계정에 과금 리소스(ALB 시간당 요금, VPC Lambda ENI)를 만드는 명령이라, 자동화된 에이전트 세션(Claude Code 자동 모드 등)에서는 권한 분류기가 이 명령을 차단합니다. 이 문서를 만들면서도 두 번 시도해 두 번 모두 차단됐고 우회하지 않았습니다. 그래서 배포는 아래 두 방법 중 하나로 사람이 실행합니다.</p>
+          <p><b>방법 1 — 터미널에서 직접:</b> 바로 아래 "배포" 블록을 그대로 실행합니다. 약 5분이 걸리고 ALB 생성이 가장 오래(2~4분) 걸립니다. <code>--no-confirm-changeset</code> 이 있으므로 changeset 확인 프롬프트 없이 진행되며, 이벤트가 <code>CREATE_COMPLETE</code> 로 끝나면 Outputs 표가 출력됩니다.</p>
+          <p><b>방법 2 — 에이전트에게 맡기기:</b> 설정에 <code>sam deploy</code> 를 허용하는 Bash 권한 규칙을 추가하거나 자동 모드를 끈 뒤 "배포 실행해" 라고 다시 지시합니다. 그러면 배포 → Outputs → health 200 확인 → <code>sam logs</code> 까지 실행하고 이 문서의 "기대" 표기를 실제 출력으로 바꿀 수 있습니다.</p>
+          <p><b>배포 뒤 할 일:</b> 오른쪽 "확인" 블록으로 <code>$API_URL/ohlcv/health</code> 와 <code>$ALB_URL/ohlcv/health</code> 가 200 인지 봅니다. DB 경로는 SG 를 열기 전까지 503 이며 이 실습의 범위 밖입니다. ALB 는 시간당 과금이므로 확인이 끝나면 E 의 <code>sam delete</code> 로 정리합니다.</p>
+        </div>
+        <div class="sam-split"><div class="sam-split-code">
+          <section class="lambda-code"><header><span>배포</span><button type="button" data-copy-code>복사</button></header><pre><code>cd /home/ubuntu/stock-coin-trade
+export AWS_PROFILE=sagemaker-admin AWS_REGION=ap-northeast-2
+set -a; . working/env/lambda.env; set +a
+
+sam build --use-container --template-file working/template/template-ohlcv.yaml --build-dir working/.aws-sam/ohlcv
+
+sam deploy \
+  --template-file working/.aws-sam/ohlcv/template.yaml \
+  --config-file working/template/samconfig.toml --config-env ohlcv \
+  --no-confirm-changeset --no-fail-on-empty-changeset \
+  --parameter-overrides \
+    "OhlcvDatabaseUrl=$LAMBDA_OHLCV_DATABASE_URL" \
+    "VpcId=$OHLCV_VPC_ID" "VpcSubnetIds=$OHLCV_SUBNET_IDS" \
+    "CreateAlb=$OHLCV_CREATE_ALB" \
+    "AlbSecondSubnetCidr=$OHLCV_ALB_SECOND_SUBNET_CIDR" "AlbSecondSubnetAz=$OHLCV_ALB_SECOND_SUBNET_AZ"
+# 이벤트 순서(기대): SecurityGroup·Subnet·LogGroup → IAM Role → Function(VPC ENI) → HttpApi·Permission
+#                 → LoadBalancer(2~4분) → TargetGroup → Listener → CREATE_COMPLETE, 이어서 Outputs 표</code></pre></section>
+          <section class="lambda-code"><header><span>확인 (DB 없이 되는 것만)</span><button type="button" data-copy-code>복사</button></header><pre><code>STACK=stock-coin-trade-ohlcv-practice
+aws cloudformation describe-stacks --stack-name $STACK --query 'Stacks[0].Outputs' --output table
+API_URL=$(aws cloudformation describe-stacks --stack-name $STACK --query 'Stacks[0].Outputs[?OutputKey==`ApiUrl`].OutputValue' --output text)
+ALB_URL=$(aws cloudformation describe-stacks --stack-name $STACK --query 'Stacks[0].Outputs[?OutputKey==`AlbUrl`].OutputValue' --output text)
+
+# 1) Lambda 가 VPC 안에 만들어졌는지
+aws lambda get-function-configuration --function-name "$(aws cloudformation describe-stack-resource --stack-name $STACK \
+  --logical-resource-id DatabasePracticeFunction --query StackResourceDetail.PhysicalResourceId --output text)" \
+  --query '{Runtime:Runtime,Handler:Handler,Timeout:Timeout,Subnets:VpcConfig.SubnetIds,SG:VpcConfig.SecurityGroupIds}'
+
+# 2) API Gateway 경유 (HTTPS)
+curl -s -w ' HTTP %{http_code}\n' "$API_URL/ohlcv/health"
+#    기대: {"ok": true, "service": "ohlcv", "routes": [...6개]} HTTP 200
+curl -s -o /dev/null -w 'HTTP %{http_code}\n' "$API_URL/ohlcv/nope"          # 404 {"message":"Not Found"}
+
+# 3) ALB 경유 (HTTP 80). DNS 전파와 타깃 등록에 1~2분
+aws elbv2 describe-target-health --target-group-arn "$(aws cloudformation describe-stack-resource --stack-name $STACK \
+  --logical-resource-id AlbTargetGroup --query StackResourceDetail.PhysicalResourceId --output text)" \
+  --query 'TargetHealthDescriptions[].[Target.Id,TargetHealth.State]' --output text   # …:function:… unused (헬스체크 off)
+curl -s -w ' HTTP %{http_code}\n' "$ALB_URL/ohlcv/health"
+#    기대: 같은 JSON, HTTP 200. Lambda 로그의 event 에 "requestContext": {"elb": {...}} 가 찍힌다
+curl -s -w ' HTTP %{http_code}\n' "$ALB_URL/ohlcv/tickers?q=0000&amp;limit=1"
+#    기대(SG 를 열기 전): {"message": "OHLCV 집계를 조회할 수 없습니다."} HTTP 503, 약 5초 — DB 검증은 범위 밖
+
+# 4) 로그
+sam logs --stack-name $STACK --name DatabasePracticeFunction --tail</code></pre></section>
+        </div><aside class="sam-errors"><header><i>⚠</i> 배포에서 발생할 수 있는 오류</header>
+          <div class="sam-err"><b>스택이 ROLLBACK_COMPLETE</b><code>… is in ROLLBACK_COMPLETE state and can not be updated.</code><p><span>원인</span>첫 생성 실패 후 재시도. 실패한 리소스는 <code>describe-stack-events</code> 의 첫 <code>CREATE_FAILED</code> 에 있음</p><p class="fix"><span>해결</span><code>sam delete --stack-name $STACK --no-prompts</code> 후 원인 고쳐 재배포</p></div>
+          <div class="sam-err"><b>서브넷 CIDR 충돌</b><code>The CIDR '172.31.1.0/24' conflicts with another subnet</code><p><span>원인</span>누군가 그 대역을 이미 사용</p><p class="fix"><span>해결</span><code>describe-subnets</code> 로 빈 /24 를 골라 <code>OHLCV_ALB_SECOND_SUBNET_CIDR</code> 변경</p></div>
+          <div class="sam-err"><b>ALB 서브넷 AZ 오류</b><code>… At least two subnets in two different Availability Zones must be specified</code><p><span>원인</span>두 서브넷이 같은 AZ</p><p class="fix"><span>해결</span><code>OHLCV_ALB_SECOND_SUBNET_AZ</code> 를 Lambda 서브넷(2a)과 다른 AZ 로</p></div>
+          <div class="sam-err"><b>ALB 가 502 Bad Gateway</b><code>HTTP/1.1 502 … &lt;html&gt;Bad Gateway</code><p><span>원인</span>Lambda 응답에 <code>statusCode</code>/<code>isBase64Encoded</code> 가 없거나 body 가 문자열이 아님, 또는 6MB 초과</p><p class="fix"><span>해결</span>핸들러 <code>_response()</code> 형식 유지. <code>sam logs</code> 에서 예외 확인</p></div>
+          <div class="sam-err"><b>ALB 가 503 Service Unavailable</b><p><span>원인</span>타깃 그룹에 함수가 아직 등록되지 않았거나 <code>AlbInvokePermission</code> 이 없음</p><p class="fix"><span>해결</span><code>describe-target-health</code> 확인, Permission 리소스가 TargetGroup 보다 먼저 생성되도록 DependsOn 유지</p></div>
+          <div class="sam-err"><b>VPC Lambda 가 외부에 못 닿음</b><code>Task timed out after 15.00 seconds</code><p><span>원인</span>이 서브넷엔 NAT 가 없어 인터넷·AWS API 호출 불가(DB 는 같은 VPC 라 무관)</p><p class="fix"><span>해결</span>이 실습은 외부 호출이 없음. 필요해지면 VPC 엔드포인트 또는 NAT</p></div>
+        </aside></div></article>
+
+        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>D · DB 연결까지 가려면 (선택)</span><h3>EC2 SG 에 Lambda SG → 55432 허용</h3><p>이 실습의 완료 기준은 아니지만, 이 두 줄만 더 하면 <code>/ohlcv/summary</code> 등 6개 경로가 AWS 에서도 200 이 됩니다.</p></div><section class="lambda-code"><header><span>SG · 포트 publish</span><button type="button" data-copy-code>복사</button></header><pre><code>LAMBDA_SG=$(aws cloudformation describe-stacks --stack-name $STACK --query 'Stacks[0].Outputs[?OutputKey==`LambdaSecurityGroupId`].OutputValue' --output text)
+EC2_SG=$(aws ec2 describe-instances --filters "Name=ip-address,Values=&lt;EC2_PUBLIC_IP&gt;" --query 'Reservations[0].Instances[0].SecurityGroups[0].GroupId' --output text)
+aws ec2 authorize-security-group-ingress --group-id $EC2_SG \
+  --ip-permissions "IpProtocol=tcp,FromPort=55432,ToPort=55432,UserIdGroupPairs=[{GroupId=$LAMBDA_SG,Description=ohlcv-lambda}]"
+
+# EC2 .env: pg-stock 을 host 55432 로 publish (DB 백업 정책 문서의 pg-stock 구성 참고)
+DB_EXTERNAL_BIND=0.0.0.0
+OHLCV_EXTERNAL_PORT=55432</code></pre></section></article>
+
+        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>E · CLEANUP</span><h3>정리 — ALB 는 시간당 과금</h3><p>ALB 는 트래픽이 없어도 시간당 요금(서울 약 0.0225 USD + LCU)이 붙습니다. 확인이 끝나면 스택을 지웁니다. 로그 그룹·서브넷·SG 모두 스택 소유라 함께 삭제됩니다.</p></div><section class="lambda-code"><header><span>sam delete</span><button type="button" data-copy-code>복사</button></header><pre><code>sam delete --stack-name $STACK --region ap-northeast-2 --no-prompts
+aws cloudformation wait stack-delete-complete --stack-name $STACK
+aws cloudformation describe-stacks --stack-name $STACK 2&gt;&amp;1 | tail -1     # … does not exist
+
+# 남는 것 점검: VPC Lambda 의 ENI 는 삭제에 20~40분 걸릴 수 있어 SG 삭제가 DELETE_IN_PROGRESS 로 오래 보일 수 있음
+aws ec2 describe-network-interfaces --filters "Name=group-id,Values=$LAMBDA_SG" --query 'NetworkInterfaces[].Status'
+# EC2 SG 에 넣은 55432 규칙(D 단계)은 스택 밖이므로 직접 revoke
+aws ec2 revoke-security-group-ingress --group-id $EC2_SG \
+  --ip-permissions "IpProtocol=tcp,FromPort=55432,ToPort=55432,UserIdGroupPairs=[{GroupId=$LAMBDA_SG}]"</code></pre></section></article>
       </div>
-      <p class="lambda-sam-note"><b>정리:</b> EC2 이관은 새 Lambda 코드를 만드는 작업이 아니라 접속 URL의 host/port와 VPC 보안그룹을 바꾸는 작업입니다. 먼저 로컬 200을 만든 뒤 이 단계로 이동하면 코드 오류와 네트워크 오류를 분리할 수 있습니다.</p>
+      <div class="lambda-server-result"><h3>AWS 배포 완료 기준</h3><span><b>STACK</b> CREATE_COMPLETE · Outputs 4개</span><span><b>LAMBDA</b> VpcConfig 에 서브넷·SG</span><span><b>API GW</b> $API_URL/ohlcv/health 200</span><span><b>ALB</b> $ALB_URL/ohlcv/health 200</span><span><b>DB 경로</b> 503 (5초 내) — 범위 밖</span><span><b>정리</b> sam delete → does not exist</span><p>EC2 이관은 새 Lambda 코드를 만드는 작업이 아니라 접속 URL 의 host/port 와 VPC 파라미터를 바꾸는 작업입니다. 로컬 200 → AWS health 200 → (선택) SG 개방 → DB 경로 200 순으로 가면 코드 오류·배포 오류·네트워크 오류를 분리할 수 있습니다.</p></div>
     </section>
 
     <section class="lambda-official"><h2>관련 문서</h2><div><a href="/sam-guide-1.html">SAM 활용 1</a><a href="/sam-guide-2.html">SAM 활용 2</a><a href="/lambda-db-practice.html">Lambda DB 실습</a><a href="/db-backup-policy.html">DB 백업 정책</a><a href="https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/using-sam-cli-local-start-api.html" target="_blank" rel="noopener noreferrer">SAM local start-api</a></div></section>
