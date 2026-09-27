@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 QDRANT_URL  = os.getenv("QDRANT_URL", ":memory:")
 COLLECTION  = "market_knowledge"
 EMBED_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+SEED_ID_NAMESPACE = uuid.UUID("623ff662-96da-5d41-a6ed-e879faa6f671")
 
 _client = None
 _lock   = Lock()
@@ -278,7 +279,13 @@ def _seed(c):
     if COLLECTION not in existing:
         texts = [d["text"] for d in SEED]
         metas = [{"title": d["title"], "category": d["category"]} for d in SEED]
-        ids   = [str(uuid.uuid4()) for _ in SEED]
+        ids = [
+            str(uuid.uuid5(
+                SEED_ID_NAMESPACE,
+                f'{document["category"]}\0{document["title"]}\0{document["text"]}',
+            ))
+            for document in SEED
+        ]
         c.add(collection_name=COLLECTION, documents=texts, metadata=metas, ids=ids)
 
 

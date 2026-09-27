@@ -1,0 +1,61 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: MariaDB 서비스 DB 회원 조회 Lambda (lambda/member)
+
+Parameters:
+  DatabaseSecretArn:
+    Type: String
+    Description: DATABASE_URL 키를 가진 Secrets Manager secret ARN
+  VpcSecurityGroupIds:
+    Type: List<AWS::EC2::SecurityGroup::Id>
+  VpcSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+  JwtIssuer:
+    Type: String
+    Description: Cognito 또는 OIDC JWT issuer URL
+  JwtAudience:
+    Type: CommaDelimitedList
+    Description: 허용할 JWT audience 목록
+
+Resources:
+  PracticeHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      Auth:
+        DefaultAuthorizer: PracticeJwtAuthorizer
+        Authorizers:
+          PracticeJwtAuthorizer:
+            IdentitySource: $request.header.Authorization
+            JwtConfiguration:
+              issuer: !Ref JwtIssuer
+              audience: !Ref JwtAudience
+
+  DatabasePracticeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.11
+      Handler: lambda_member.lambda_handler
+      CodeUri: ../lambda/member/
+      Timeout: 15
+      MemorySize: 512
+      Policies:
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref DatabaseSecretArn
+      Environment:
+        Variables:
+          DATABASE_SECRET_ARN: !Ref DatabaseSecretArn
+      VpcConfig:
+        SecurityGroupIds: !Ref VpcSecurityGroupIds
+        SubnetIds: !Ref VpcSubnetIds
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref PracticeHttpApi
+            Path: /members/{member_id}
+            Method: GET
+
+Outputs:
+  ApiUrl:
+    Description: JWT 인증이 필요한 회원 조회 API 기본 URL
+    Value: !Sub 'https://${PracticeHttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}'

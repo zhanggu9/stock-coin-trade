@@ -1,0 +1,41 @@
+version = 0.1
+
+[member.global.parameters]
+stack_name = "stock-coin-trade-member-practice"
+[member.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+resolve_s3 = true
+region = "ap-northeast-2"
+
+[quant.global.parameters]
+stack_name = "stock-coin-trade-quant-practice"
+[quant.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+resolve_s3 = true
+region = "ap-northeast-2"
+
+[ohlcv.global.parameters]
+stack_name = "stock-coin-trade-ohlcv-practice"
+[ohlcv.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+resolve_s3 = true
+region = "ap-northeast-2"
+
+[session.global.parameters]
+stack_name = "stock-coin-trade-session-practice"
+[session.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+resolve_s3 = true
+region = "ap-northeast-2"
+
+[knowledge.global.parameters]
+stack_name = "stock-coin-trade-knowledge-practice"
+[knowledge.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+resolve_s3 = true
+region = "ap-northeast-2"

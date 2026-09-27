@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Lambda/API 실습 — EDUMGT</title>
+  <link rel="icon" href="/img/favicon.png">
+  <link rel="stylesheet" href="/css/style.css?v=20260920-chart">
+  <link rel="stylesheet" href="/css/lambda-db-practice.css?v=20260927-split1">
+</head>
+<body class="lambda-practice-body">
+  <div id="header-mount"></div>
+  <main class="lambda-practice-shell">
+    <section class="lambda-hero">
+      <div><span>AWS LAMBDA · API GATEWAY PRACTICE</span><h1>Lambda/API — Python 함수를 HTTP API로 배포하기</h1><p>저장소의 DB Python 코드를 Lambda 핸들러로 분리하고, SAM 템플릿에 API Gateway 경로를 선언한 뒤 로컬 API 테스트와 AWS 배포까지 단계별로 진행합니다.</p></div>
+      <div class="lambda-hero-badge"><i class="fa-brands fa-aws" aria-hidden="true"></i><b>8 STEP</b><small>handler → HTTPS</small></div>
+    </section>
+
+    <section class="lambda-boundary" aria-label="Lambda API 실습 흐름">
+      <div><b>Python Service</b><span>Flask에서 DB 작업 분리</span></div><i>→</i>
+      <div><b>Lambda Handler</b><span>event 입력과 HTTP 응답 처리</span></div><i>→</i>
+      <div><b>API Gateway</b><span>경로·메서드·공개 HTTPS 연결</span></div>
+    </section>
+
+    <section class="lambda-sam-guide" aria-labelledby="lambda-api-flow-title">
+      <header class="lambda-sam-head"><div><span>BEFORE PRACTICE · END TO END</span><h2 id="lambda-api-flow-title">SAM으로 Lambda와 API Gateway를 함께 만드는 과정</h2></div><a href="/sam-guide.html">먼저: SAM 활용</a></header>
+      <div class="lambda-server-flow">
+        <span><small>1. 코드</small><b>lambda_handler</b></span><i>→</i><span><small>2. 선언</small><b>HttpApi Event</b></span><i>→</i><span><small>3. 배포</small><b>sam deploy</b></span><i>→</i><span><small>4. 호출</small><b>API URL</b></span>
+      </div>
+      <div class="lambda-sam-details">
+        <article><div class="lambda-sam-section-title"><span>TEMPLATE</span><h3>Lambda + HTTP API 연결</h3><p><code>Events</code> 아래 <code>Type: HttpApi</code>를 선언하면 SAM이 API Gateway와 Lambda 통합·호출 권한을 구성합니다.</p></div><section class="lambda-code"><header><span>template.yaml</span><button type="button" data-copy-code>복사</button></header><pre><code>AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  DatabasePracticeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambda/
+      Runtime: python3.11
+      Handler: handler.lambda_handler
+      Timeout: 15
+      Events:
+        ReadApi:
+          Type: HttpApi
+          Properties:
+            Path: /practice/{member_id}
+            Method: GET
+Outputs:
+  ApiUrl:
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}"</code></pre></section></article>
+        <article><div class="lambda-sam-section-title"><span>COMMANDS</span><h3>빌드 → 로컬 API → 배포</h3><p>단일 이벤트 호출뿐 아니라 로컬 HTTP 서버로 경로와 메서드까지 확인한 뒤 배포합니다.</p></div><section class="lambda-code"><header><span>실행 순서</span><button type="button" data-copy-code>복사</button></header><pre><code>sam validate --lint
+sam build --use-container
+sam local start-api --port 3001
+
+curl http://127.0.0.1:3001/practice/1
+
+sam deploy --guided
+aws cloudformation describe-stacks \
+  --stack-name db-python-practice \
+  --query 'Stacks[0].Outputs'</code></pre></section></article>
+      </div>
+      <p class="lambda-sam-note"><b>중요:</b> API Gateway가 만들어져도 private DB에 자동 연결되지는 않습니다. Lambda VPC, private subnet, DB 보안 그룹, Secrets Manager와 필요 시 NAT 또는 VPC Endpoint를 별도로 구성합니다.</p>
+    </section>
+
+    <section class="lambda-targets" aria-labelledby="lambda-target-title">
+      <header><div><span>01 · TARGET</span><h2 id="lambda-target-title">Lambda/API로 옮길 저장소를 선택하세요</h2></div><button id="lambda-reset" type="button">진행률 초기화</button></header>
+      <div id="lambda-target-list" class="lambda-target-list"></div>
+    </section>
+
+    <section class="lambda-source-map" aria-labelledby="lambda-source-title">
+      <header><span>현재 선택</span><h2 id="lambda-source-title">Python → Lambda → API 매핑</h2></header>
+      <div class="lambda-source-grid">
+        <article><small>DB 스키마</small><b id="lambda-db-name">-</b><span id="lambda-db-role">-</span></article>
+        <article><small>현재 Python</small><div id="lambda-source-files" class="lambda-file-list"></div></article>
+        <article><small>Lambda Handler</small><b id="lambda-handler-name">-</b><span id="lambda-trigger">-</span></article>
+        <article><small>환경변수·Secret</small><code id="lambda-env">-</code></article>
+      </div>
+      <p id="lambda-target-warning" class="lambda-target-warning"></p>
+    </section>
+
+    <section class="lambda-workspace">
+      <aside class="lambda-step-nav" aria-label="Lambda API 생성 단계">
+        <div class="lambda-progress-head"><span>진행률</span><b id="lambda-progress-text">0 / 8</b></div>
+        <div class="lambda-progress-track"><i id="lambda-progress-bar"></i></div>
+        <nav id="lambda-step-list"></nav>
+      </aside>
+      <section class="lambda-step-card" aria-live="polite">
+        <header><div><span id="lambda-step-kicker">STEP 1</span><h2 id="lambda-step-title">소스 확인</h2><p id="lambda-step-summary"></p></div><span id="lambda-step-state" class="lambda-step-state">진행 중</span></header>
+        <div id="lambda-step-content" class="lambda-step-content"></div>
+        <footer><button id="lambda-prev" type="button">← 이전 단계</button><button id="lambda-complete" class="complete" type="button">이 단계 완료</button><button id="lambda-next" class="next" type="button">다음 단계 →</button></footer>
+      </section>
+    </section>
+
+    <section class="lambda-server-guide" aria-labelledby="lambda-server-title">
+      <header class="lambda-server-head"><div><span>DEPLOYED API CHECK</span><h2 id="lambda-server-title">배포된 API Gateway와 Lambda 검증</h2><p>CloudFormation Output의 API URL을 사용해 성공·입력 오류·인증·DB 장애 응답을 각각 확인합니다.</p></div></header>
+      <div class="lambda-server-practice">
+        <article><div class="lambda-sam-section-title"><span>01 · API URL</span><h3>스택 출력과 HTTPS 호출</h3><p>브라우저에 비밀번호를 넣지 않고 터미널에서 응답 코드와 본문을 확인합니다.</p></div><section class="lambda-code"><header><span>deployed-api-test.sh</span><button type="button" data-copy-code>복사</button></header><pre><code>API_URL="$(aws cloudformation describe-stacks \
+  --stack-name db-python-practice \
+  --query 'Stacks[0].Outputs[?OutputKey==`ApiUrl`].OutputValue' \
+  --output text)"
+
+curl --fail-with-body --show-error \
+  "$API_URL/practice/1"</code></pre></section></article>
+        <article><div class="lambda-sam-section-title"><span>02 · LOGS</span><h3>Lambda 로그와 구성 확인</h3><p>API Gateway의 5xx만 보지 말고 Lambda 로그, timeout, 메모리, VPC 연결을 함께 확인합니다.</p></div><section class="lambda-code"><header><span>운영 확인</span><button type="button" data-copy-code>복사</button></header><pre><code>sam logs --stack-name db-python-practice \
+  --name DatabasePracticeFunction --tail
+
+aws lambda get-function-configuration \
+  --function-name DatabasePracticeFunction</code></pre></section></article>
+      </div>
+      <div class="lambda-server-result"><h3>응답 판정</h3><span><b>200</b> JSON 스키마 확인</span><span><b>400</b> 입력 검증 확인</span><span><b>401/403</b> 인증·권한 확인</span><span><b>500/503</b> Lambda 로그·DB 경로 확인</span><p>API Gateway URL은 공개 진입점입니다. 회원 데이터나 쓰기 API는 JWT Authorizer·IAM·Cognito 등 인증을 추가하고, CORS 허용 출처와 메서드를 최소화합니다.</p></div>
+    </section>
+
+    <section class="lambda-checkpoint"><h2>Lambda/API 완료 기준</h2><div><span>✓ Flask 없이 handler import</span><span>✓ HttpApi 경로·메서드 선언</span><span>✓ local start-api 호출 성공</span><span>✓ API URL 출력 확인</span><span>✓ CloudWatch 오류 확인</span><span>✓ DB Secret·VPC 분리</span></div></section>
+
+    <section class="lambda-official"><h2>AWS 공식 참고 문서</h2><div><a href="https://docs.aws.amazon.com/lambda/latest/dg/python-handler.html" target="_blank" rel="noopener noreferrer">Python Handler</a><a href="https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-httpapi.html" target="_blank" rel="noopener noreferrer">SAM HttpApi Event</a><a href="https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/using-sam-cli-local-start-api.html" target="_blank" rel="noopener noreferrer">SAM local start-api</a><a href="https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc.html" target="_blank" rel="noopener noreferrer">Lambda VPC</a><a href="/sam-guide.html">SAM 활용 문서</a></div></section>
+  </main>
+  <div id="lambda-toast" class="lambda-toast" role="status" aria-live="polite"></div>
+  <script src="/js/config.js"></script>
+  <script src="/js/common.js?v=20260927-sam-split"></script>
+  <script src="/js/lambda-db-practice.js?v=20260927-api-split"></script>
+</body>
+</html>

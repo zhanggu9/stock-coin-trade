@@ -253,14 +253,17 @@ function renderHeader(user) {
       { href: '/learning/korbit-api.html', label: 'Korbit Open API 학습', icon: 'fa-solid fa-coins' },
       { href: '/korbit-api-test.html', label: 'Korbit 공개 시세 테스트', icon: 'fa-solid fa-chart-line' },
     ]},
-    { type: 'group', label: 'POSTGRESQL QUANT', items: [
+    { type: 'group', label: 'Data Base / API', items: [
       { href: '/quant.html?tab=schema', label: 'DB 스키마', icon: 'fa-solid fa-sitemap' },
+      { href: '/sam-guide.html', label: 'SAM 활용', icon: 'fa-brands fa-aws' },
+      { href: '/lambda-db-practice.html', label: 'Lambda/API', icon: 'fa-solid fa-cloud-arrow-up' },
       { href: '/ohlcv-db.html', label: 'OHLCV DB', icon: 'fa-brands fa-docker' },
+      { href: '/db-backup-policy.html', label: 'DB 백업 정책', icon: 'fa-solid fa-database' },
       { href: '/ohlcv-openapi.html', label: 'OHLCV Open API', icon: 'fa-solid fa-code' },
-      { href: '/quant.html?tab=algorithm', label: '알고리즘', icon: 'fa-solid fa-code-branch' },
-      { href: '/quant.html?tab=simulation', label: '시뮬레이션', icon: 'fa-solid fa-flask-vial' },
     ]},
     { type: 'group', label: '분석 · 도구', items: [
+      { href: '/quant.html?tab=algorithm', label: '알고리즘', icon: 'fa-solid fa-code-branch' },
+      { href: '/quant.html?tab=simulation', label: '시뮬레이션', icon: 'fa-solid fa-flask-vial' },
       { href: '/hts.html', label: 'HTS 시뮬레이션', icon: 'fa-solid fa-desktop' },
       { href: '/analysis.html', label: '투자 분석 학습', icon: 'fa-solid fa-graduation-cap' },
       { href: '/ai-sheet.html', label: 'AI Sheet',       icon: 'fa-solid fa-table-cells-large' },
@@ -294,7 +297,7 @@ function renderHeader(user) {
   };
 
   // 좌측은 외부 사업자 API/Testbed/Paper 실습만, 우측은 저장소 내부 거래·자산·분석 메뉴로 나눈다.
-  const rightMenuLabels = new Set(['대시보드', '거래', '자산관리', 'POSTGRESQL QUANT', '분석 · 도구', 'Secrets Manager']);
+  const rightMenuLabels = new Set(['대시보드', '거래', '자산관리', 'Data Base / API', '분석 · 도구', 'Secrets Manager']);
   const leftNavGroups = navGroups.filter(group => !rightMenuLabels.has(group.label));
   const rightPanelGroups = navGroups.filter(group => rightMenuLabels.has(group.label));
   const practiceItems = navGroups.find(group => group.label === 'TradingView · 외부 실습')?.items || [];

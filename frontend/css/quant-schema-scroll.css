@@ -1,0 +1,24 @@
+/* Expanded ERD viewer: keep both axes reachable at every zoom level. */
+.erd-modal .erd-modal-canvas {
+  overflow: scroll;
+  overscroll-behavior: contain;
+  scrollbar-color: #7892b2 #e8eef6;
+  scrollbar-gutter: stable;
+  scrollbar-width: auto;
+}
+
+.erd-modal .erd-modal-canvas::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+
+.erd-modal .erd-modal-canvas::-webkit-scrollbar-track,
+.erd-modal .erd-modal-canvas::-webkit-scrollbar-corner {
+  background: #e8eef6;
+}
+
+.erd-modal .erd-modal-canvas::-webkit-scrollbar-thumb {
+  border: 3px solid #e8eef6;
+  border-radius: 999px;
+  background: #7892b2;
+}

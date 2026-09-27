@@ -56,18 +56,17 @@ Nginx Frontend (:3333)
                      ├─ PostgreSQL quant_research (퀀트 시계열·전략·체결·성과)
                      ├─ PostgreSQL pg-stock (국내주식 일봉·일일 집계)
                      ├─ Qdrant market_knowledge (현재 인메모리 RAG)
+                     ├─ Redis 7.4 (로그인 서버 세션 · 7일 TTL)
                      ├─ 국내·해외 시세 제공처
                      └─ KIS / KB증권 / Alpaca Paper API (선택, 읽기 전용 테스트)
-
-Redis는 현재 서비스·클라이언트·환경변수 연결이 없으며 운영 저장소로 사용하지 않습니다.
 ```
 
 | 영역 | 구성 | 역할 |
 |---|---|---|
 | Frontend | Nginx, HTML, Vanilla JS, Tailwind CDN | 화면·오프캔버스 메뉴·API 호출 |
-| Backend | Flask, SQLAlchemy, Requests | 회원·모의 주문·시세·Open API·외부 API 테스트 |
-| Data | MariaDB, PostgreSQL Quant, PostgreSQL pg-stock, Qdrant | 서비스 트랜잭션, 퀀트 연구, 주식 원본·집계, AI 지식 검색 |
-| 운영 | Docker Compose | frontend, python-backend, mariadb(local profile) |
+| Backend | Flask, Flask-Session, SQLAlchemy, Requests | 회원·Redis 로그인 세션·모의 주문·시세·Open API·외부 API 테스트 |
+| Data | MariaDB, PostgreSQL Quant, PostgreSQL pg-stock, Qdrant, Redis | 서비스 트랜잭션, 퀀트 연구, 주식 원본·집계, AI 검색, 로그인 상태 |
+| 운영 | Docker Compose | frontend, python-backend, redis, mariadb/postgres(local profile) |
 
 ## 빠른 시작
 
@@ -121,6 +120,8 @@ docker compose ps
 | <http://localhost:3333/quant.html> | PostgreSQL 퀀트 랩 |
 
 Nginx는 `/api/*`, `/openapi/*`를 Flask로 프록시합니다. 브라우저에서는 API 호출을 같은 origin으로 처리합니다.
+
+로그인 세션은 Redis에 서버 측으로 저장됩니다. 브라우저 쿠키에는 서명된 세션 ID만 들어가며, 실제 `member_id`는 `stock-coin-trade:session:*` 키에 7일 TTL로 보관됩니다. 로그인·회원가입 성공 시 세션 ID를 재발급하고 로그아웃 시 Redis 세션을 삭제합니다.
 
 ### 5. 종료
 
@@ -570,6 +571,7 @@ VS Code 탐색기 KIS MCP 패널 ───────────────�
 |---|---|
 | `MARIADB_DATABASE`, `MARIADB_USER`, `MARIADB_PASSWORD` | 로컬 MariaDB 설정 |
 | `SECRET_KEY` | Flask 세션 서명 키 |
+| `REDIS_URL`, `REDIS_SESSION_KEY_PREFIX` | Redis 로그인 세션 연결과 키 접두사 |
 | `CMC_API_KEY`, `ANTHROPIC_API_KEY` | 선택적 코인 데이터·AI 기능 |
 | `KIS_PAPER_*`, `KB_*` | 증권사 테스트 환경 변수 |
 | `ALPACA_API_KEY`, `ALPACA_SECRET_KEY` | Alpaca Paper API 키 대안 |

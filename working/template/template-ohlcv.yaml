@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: PostgreSQL pg-stock 집계 조회 Lambda (lambda/ohlcv)
+
+Parameters:
+  OhlcvSecretArn:
+    Type: String
+    Description: OHLCV_DATABASE_URL 키를 가진 Secrets Manager secret ARN
+  VpcSecurityGroupIds:
+    Type: List<AWS::EC2::SecurityGroup::Id>
+  VpcSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+
+Resources:
+  DatabasePracticeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.11
+      Handler: lambda_ohlcv_summary.lambda_handler
+      CodeUri: ../lambda/ohlcv/
+      Timeout: 15
+      MemorySize: 512
+      Policies:
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref OhlcvSecretArn
+      Environment:
+        Variables:
+          OHLCV_SECRET_ARN: !Ref OhlcvSecretArn
+      VpcConfig:
+        SecurityGroupIds: !Ref VpcSecurityGroupIds
+        SubnetIds: !Ref VpcSubnetIds
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Path: /ohlcv/summary
+            Method: GET
+        # 배치로 전환하려면 EventBridge Scheduler를 쓰고 중복 실행 방지 키를 유지한다.
+        # DailySchedule:
+        #   Type: ScheduleV2
+        #   Properties:
+        #     ScheduleExpression: cron(30 6 * * ? *)
+
+Outputs:
+  ApiUrl:
+    Description: OHLCV 집계 조회 API 기본 URL
+    Value: !Sub 'https://${ServerlessHttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}'

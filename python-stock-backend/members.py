@@ -3,7 +3,7 @@ import requests
 import threading
 import time
 from datetime import datetime, timedelta
-from flask import Blueprint, jsonify, request, session
+from flask import Blueprint, current_app, jsonify, request, session
 
 from sqlalchemy import text
 
@@ -380,6 +380,7 @@ def login():
         session.clear()
         session["member_id"] = member.member_id
         session.permanent = True
+        current_app.session_interface.regenerate(session)
         return jsonify({"username": member.username, "asset": member.asset})
 
 
@@ -412,6 +413,7 @@ def register():
         session.clear()
         session["member_id"] = member.member_id
         session.permanent = True
+        current_app.session_interface.regenerate(session)
         return jsonify({"username": username})
 
 

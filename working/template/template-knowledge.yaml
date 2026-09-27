@@ -1,0 +1,41 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Qdrant 지식 DB 유사도 검색 Lambda (lambda/knowledge)
+
+Parameters:
+  QdrantSecretArn:
+    Type: String
+    Description: QDRANT_URL과 QDRANT_API_KEY 키를 가진 Secrets Manager secret ARN
+
+Resources:
+  DatabasePracticeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.11
+      Handler: lambda_knowledge_search.lambda_handler
+      CodeUri: ../lambda/knowledge/
+      Timeout: 15
+      MemorySize: 512
+      Policies:
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref QdrantSecretArn
+      Environment:
+        Variables:
+          QDRANT_SECRET_ARN: !Ref QdrantSecretArn
+          QDRANT_COLLECTION: market_knowledge
+      # 외부 Qdrant면 HTTPS egress가 필요하다. Lambda를 DB VPC에 넣었다면
+      # private subnet의 NAT 게이트웨이 또는 적절한 VPC 엔드포인트를 확인한다.
+      # VpcConfig:
+      #   SecurityGroupIds: [sg-lambda-egress]
+      #   SubnetIds: [subnet-private-a, subnet-private-b]
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Path: /knowledge/search
+            Method: POST
+
+Outputs:
+  ApiUrl:
+    Description: Qdrant 지식 검색 API 기본 URL
+    Value: !Sub 'https://${ServerlessHttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}'

@@ -11,7 +11,7 @@ from db import session_scope
 from market_bots import run_bot_trading_round
 from models import CryptoRank, UpbitMarket
 from ohlcv_aggregate import bootstrap_ohlcv_aggregates
-from ohlcv_sync import run_daily_ohlcv_batch, sync_enabled
+from ohlcv_sync import run_incremental_sync, sync_enabled
 
 log = logging.getLogger(__name__)
 
@@ -65,6 +65,18 @@ def sync_upbit_markets():
             ))
 
 
+def _ohlcv_schedule_hours() -> str:
+    """Return deterministic Asia/Seoul cron hours for the configured interval."""
+    base_hour = int(os.environ.get("OHLCV_SYNC_HOUR", "18"))
+    interval_hours = int(os.environ.get("OHLCV_SYNC_INTERVAL_HOURS", "12"))
+    if not 0 <= base_hour <= 23:
+        raise ValueError("OHLCV_SYNC_HOUR must be between 0 and 23")
+    if interval_hours < 1 or 24 % interval_hours:
+        raise ValueError("OHLCV_SYNC_INTERVAL_HOURS must be a positive divisor of 24")
+    hours = sorted({(base_hour + offset) % 24 for offset in range(0, 24, interval_hours)})
+    return ",".join(str(hour) for hour in hours)
+
+
 def start_scheduler() -> BackgroundScheduler:
     scheduler = BackgroundScheduler(timezone="Asia/Seoul")
     scheduler.add_job(sync_coinmarketcap_rankings, CronTrigger(minute=0, timezone="Asia/Seoul"))
@@ -74,16 +86,16 @@ def start_scheduler() -> BackgroundScheduler:
         result = bootstrap_ohlcv_aggregates()
         log.info("OHLCV aggregate bootstrap: %s", result)
     except Exception:
-        log.exception("OHLCV aggregate bootstrap failed; daily batch will retry aggregation")
+        log.exception("OHLCV aggregate bootstrap failed; scheduled batch will retry aggregation")
     if sync_enabled():
         scheduler.add_job(
-            run_daily_ohlcv_batch,
+            run_incremental_sync,
             CronTrigger(
-                hour=int(os.environ.get("OHLCV_SYNC_HOUR", "18")),
+                hour=_ohlcv_schedule_hours(),
                 minute=int(os.environ.get("OHLCV_SYNC_MINUTE", "20")),
                 timezone="Asia/Seoul",
             ),
-            id="ohlcv-daily-batch",
+            id="ohlcv-incremental-batch",
             max_instances=1,
             coalesce=True,
             misfire_grace_time=3600,

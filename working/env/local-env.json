@@ -1,0 +1,12 @@
+{
+  "DatabasePracticeFunction": {
+    "DATABASE_URL": "mysql+pymysql://USER:PASSWORD@mariadb:3306/mockinv",
+    "QUANT_DATABASE_URL": "postgresql+psycopg://USER:PASSWORD@postgres:5432/quant_research",
+    "OHLCV_DATABASE_URL": "postgresql+psycopg://USER:PASSWORD@pg-stock:5432/admin",
+    "REDIS_URL": "redis://redis:6379/0",
+    "REDIS_SESSION_KEY_PREFIX": "stock-coin-trade:session:",
+    "QDRANT_URL": "http://qdrant:6333",
+    "QDRANT_API_KEY": "LOCAL_DEV_NO_AUTH",
+    "QDRANT_COLLECTION": "market_knowledge"
+  }
+}

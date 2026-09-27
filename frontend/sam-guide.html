@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SAM 활용 — EDUMGT</title>
+  <link rel="icon" href="/img/favicon.png">
+  <link rel="stylesheet" href="/css/style.css?v=20260920-chart">
+  <link rel="stylesheet" href="/css/lambda-db-practice.css?v=20260927-split1">
+</head>
+<body class="lambda-practice-body">
+  <div id="header-mount"></div>
+  <main class="lambda-practice-shell">
+    <section class="lambda-hero">
+      <div><span>AWS SERVERLESS APPLICATION MODEL</span><h1>SAM 활용 — 소개와 간단한 사용법</h1><p>SAM의 역할, CLI 설치, 프로젝트 생성, 템플릿 검증, 빌드와 로컬 호출까지 먼저 익힙니다. 실제 Lambda와 API Gateway를 만드는 과정은 별도의 Lambda/API 실습에서 이어집니다.</p></div>
+      <div class="lambda-hero-badge"><i class="fa-brands fa-aws" aria-hidden="true"></i><b>SAM BASIC</b><small>learn → build</small></div>
+    </section>
+
+    <section class="lambda-boundary" aria-label="SAM 학습 범위">
+      <div><b>template.yaml</b><span>서버리스 리소스를 간단한 YAML로 정의</span></div><i>→</i>
+      <div><b>SAM CLI</b><span>검증·빌드·로컬 실행·배포 명령 제공</span></div><i>→</i>
+      <div><b>CloudFormation</b><span>AWS 리소스로 변환하고 스택으로 관리</span></div>
+    </section>
+
+    <section class="lambda-sam-guide" aria-labelledby="sam-intro-title">
+      <header class="lambda-sam-head"><div><span>01 · INTRODUCTION</span><h2 id="sam-intro-title">SAM은 무엇인가요?</h2></div><a href="https://github.com/aws/serverless-application-model" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-github" aria-hidden="true"></i> 공식 GitHub</a></header>
+      <div class="lambda-sam-summary">
+        <article><b>AWS SAM</b><p>CloudFormation을 확장한 오픈소스 서버리스 애플리케이션 모델입니다. <code>AWS::Serverless::Function</code> 같은 간결한 선언을 실제 AWS 리소스로 변환합니다.</p></article>
+        <article><b>SAM CLI</b><p><code>sam</code> 명령을 제공하는 별도 도구입니다. 초기화, 검증, 빌드, 로컬 실행, 배포와 로그 확인을 한 흐름으로 묶습니다.</p></article>
+        <article><b>Docker</b><p><code>sam build --use-container</code>와 <code>sam local</code> 명령이 Lambda와 비슷한 실행 이미지를 사용할 때 필요합니다. AWS 배포 자체에 항상 필요한 것은 아닙니다.</p></article>
+      </div>
+      <div class="lambda-sam-flow"><span><small>작성</small><b>template.yaml</b></span><i>→</i><span><small>변환</small><b>SAM Transform</b></span><i>→</i><span><small>배포</small><b>CloudFormation Stack</b></span><i>→</i><span><small>생성</small><b>Lambda · IAM 등</b></span></div>
+      <p class="lambda-sam-note"><b>구분:</b> <code>aws/serverless-application-model</code>은 SAM 규격과 변환 구현 저장소이고, <code>aws/aws-sam-cli</code>는 터미널에서 사용하는 CLI 저장소입니다.</p>
+    </section>
+
+    <section class="lambda-sam-guide" aria-labelledby="sam-install-title">
+      <header class="lambda-sam-head"><div><span>02 · INSTALL</span><h2 id="sam-install-title">Linux에 SAM CLI 설치</h2></div></header>
+      <div class="lambda-sam-details">
+        <article><div class="lambda-sam-section-title"><span>PRECHECK</span><h3>먼저 설치 여부 확인</h3><p>이미 설치돼 있으면 다시 설치하지 않습니다. 로컬 실행에는 Docker 데몬도 확인합니다.</p></div><section class="lambda-code"><header><span>환경 확인</span><button type="button" data-copy-code>복사</button></header><pre><code>uname -m
+command -v sam || true
+sam --version
+aws --version
+docker --version
+docker info</code></pre></section></article>
+        <article><div class="lambda-sam-section-title"><span>X86_64</span><h3>x86_64 설치</h3><p>GitHub의 최신 공식 설치 ZIP을 내려받아 설치합니다.</p></div><section class="lambda-code"><header><span>Linux x86_64</span><button type="button" data-copy-code>복사</button></header><pre><code>curl -L "https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-linux-x86_64.zip" \
+  -o aws-sam-cli-linux-x86_64.zip
+unzip aws-sam-cli-linux-x86_64.zip -d sam-installation
+sudo ./sam-installation/install
+sam --version</code></pre></section></article>
+        <article><div class="lambda-sam-section-title"><span>ARM64</span><h3>arm64 설치</h3><p><code>uname -m</code>이 <code>aarch64</code>이면 arm64 패키지를 사용합니다.</p></div><section class="lambda-code"><header><span>Linux arm64</span><button type="button" data-copy-code>복사</button></header><pre><code>curl -L "https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-linux-arm64.zip" \
+  -o aws-sam-cli-linux-arm64.zip
+unzip aws-sam-cli-linux-arm64.zip -d sam-installation
+sudo ./sam-installation/install
+sam --version</code></pre></section></article>
+        <article><div class="lambda-sam-section-title"><span>AWS ACCESS</span><h3>AWS CLI 자격증명 확인</h3><p>배포 단계에서만 필요합니다. 개인 키를 템플릿이나 저장소에 기록하지 않습니다.</p></div><section class="lambda-code"><header><span>호출자 확인</span><button type="button" data-copy-code>복사</button></header><pre><code>aws configure list
+aws sts get-caller-identity
+aws configure get region</code></pre></section></article>
+      </div>
+    </section>
+
+    <section class="lambda-sam-guide" aria-labelledby="sam-quick-title">
+      <header class="lambda-sam-head"><div><span>03 · QUICK START</span><h2 id="sam-quick-title">가장 작은 SAM 프로젝트 사용법</h2></div><a href="/lambda-db-practice.html">다음: Lambda/API 실습</a></header>
+      <div class="lambda-sam-details">
+        <article><div class="lambda-sam-section-title"><span>STEP 1</span><h3>프로젝트 생성</h3><p>처음에는 공식 템플릿으로 디렉터리 구조와 명령 흐름부터 확인합니다.</p></div><section class="lambda-code"><header><span>초기화</span><button type="button" data-copy-code>복사</button></header><pre><code>sam init
+# 선택 예시
+# Template source: AWS Quick Start Templates
+# Runtime: python3.11
+# Package type: Zip
+
+cd sam-app
+find . -maxdepth 2 -type f | sort</code></pre></section></article>
+        <article><div class="lambda-sam-section-title"><span>STEP 2</span><h3>최소 템플릿 이해</h3><p><code>Transform</code>, 함수 타입, 코드 위치, 런타임과 핸들러가 핵심입니다.</p></div><section class="lambda-code"><header><span>template.yaml</span><button type="button" data-copy-code>복사</button></header><pre><code>AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  PracticeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Runtime: python3.11
+      Handler: app.lambda_handler
+      Timeout: 10</code></pre></section></article>
+        <article><div class="lambda-sam-section-title"><span>STEP 3</span><h3>검증과 빌드</h3><p>YAML과 리소스 규칙을 검사한 후 Lambda 실행 구조로 빌드합니다.</p></div><section class="lambda-code"><header><span>validate → build</span><button type="button" data-copy-code>복사</button></header><pre><code>sam validate --lint
+sam build
+
+# 네이티브 패키지가 있으면 Lambda 유사 컨테이너에서 빌드
+sam build --use-container</code></pre></section></article>
+        <article><div class="lambda-sam-section-title"><span>STEP 4</span><h3>로컬 단일 호출</h3><p>이벤트 JSON을 핸들러에 전달합니다. 로컬 컨테이너 호출에는 Docker가 실행 중이어야 합니다.</p></div><section class="lambda-code"><header><span>local invoke</span><button type="button" data-copy-code>복사</button></header><pre><code>mkdir -p events
+printf '{"message":"hello"}\n' &gt; events/basic.json
+
+sam local invoke PracticeFunction \
+  --event events/basic.json</code></pre></section></article>
+      </div>
+      <div class="lambda-command-list" style="margin-top:12px"><code>sam deploy --guided  # 첫 AWS 배포 설정을 대화형으로 저장</code><code>sam deploy           # 저장된 samconfig.toml로 반복 배포</code><code>sam delete           # 실습 CloudFormation 스택과 배포 산출물 정리</code></div>
+    </section>
+
+    <section class="lambda-sam-guide" aria-labelledby="sam-repo-title">
+      <header class="lambda-sam-head"><div><span>04 · REPOSITORY MAP</span><h2 id="sam-repo-title">공식 저장소에서 볼 부분</h2></div></header>
+      <dl class="lambda-repo-map">
+        <div><dt>samtranslator/</dt><dd>SAM 리소스를 CloudFormation 리소스로 변환하는 핵심 구현</dd></div>
+        <div><dt>schema_source/</dt><dd>SAM 템플릿 리소스와 속성의 스키마 원본</dd></div>
+        <div><dt>examples/</dt><dd>서버리스 리소스 조합과 템플릿 예제</dd></div>
+        <div><dt>tests/ · integration/</dt><dd>변환 결과와 AWS 기능 호환성을 확인하는 테스트</dd></div>
+      </dl>
+      <div class="lambda-sam-links"><a href="https://github.com/aws/serverless-application-model" target="_blank" rel="noopener noreferrer">SAM 모델·Transform</a><a href="https://github.com/aws/aws-sam-cli" target="_blank" rel="noopener noreferrer">SAM CLI</a><a href="https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html" target="_blank" rel="noopener noreferrer">공식 설치 문서</a><a href="https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/using-sam-cli.html" target="_blank" rel="noopener noreferrer">SAM CLI 사용법</a></div>
+    </section>
+
+    <section class="lambda-checkpoint"><h2>SAM 기본 과정 완료 기준</h2><div><span>✓ SAM과 SAM CLI 차이 설명</span><span>✓ sam --version 확인</span><span>✓ template.yaml 핵심 필드 이해</span><span>✓ validate와 build 성공</span><span>✓ local invoke 성공</span></div></section>
+  </main>
+  <div id="lambda-toast" class="lambda-toast" role="status" aria-live="polite"></div>
+  <script src="/js/config.js"></script>
+  <script src="/js/common.js?v=20260927-sam-split"></script>
+  <script src="/js/sam-guide.js?v=20260927-1"></script>
+</body>
+</html>

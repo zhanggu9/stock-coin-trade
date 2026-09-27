@@ -30,6 +30,9 @@ services:
     profiles: ["local-db"]
     networks:
       - internal
+    ports:
+      # EC2에서는 DB_EXTERNAL_BIND=0.0.0.0으로 두되 보안 그룹에서 관리자 /32만 허용한다.
+      - "${DB_EXTERNAL_BIND:-127.0.0.1}:${MARIADB_EXTERNAL_PORT:-3306}:3306"
     environment:
       MARIADB_DATABASE: ${MARIADB_DATABASE:-mockinv}
       MARIADB_USER: ${MARIADB_USER:-mockinv}
@@ -52,6 +55,9 @@ services:
     profiles: ["local-db"]
     networks:
       - internal
+    ports:
+      # MariaDB와 동일하게 외부 허용 범위는 EC2 보안 그룹에서 제한한다.
+      - "${DB_EXTERNAL_BIND:-127.0.0.1}:${QUANT_EXTERNAL_PORT:-5432}:5432"
     environment:
       POSTGRES_DB: ${QUANT_DB_NAME:-quant_research}
       POSTGRES_USER: ${QUANT_DB_USER:-quant}
@@ -66,6 +72,22 @@ services:
       retries: 10
     restart: unless-stopped
 
+  # 로그인 상태는 브라우저 쿠키에 회원 정보를 넣지 않고 Redis 서버 세션으로 보관한다.
+  redis:
+    image: redis:7.4-alpine
+    container_name: crypto-mock-redis
+    networks:
+      - internal
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
+    volumes:
+      - redis-session-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
   # ── Python 백엔드 (Flask REST API — 코인/주식/회원/관리자/AI 전부 처리) ──
   python-backend:
     build:
@@ -77,6 +99,9 @@ services:
       - ohlcv-db
     expose:
       - "8200"
+    depends_on:
+      redis:
+        condition: service_healthy
     environment:
       DB_HOST: ${DB_HOST:-mariadb}
       DB_PORT: ${DB_PORT:-3306}
@@ -84,7 +109,7 @@ services:
       DB_USER: ${MARIADB_USER:-mockinv}
       DB_PASSWORD: ${MARIADB_PASSWORD:-12345678!!}
       QUANT_DATABASE_URL: ${QUANT_DATABASE_URL:-postgresql+psycopg://${QUANT_DB_USER:-quant}:${QUANT_DB_PASSWORD:-quant}@postgres:5432/${QUANT_DB_NAME:-quant_research}}
-      # pg-stock 원본은 일일 배치로 갱신하고 대시보드는 별도 집계 스냅샷을 읽는다.
+      # pg-stock 원본은 12시간 배치로 갱신하고 대시보드는 별도 집계 스냅샷을 읽는다.
       OHLCV_DATABASE_URL: ${OHLCV_DATABASE_URL:-postgresql+psycopg://admin:admin1234@pg-stock:5432/admin}
       OHLCV_SYNC_ENABLED: ${OHLCV_SYNC_ENABLED:-true}
       OHLCV_SYNC_TICKERS: ${OHLCV_SYNC_TICKERS:-major}
@@ -92,8 +117,11 @@ services:
       OHLCV_SYNC_START_YEAR: ${OHLCV_SYNC_START_YEAR:-2020}
       OHLCV_SYNC_CORRECTION_DAYS: ${OHLCV_SYNC_CORRECTION_DAYS:-7}
       OHLCV_SYNC_HOUR: ${OHLCV_SYNC_HOUR:-18}
+      OHLCV_SYNC_INTERVAL_HOURS: ${OHLCV_SYNC_INTERVAL_HOURS:-12}
       OHLCV_SYNC_MINUTE: ${OHLCV_SYNC_MINUTE:-20}
       SECRET_KEY: ${SECRET_KEY:-dev-secret-change-me}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      REDIS_SESSION_KEY_PREFIX: ${REDIS_SESSION_KEY_PREFIX:-stock-coin-trade:session:}
       CMC_API_KEY: ${CMC_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       # ARIA 암복호화 예제(/api/aria)의 서버 기본 키. 비우면 데모용 고정 키를 쓴다.
@@ -147,6 +175,7 @@ services:
 volumes:
   mariadb-data:
   postgres-quant-data:
+  redis-session-data:
   # 이름을 고정해 python-backend가 `docker run -v lean-data:...`로 호스트
   # 데몬에 직접 실행을 요청할 때도(Compose 프로젝트 접두사 없이) 같은
   # 볼륨을 가리키게 한다.

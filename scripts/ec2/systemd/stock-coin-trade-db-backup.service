@@ -1,0 +1,17 @@
+[Unit]
+Description=Stock Coin Trade MariaDB and PostgreSQL full backup
+Requires=docker.service
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+WorkingDirectory=/opt/stock-coin-trade
+EnvironmentFile=-/opt/stock-coin-trade/.env
+ExecStart=/opt/stock-coin-trade/scripts/ec2/backup-databases.sh
+UMask=0077
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+TimeoutStartSec=2h

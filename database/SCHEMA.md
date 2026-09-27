@@ -1,6 +1,6 @@
 # 시스템 데이터 스키마
 
-기준일: 2026-09-26. 이 문서는 실행 중인 DB introspection, `database/*.sql`, Flask의 안전 생성문, Docker Compose 설정을 함께 대조한 결과다. 브라우저는 저장소에 직접 연결하지 않고 Nginx와 Flask API를 통해 접근한다.
+기준일: 2026-09-27. 이 문서는 실행 중인 DB introspection, `database/*.sql`, Flask의 안전 생성문, Docker Compose 설정을 함께 대조한 결과다. 브라우저는 저장소에 직접 연결하지 않고 Nginx와 Flask API를 통해 접근한다.
 
 ## 저장소 카탈로그
 
@@ -10,9 +10,9 @@
 | PostgreSQL `pg-stock` | 외부 Docker 네트워크 | 국내주식 일봉 원본, 품질·수집 이력, 일일 집계 | `OHLCV_DATABASE_URL`, `postgresql_default` 외부 네트워크 |
 | MariaDB 11.4 `mockinv` | 운영 중 | 회원, 웹 모의주문·포지션, KIS 연습, 감사·오류 | 내부 3306, `mariadb-data` 볼륨 |
 | Qdrant `market_knowledge` | 인메모리 | RAG 투자 지식 문서·임베딩 | 현재 `QDRANT_URL=:memory:`, 재시작 시 시드 재생성 |
-| Redis | 미도입 | 현재 사용처 없음 | Compose, 클라이언트, URL, 키·TTL 정책 모두 없음 |
+| Redis 7.4 | 운영 중 | Flask 로그인 서버 세션 | `REDIS_URL`, DB 0, 7일 TTL, AOF, `redis-session-data` 볼륨 |
 
-Redis를 도입한 것처럼 표현하지 않는다. 향후 필요하면 세션, 시세 캐시, 작업 큐 중 목적과 TTL·eviction·영속화 정책을 먼저 정의하고 RDB를 원본으로 유지한다.
+Redis는 로그인 상태만 보관한다. 회원 프로필과 인증 원본은 MariaDB `member`가 유지하며 Redis를 회원 데이터의 원본으로 사용하지 않는다.
 
 ## 전체 데이터 경계
 
@@ -23,9 +23,8 @@ Browser
             ├─> PostgreSQL quant_research
             ├─> PostgreSQL pg-stock
             ├─> MariaDB mockinv
-            └─> Qdrant market_knowledge
-
-Redis: 현재 연결 없음
+            ├─> Qdrant market_knowledge
+            └─> Redis login session
 ```
 
 RDB 사이에는 교차 DB FK가 없다. Flask API가 인증, 입력 검증, 저장소 선택과 응답 마스킹을 담당한다. Qdrant는 벡터 컬렉션이므로 RDB FK 대상이 아니다.
@@ -133,12 +132,27 @@ crypto_rank                     회원과 독립
 
 외부 Qdrant를 사용하려면 `QDRANT_URL`을 지정하고 서버 측 볼륨·백업·접근제어를 별도로 구성한다. 인증정보와 회원 개인정보는 vector 또는 payload에 넣지 않는다.
 
+## Redis 로그인 세션 명세
+
+| 항목 | 값 |
+| --- | --- |
+| 용도 | Flask-Session 기반 로그인 상태 저장 |
+| 키 | `stock-coin-trade:session:<sid>` (`REDIS_SESSION_KEY_PREFIX`로 변경 가능) |
+| 값 | `member_id`, permanent 상태 등 서버 측 세션 데이터 |
+| 브라우저 쿠키 | 서명된 임의 세션 ID만 저장, `HttpOnly`, `SameSite=Lax` |
+| TTL | 7일 (`PERMANENT_SESSION_LIFETIME`) |
+| 세션 교체 | 로그인·회원가입 성공 시 기존 SID를 폐기하고 새 SID 발급 |
+| 영속성 | AOF `everysec`, `redis-session-data` named volume |
+| 네트워크 | Compose `internal`, 호스트 포트 미공개 |
+
+로그아웃하면 해당 Redis 세션을 삭제한다. Redis 장애 시 로그인 상태를 MariaDB나 브라우저 쿠키로 대체하지 않으며, Redis 복구 후 다시 로그인한다.
+
 ## 운영·보안 규칙
 
 1. 증권사 App Key/Secret, 계좌 비밀번호, AWS 키는 루트 `.env` 또는 AWS Secrets Manager에만 두고 DB·Qdrant·로그에 원문을 저장하지 않는다.
 2. PostgreSQL과 MariaDB 포트를 인터넷에 공개하지 않는다. 운영 접근은 컨테이너 내부 명령, SSM, VPN 또는 사설망을 사용한다.
 3. `market_data` 파티션은 운영 연도 전에 미리 추가하고 default 파티션의 잔류 데이터를 점검한다.
-4. `pg-stock`은 최초 적재 후 하루 한 번 증분 수집과 집계 스냅샷 갱신을 실행한다. 대시보드는 원본 전체 집계를 반복하지 않는다.
+4. `pg-stock`은 최초 적재 후 12시간마다 증분 수집과 집계 스냅샷 갱신을 실행한다. 기본 실행 시각은 06:20·18:20(Asia/Seoul)이며, 대시보드는 원본 전체 집계를 반복하지 않는다.
 5. 백업은 PostgreSQL `pg_dump`, MariaDB `mariadb-dump`를 사용한다. named volume만으로는 백업이 아니다.
 6. Qdrant 인메모리 모드는 개발용이다. 사용자 추가 문서를 보존해야 하면 외부 Qdrant와 영속 볼륨·백업을 먼저 구성한다.
-7. Redis는 현재 미도입이다. 실제 구현 전까지 아키텍처에서 운영 저장소나 캐시로 표시하지 않는다.
+7. Redis는 로그인 세션 전용으로 사용하며 회원 원본, 시세 캐시, 작업 큐 용도로 혼용하지 않는다. 세션 키에는 비밀번호·API 키·계좌번호를 저장하지 않는다.

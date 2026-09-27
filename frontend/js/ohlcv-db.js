@@ -1,6 +1,9 @@
 (() => {
   const PAGE_SIZE = 100;
+  const YEAR_PREVIEW_SIZE = 4;
   let gridApi;
+  let yearlySummary = [];
+  let showAllYears = false;
   const number = value => Number(value || 0).toLocaleString('ko-KR');
   const dateText = value => value ? String(value).slice(0, 10) : '–';
   const won = value => value == null ? '–' : Math.round(Number(value)).toLocaleString('ko-KR');
@@ -9,6 +12,23 @@
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     return now.toISOString().slice(0, 10);
+  }
+
+  function renderYearSummary() {
+    const summary = document.getElementById('ohlcv-year-summary');
+    const toggle = document.getElementById('ohlcv-year-toggle');
+    const caption = document.getElementById('ohlcv-year-caption');
+    const rows = showAllYears ? yearlySummary : yearlySummary.slice(-YEAR_PREVIEW_SIZE);
+    summary.innerHTML = rows.length ? rows.map(row => `
+      <article class="ohlcv-year-item">
+        <b>${row.year}<span>${number(row.row_count)}건</span></b>
+        <small>${dateText(row.first_date)} ~ ${dateText(row.last_date)}</small>
+      </article>
+    `).join('') : '<div class="ohlcv-year-empty">연도별 집계가 없습니다.</div>';
+    toggle.hidden = yearlySummary.length <= YEAR_PREVIEW_SIZE;
+    toggle.textContent = showAllYears ? '간단히 보기' : `전체 ${number(yearlySummary.length)}개 보기`;
+    toggle.setAttribute('aria-expanded', String(showAllYears));
+    caption.textContent = showAllYears ? `· 전체 ${number(yearlySummary.length)}개` : `· 최근 ${number(rows.length)}개`;
   }
 
   async function loadSummary() {
@@ -22,9 +42,8 @@
     const lastYear = dateText(totals.last_date).slice(0, 4);
     document.getElementById('ohlcv-data-year').textContent = firstYear === lastYear ? `${lastYear}년` : `${firstYear}–${lastYear}`;
     document.getElementById('ohlcv-data-range').textContent = `${dateText(totals.first_date)} ~ ${dateText(totals.last_date)}`;
-    document.getElementById('ohlcv-year-summary').innerHTML = yearly.map(row => `
-      <tr><td>${row.year}</td><td>${number(row.row_count)}</td><td>${dateText(row.first_date)} ~ ${dateText(row.last_date)}</td></tr>
-    `).join('');
+    yearlySummary = [...yearly].sort((a, b) => Number(a.year) - Number(b.year));
+    renderYearSummary();
     const marketText = markets.map(row => `${row.market || '미분류'} ${number(row.ticker_count)}종목`).join(' · ');
     const syncText = sync?.last_completed_at
       ? `자동 수집 ${number(sync.success_ranges)}/${number(sync.tracked_ranges)} 구간 완료 · 최근 ${dateText(sync.last_completed_at)}`
@@ -136,6 +155,10 @@
     });
     document.getElementById('ohlcv-export-csv').addEventListener('click', () => {
       gridApi?.exportDataAsCsv({ fileName: `ohlcv-${today()}.csv` });
+    });
+    document.getElementById('ohlcv-year-toggle').addEventListener('click', () => {
+      showAllYears = !showAllYears;
+      renderYearSummary();
     });
   }
 

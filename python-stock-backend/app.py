@@ -10,9 +10,11 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parents[1] / ".env", override=False)
 
 from flask import Flask, jsonify, request, g, session, got_request_exception
+from flask_session import Session
 import threading
 import time
 import requests as _req
+from redis import Redis
 from flask_cors import CORS
 
 from admin import admin_bp
@@ -49,9 +51,20 @@ from stocks import stock_bp
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-change-me")
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=7)
+app.config["SESSION_TYPE"] = "redis"
+app.config["SESSION_REDIS"] = Redis.from_url(
+    os.environ.get("REDIS_URL", "redis://redis:6379/0"),
+    socket_connect_timeout=3,
+    socket_timeout=3,
+)
+app.config["SESSION_KEY_PREFIX"] = os.environ.get("REDIS_SESSION_KEY_PREFIX", "stock-coin-trade:session:")
+app.config["SESSION_PERMANENT"] = True
+app.config["SESSION_USE_SIGNER"] = True
+app.config["SESSION_ID_LENGTH"] = 32
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = os.environ.get("SESSION_COOKIE_SECURE", "false").lower() == "true"
+Session(app)
 
 CORS(
     app,
