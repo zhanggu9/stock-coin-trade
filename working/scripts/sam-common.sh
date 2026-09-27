@@ -16,7 +16,7 @@ select_target() {
   BUILD_DIR="$WORKING_ROOT/.aws-sam/${TARGET}"
   BUILT_TEMPLATE="$BUILD_DIR/template.yaml"
   EVENT="$WORKING_ROOT/lambda/${TARGET}/event.json"
-  ENV_JSON="$WORKING_ROOT/env/local-env.json"
+  ENV_JSON="$WORKING_ROOT/env/local-env.generated.json"
   FUNCTION_ID="DatabasePracticeFunction"
   STACK_NAME="stock-coin-trade-${TARGET}-practice"
 

@@ -3,9 +3,10 @@ Transform: AWS::Serverless-2016-10-31
 Description: PostgreSQL pg-stock 집계 조회 Lambda (lambda/ohlcv)
 
 Parameters:
-  OhlcvSecretArn:
+  OhlcvDatabaseUrl:
     Type: String
-    Description: OHLCV_DATABASE_URL 키를 가진 Secrets Manager secret ARN
+    NoEcho: true
+    Description: EC2 Docker pg-stock 접속 URL
   VpcSecurityGroupIds:
     Type: List<AWS::EC2::SecurityGroup::Id>
   VpcSubnetIds:
@@ -20,14 +21,9 @@ Resources:
       CodeUri: ../lambda/ohlcv/
       Timeout: 15
       MemorySize: 512
-      Policies:
-        - AWSSecretsManagerGetSecretValuePolicy:
-            SecretArn: !Ref OhlcvSecretArn
       Environment:
         Variables:
-          OHLCV_SECRET_ARN: !Ref OhlcvSecretArn
-          # sam local의 env.json이 이 값을 덮어쓴다. AWS에서는 빈 값이므로 Secret을 사용한다.
-          OHLCV_DATABASE_URL: ""
+          OHLCV_DATABASE_URL: !Ref OhlcvDatabaseUrl
       VpcConfig:
         SecurityGroupIds: !Ref VpcSecurityGroupIds
         SubnetIds: !Ref VpcSubnetIds

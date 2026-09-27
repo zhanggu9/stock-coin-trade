@@ -1,10 +1,10 @@
 import json
 from sqlalchemy import create_engine
 from member_service import get_member
-from secret_config import secret_values
+from secret_config import environment_values
 
 # 핸들러 밖에서 엔진을 한 번만 만들어 호출 간 재사용한다.
-config = secret_values(("DATABASE_URL",), "DATABASE_SECRET_ARN")
+config = environment_values(("DATABASE_URL",))
 engine = create_engine(config["DATABASE_URL"], pool_pre_ping=True)
 
 

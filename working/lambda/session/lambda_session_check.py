@@ -1,10 +1,10 @@
 import json
 import os
 from redis import Redis
-from secret_config import secret_values
+from secret_config import environment_values
 from session_service import session_ttl
 
-config = secret_values(("REDIS_URL",), "REDIS_SECRET_ARN")
+config = environment_values(("REDIS_URL",))
 client = Redis.from_url(config["REDIS_URL"], socket_timeout=3)
 prefix = os.environ.get("REDIS_SESSION_KEY_PREFIX", "stock-coin-trade:session:")
 

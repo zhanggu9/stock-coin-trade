@@ -4,10 +4,12 @@ set -euo pipefail
 source "$(dirname "$0")/sam-common.sh"
 select_target "${1:-member}"
 require_docker_network
+"$WORKING_ROOT/scripts/prepare-local-env.sh"
 
 [[ -f "$BUILT_TEMPLATE" ]] || "$WORKING_ROOT/scripts/sam-build.sh" "$TARGET"
 sam local invoke "$FUNCTION_ID" \
   --template-file "$BUILT_TEMPLATE" \
   --event "$EVENT" \
   --env-vars "$ENV_JSON" \
-  --docker-network "$DOCKER_NETWORK"
+  --docker-network "$DOCKER_NETWORK" \
+  --container-host-interface "${SAM_CONTAINER_HOST_INTERFACE:-0.0.0.0}"

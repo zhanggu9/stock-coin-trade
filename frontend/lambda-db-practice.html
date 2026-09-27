@@ -7,9 +7,10 @@
   <link rel="icon" href="/img/favicon.png">
   <link rel="stylesheet" href="/css/style.css?v=20260920-chart-f13">
   <link rel="stylesheet" href="/css/lambda-db-practice.css?v=20260927-split1-f13">
+  <link rel="stylesheet" href="/css/sam-guide.css?v=20260927-lambda-practice-f14">
   <link rel="stylesheet" href="/css/tech-glossary.css?v=20260927-1-f13">
 </head>
-<body class="lambda-practice-body">
+<body class="lambda-practice-body sam-guide-body">
   <div id="header-mount"></div>
   <main class="lambda-practice-shell">
     <section class="lambda-hero">
@@ -29,34 +30,35 @@
         <span><small>1. 코드</small><b>lambda_handler</b></span><i>→</i><span><small>2. 선언</small><b>HttpApi Event</b></span><i>→</i><span><small>3. 배포</small><b>sam deploy</b></span><i>→</i><span><small>4. 호출</small><b>API URL</b></span>
       </div>
       <div class="lambda-sam-details">
-        <article><div class="lambda-sam-section-title"><span>TEMPLATE</span><h3>Lambda + HTTP API 연결</h3><p><code>Events</code> 아래 <code>Type: HttpApi</code>를 선언하면 SAM이 API Gateway와 Lambda 통합·호출 권한을 구성합니다.</p></div><section class="lambda-code"><header><span>template.yaml</span><button type="button" data-copy-code>복사</button></header><pre><code>AWSTemplateFormatVersion: '2010-09-09'
+        <article><div class="lambda-sam-section-title"><span>TEMPLATE</span><h3>Lambda + HTTP API 연결</h3><p><code>Events</code> 아래 <code>Type: HttpApi</code>를 선언하면 SAM이 API Gateway와 Lambda 통합·호출 권한을 구성합니다.</p></div><section class="lambda-code"><header><span>member 경로를 이용한 최소 구조 예시</span><button type="button" data-copy-code>복사</button></header><pre><code>AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Resources:
   DatabasePracticeFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: lambda/
+      CodeUri: ../lambda/member/
       Runtime: python3.11
-      Handler: handler.lambda_handler
+      Handler: lambda_member.lambda_handler
       Timeout: 15
       Events:
-        ReadApi:
+        Api:
           Type: HttpApi
           Properties:
-            Path: /practice/{member_id}
+            Path: /members/{member_id}
             Method: GET
 Outputs:
   ApiUrl:
     Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}"</code></pre></section></article>
-        <article><div class="lambda-sam-section-title"><span>COMMANDS</span><h3>빌드 → 로컬 API → 배포</h3><p>단일 이벤트 호출뿐 아니라 로컬 HTTP 서버로 경로와 메서드까지 확인한 뒤 배포합니다.</p></div><section class="lambda-code"><header><span>실행 순서</span><button type="button" data-copy-code>복사</button></header><pre><code>sam validate --lint
-sam build --use-container
-sam local start-api --port 3001
+        <article><div class="lambda-sam-section-title"><span>COMMANDS</span><h3>빌드 → 로컬 API → 배포</h3><p>repo 루트에서 대상 이름을 인자로 넘깁니다. 다른 대상은 <code>quant</code>, <code>ohlcv</code>, <code>session</code>, <code>knowledge</code>입니다.</p></div><section class="lambda-code"><header><span>실제 저장소 스크립트 · member 예</span><button type="button" data-copy-code>복사</button></header><pre><code>./working/scripts/preflight-check.sh
+./working/scripts/sam-build.sh member
+./working/scripts/sam-local-invoke.sh member
+./working/scripts/sam-local-start-api.sh member 3001
 
-curl http://127.0.0.1:3001/practice/1
+curl http://127.0.0.1:3001/members/1
 
-sam deploy --guided
+./working/scripts/sam-deploy.sh member
 aws cloudformation describe-stacks \
-  --stack-name db-python-practice \
+  --stack-name stock-coin-trade-member-practice \
   --query 'Stacks[0].Outputs'</code></pre></section></article>
       </div>
       <p class="lambda-sam-note"><b>중요:</b> API Gateway가 만들어져도 private DB에 자동 연결되지는 않습니다. Lambda VPC, private subnet, DB 보안 그룹, Secrets Manager와 필요 시 NAT 또는 VPC Endpoint를 별도로 구성합니다.</p>
@@ -95,13 +97,13 @@ aws cloudformation describe-stacks \
       <header class="lambda-server-head"><div><span>DEPLOYED API CHECK</span><h2 id="lambda-server-title">배포된 API Gateway와 Lambda 검증</h2><p>CloudFormation Output의 API URL을 사용해 성공·입력 오류·인증·DB 장애 응답을 각각 확인합니다.</p></div></header>
       <div class="lambda-server-practice">
         <article><div class="lambda-sam-section-title"><span>01 · API URL</span><h3>스택 출력과 HTTPS 호출</h3><p>브라우저에 비밀번호를 넣지 않고 터미널에서 응답 코드와 본문을 확인합니다.</p></div><section class="lambda-code"><header><span>deployed-api-test.sh</span><button type="button" data-copy-code>복사</button></header><pre><code>API_URL="$(aws cloudformation describe-stacks \
-  --stack-name db-python-practice \
+  --stack-name stock-coin-trade-member-practice \
   --query 'Stacks[0].Outputs[?OutputKey==`ApiUrl`].OutputValue' \
   --output text)"
 
 curl --fail-with-body --show-error \
-  "$API_URL/practice/1"</code></pre></section></article>
-        <article><div class="lambda-sam-section-title"><span>02 · LOGS</span><h3>Lambda 로그와 구성 확인</h3><p>API Gateway의 5xx만 보지 말고 Lambda 로그, timeout, 메모리, VPC 연결을 함께 확인합니다.</p></div><section class="lambda-code"><header><span>운영 확인</span><button type="button" data-copy-code>복사</button></header><pre><code>sam logs --stack-name db-python-practice \
+  "$API_URL/members/1"</code></pre></section></article>
+        <article><div class="lambda-sam-section-title"><span>02 · LOGS</span><h3>Lambda 로그와 구성 확인</h3><p>API Gateway의 5xx만 보지 말고 Lambda 로그, timeout, 메모리, VPC 연결을 함께 확인합니다.</p></div><section class="lambda-code"><header><span>운영 확인</span><button type="button" data-copy-code>복사</button></header><pre><code>sam logs --stack-name stock-coin-trade-member-practice \
   --name DatabasePracticeFunction --tail
 
 aws lambda get-function-configuration \
@@ -117,7 +119,7 @@ aws lambda get-function-configuration \
   <div id="lambda-toast" class="lambda-toast" role="status" aria-live="polite"></div>
   <script src="/js/config.js"></script>
   <script src="/js/common.js?v=20260927-sam-split-f13"></script>
-  <script src="/js/lambda-db-practice.js?v=20260927-api-split-f13"></script>
+  <script src="/js/lambda-db-practice.js?v=20260927-guide1-f14"></script>
   <script src="/js/tech-glossary.js?v=20260927-3" data-glossary-root="main"></script>
 </body>
 </html>

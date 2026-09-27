@@ -3,9 +3,10 @@ Transform: AWS::Serverless-2016-10-31
 Description: MariaDB 서비스 DB 회원 조회 Lambda (lambda/member)
 
 Parameters:
-  DatabaseSecretArn:
+  DatabaseUrl:
     Type: String
-    Description: DATABASE_URL 키를 가진 Secrets Manager secret ARN
+    NoEcho: true
+    Description: EC2 Docker MariaDB 접속 URL (mysql+pymysql://...@EC2_PRIVATE_IP:3306/mockinv)
   VpcSecurityGroupIds:
     Type: List<AWS::EC2::SecurityGroup::Id>
   VpcSubnetIds:
@@ -38,14 +39,9 @@ Resources:
       CodeUri: ../lambda/member/
       Timeout: 15
       MemorySize: 512
-      Policies:
-        - AWSSecretsManagerGetSecretValuePolicy:
-            SecretArn: !Ref DatabaseSecretArn
       Environment:
         Variables:
-          DATABASE_SECRET_ARN: !Ref DatabaseSecretArn
-          # sam local의 env.json이 이 값을 덮어쓴다. AWS에서는 빈 값이므로 Secret을 사용한다.
-          DATABASE_URL: ""
+          DATABASE_URL: !Ref DatabaseUrl
       VpcConfig:
         SecurityGroupIds: !Ref VpcSecurityGroupIds
         SubnetIds: !Ref VpcSubnetIds

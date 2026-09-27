@@ -2,10 +2,10 @@ import json
 import os
 from qdrant_client import QdrantClient
 from knowledge_service import search_knowledge
-from secret_config import secret_values
+from secret_config import environment_values
 
-config = secret_values(("QDRANT_URL", "QDRANT_API_KEY"), "QDRANT_SECRET_ARN")
-client = QdrantClient(url=config["QDRANT_URL"], api_key=config["QDRANT_API_KEY"])
+config = environment_values(("QDRANT_URL",))
+client = QdrantClient(url=config["QDRANT_URL"], api_key=os.environ.get("QDRANT_API_KEY") or None)
 collection = os.environ.get("QDRANT_COLLECTION", "market_knowledge")
 
 

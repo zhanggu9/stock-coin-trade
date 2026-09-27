@@ -5,6 +5,7 @@ source "$(dirname "$0")/sam-common.sh"
 select_target "${1:-member}"
 PORT="${2:-3001}"
 require_docker_network
+"$WORKING_ROOT/scripts/prepare-local-env.sh"
 
 [[ "$PORT" =~ ^[0-9]+$ ]] || { printf 'port must be numeric\n' >&2; exit 2; }
 [[ -f "$BUILT_TEMPLATE" ]] || "$WORKING_ROOT/scripts/sam-build.sh" "$TARGET"
@@ -14,4 +15,5 @@ sam local start-api \
   --template-file "$BUILT_TEMPLATE" \
   --env-vars "$ENV_JSON" \
   --docker-network "$DOCKER_NETWORK" \
+  --container-host-interface "${SAM_CONTAINER_HOST_INTERFACE:-0.0.0.0}" \
   --port "$PORT"

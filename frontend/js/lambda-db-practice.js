@@ -15,6 +15,8 @@
   const targets = {
     mariadb: {
       short: 'MariaDB', title: 'MariaDB 서비스 DB', role: '회원·포지션·모의주문·감사 로그',
+      scriptTarget: 'member', route: '/members/{member_id}', testPath: '/members/1', method: 'GET',
+      template: 'working/template/template-member.yaml', lambdaDir: 'working/lambda/member', secretParam: 'DatabaseSecretArn', secretEnv: 'DATABASE_SECRET_ARN', directEnv: 'DATABASE_URL', apiLogicalId: 'PracticeHttpApi',
       files: ['db.py', 'members.py', 'models.py'], handler: 'lambda_member.py · lambda_handler',
       trigger: 'API Gateway HTTP API', env: 'DATABASE_URL · MEMBER_SECRET_ARN', color: '#0d6a9e',
       warning: 'Compose의 mariadb 호스트명은 Lambda에서 해석되지 않습니다. AWS에서 접근 가능한 RDS/Aurora 엔드포인트와 private subnet 연결이 필요합니다.',
@@ -27,6 +29,8 @@
     },
     quant: {
       short: 'Quant PG', title: 'PostgreSQL Quant DB', role: 'OHLCV·전략·체결·성과·팩터',
+      scriptTarget: 'quant', route: '/quant/prices', testPath: '/quant/prices?symbol=005930&limit=30', method: 'GET',
+      template: 'working/template/template-quant.yaml', lambdaDir: 'working/lambda/quant', secretParam: 'QuantSecretArn', secretEnv: 'QUANT_SECRET_ARN', directEnv: 'QUANT_DATABASE_URL',
       files: ['quant.py', 'database/quant-postgres.sql'], handler: 'lambda_quant.py · lambda_handler',
       trigger: 'API Gateway HTTP API', env: 'QUANT_DATABASE_URL', color: '#3157a4',
       warning: 'quant.py 전체를 복사하지 말고 조회·계산 함수를 나눕니다. Lambda 호출마다 SQLAlchemy engine을 만들지 말고 모듈 전역에서 재사용합니다.',
@@ -39,6 +43,8 @@
     },
     stock: {
       short: 'pg-stock', title: 'PostgreSQL pg-stock', role: '국내주식 일봉·품질·수집 상태·집계',
+      scriptTarget: 'ohlcv', route: '/ohlcv/summary', testPath: '/ohlcv/summary', method: 'GET',
+      template: 'working/template/template-ohlcv.yaml', lambdaDir: 'working/lambda/ohlcv', secretParam: 'OhlcvSecretArn', secretEnv: 'OHLCV_SECRET_ARN', directEnv: 'OHLCV_DATABASE_URL',
       files: ['ohlcv_db.py', 'ohlcv_sync.py', 'ohlcv_aggregate.py'], handler: 'lambda_ohlcv_summary.py · lambda_handler',
       trigger: 'API Gateway 또는 EventBridge', env: 'OHLCV_DATABASE_URL', color: '#146f79',
       warning: 'pg-stock은 현재 외부 Docker 네트워크의 DB입니다. Lambda에서는 Docker DNS 이름 pg-stock 대신 VPC에서 도달 가능한 DB 엔드포인트가 필요합니다.',
@@ -51,6 +57,8 @@
     },
     redis: {
       short: 'Redis', title: 'Redis 로그인 세션', role: 'Flask 로그인 서버 세션·7일 TTL',
+      scriptTarget: 'session', route: '/internal/session-check', testPath: '/internal/session-check?sid=test-session-id', method: 'GET',
+      template: 'working/template/template-session.yaml', lambdaDir: 'working/lambda/session', secretParam: 'RedisSecretArn', secretEnv: 'REDIS_SECRET_ARN', directEnv: 'REDIS_URL',
       files: ['app.py', 'members.py'], handler: 'lambda_session_check.py · lambda_handler',
       trigger: 'API Gateway 내부 진단 API', env: 'REDIS_URL · REDIS_SESSION_KEY_PREFIX', color: '#a23636',
       warning: 'Flask-Session 쿠키 서명과 SID 교체 규칙을 그대로 유지해야 합니다. 첫 연습에서는 로그인 재작성보다 Redis 연결·TTL 확인용 읽기 함수를 Lambda로 분리하세요.',
@@ -63,6 +71,8 @@
     },
     qdrant: {
       short: 'Qdrant', title: 'Qdrant 지식 DB', role: '투자 문서·임베딩·유사도 검색',
+      scriptTarget: 'knowledge', route: '/knowledge/search', testPath: '/knowledge/search', method: 'POST',
+      template: 'working/template/template-knowledge.yaml', lambdaDir: 'working/lambda/knowledge', secretParam: 'QdrantSecretArn', secretEnv: 'QDRANT_SECRET_ARN', directEnv: 'QDRANT_URL',
       files: ['qdrant_service.py', 'ai.py'], handler: 'lambda_knowledge_search.py · lambda_handler',
       trigger: 'API Gateway HTTP API', env: 'QDRANT_URL · QDRANT_API_KEY', color: '#7157a6',
       warning: '현재 QDRANT_URL=:memory: 모드는 Lambda 인스턴스마다 데이터가 달라집니다. Lambda 전환 전에 영속 Qdrant 서비스와 인증 URL을 준비해야 합니다.',
@@ -107,11 +117,18 @@
     });
   };
   const codeBlock = (title, code) => `<section class="lambda-code"><header><span>${escapeHtml(title)}</span><button type="button" data-copy-code>복사</button></header><pre><code>${escapeHtml(code)}</code></pre></section>`;
+  const transcriptBlock = (title, text) => `<section class="lambda-code sam-transcript"><header><span>${escapeHtml(title)}</span></header><pre><code>${escapeHtml(text)}</code></pre></section>`;
+  const errorPanel = items => `<aside class="sam-errors"><header><i>!</i> 예상 오류와 해결</header>${items.map(item => `
+    <div class="sam-err"><b>${escapeHtml(item.title)}</b><code>${escapeHtml(item.output)}</code><p><span>원인</span>${escapeHtml(item.cause)}</p><p class="fix"><span>해결</span>${escapeHtml(item.fix)}</p></div>`).join('')}</aside>`;
+  const stepLayout = (intro, main, transcript, errors) => `${intro}<div class="sam-split"><div class="sam-split-code">${main}${transcript}</div>${errorPanel(errors)}</div>`;
   const sourceLinks = target => target.files.map(file => {
     const backendPath = file.startsWith('database/') ? `https://github.com/edumgt/stock-coin-trade/blob/main/${file}` : `${REPO}${file}`;
     return `<a href="${backendPath}" target="_blank" rel="noopener noreferrer">${escapeHtml(file)}</a>`;
   }).join('');
-  const samTemplate = target => `AWSTemplateFormatVersion: '2010-09-09'\nTransform: AWS::Serverless-2016-10-31\nResources:\n  DatabasePracticeFunction:\n    Type: AWS::Serverless::Function\n    Properties:\n      Runtime: python3.11\n      Handler: ${target.handler.split(' · ')[0].replace('.py', '')}.lambda_handler\n      CodeUri: lambda/\n      Timeout: 15\n      MemorySize: 512\n      Environment:\n        Variables:\n          ${target.env.split(' · ')[0]}: REPLACE_WITH_SECRET_OR_ENDPOINT\n      VpcConfig:\n        SecurityGroupIds: [sg-lambda-to-database]\n        SubnetIds: [subnet-private-a, subnet-private-b]\n      Events:\n        PracticeApi:\n          Type: HttpApi\n          Properties:\n            Path: /practice/{proxy+}\n            Method: ANY\nOutputs:\n  ApiUrl:\n    Value: !Sub "https://\${ServerlessHttpApi}.execute-api.\${AWS::Region}.\${AWS::URLSuffix}"`;
+  const samTemplate = target => `# 저장소 파일: ${target.template}\n# 핵심 발췌이며 JWT/VPC 등 전체 선언은 위 파일에서 확인\nAWSTemplateFormatVersion: '2010-09-09'\nTransform: AWS::Serverless-2016-10-31\nParameters:\n  ${target.secretParam}:\n    Type: String\nResources:\n  DatabasePracticeFunction:\n    Type: AWS::Serverless::Function\n    Properties:\n      Runtime: python3.11\n      Handler: ${target.handler.split(' · ')[0].replace('.py', '')}.lambda_handler\n      CodeUri: ../lambda/${target.scriptTarget}/\n      Timeout: 15\n      MemorySize: 512\n      Policies:\n        - AWSSecretsManagerGetSecretValuePolicy:\n            SecretArn: !Ref ${target.secretParam}\n      Environment:\n        Variables:\n          ${target.secretEnv}: !Ref ${target.secretParam}\n          ${target.directEnv}: "" # sam local의 env 파일만 덮어씀\n      Events:\n        Api:\n          Type: HttpApi\n          Properties:${target.apiLogicalId ? `\n            ApiId: !Ref ${target.apiLogicalId}` : ''}\n            Path: ${target.route}\n            Method: ${target.method}\nOutputs:\n  ApiUrl:\n    Value: !Sub 'https://\${${target.apiLogicalId || 'ServerlessHttpApi'}}.execute-api.\${AWS::Region}.\${AWS::URLSuffix}'`;
+  const localCurl = target => target.method === 'POST'
+    ? `curl --fail-with-body -X POST http://127.0.0.1:3001${target.testPath} \\\n  -H 'content-type: application/json' \\\n  --data '{"vector":[0.01,0.02,0.03]}'`
+    : `curl --fail-with-body "http://127.0.0.1:3001${target.testPath}"`;
 
   function renderTargetList() {
     document.getElementById('lambda-target-list').innerHTML = Object.entries(targets).map(([key, target]) => `
@@ -138,40 +155,84 @@
   }
 
   function stepHtml(index, target) {
-    if (index === 0) return `
-      <div class="lambda-explain"><b>목표:</b> ERD의 저장소가 실제로 어느 Python 모듈에서 연결되고 조회되는지 먼저 찾습니다. Lambda 파일을 만들기 전에 현재 경계를 설명할 수 있어야 합니다.</div>
-      <div class="lambda-practice-grid"><article><h3>${escapeHtml(target.title)}</h3><p>${escapeHtml(target.role)}</p><div class="lambda-file-list">${sourceLinks(target)}</div></article><article><h3>확인 질문</h3><ul><li>DB 연결은 import 시점인가, 요청 시점인가?</li><li>Flask의 request·jsonify·session에 의존하는가?</li><li>읽기 함수인가, 재시도에 주의할 쓰기 함수인가?</li></ul></article></div>
-      ${codeBlock('현재 소스 패턴', target.source)}`;
-    if (index === 1) return `
-      <div class="lambda-explain"><b>핵심:</b> Lambda 핸들러 안에 SQL과 업무 규칙을 모두 넣지 않습니다. Flask를 모르는 서비스 함수가 일반 Python 값만 받고 반환하도록 먼저 분리합니다.</div>
-      ${codeBlock('분리할 서비스 함수', target.service)}
-      <div class="lambda-practice-grid"><article><h3>서비스 함수 규칙</h3><ul><li><code>request</code>, <code>jsonify</code>, <code>session</code> import 금지</li><li>입력 검증 결과를 명시적 인자로 전달</li><li>DB 예외는 핸들러가 변환할 수 있게 유지</li></ul></article><article><h3>완료 조건</h3><p>로컬 Python에서 함수만 import해 테스트할 수 있고 Flask 앱 생성 없이 실행됩니다.</p></article></div>`;
-    if (index === 2) return `
-      <div class="lambda-explain"><b>핸들러:</b> 파일명과 함수명을 합친 <code>${escapeHtml(target.handler.replace(' · ', '.'))}</code>가 Lambda Handler 설정값입니다. DB 클라이언트는 실행 환경 재사용을 위해 모듈 전역에 둡니다.</div>
-      ${codeBlock(target.handler, target.handlerCode)}
-      <div class="lambda-practice-grid"><article><h3>핸들러 책임</h3><p>이벤트 파싱, 입력 검증, 서비스 호출, HTTP 응답과 오류 코드 변환만 담당합니다.</p></article><article><h3>남기지 않을 것</h3><p>Flask Blueprint 등록, 개발 서버 실행, 하드코딩된 비밀번호와 Docker 호스트명을 제거합니다.</p></article></div>`;
-    if (index === 3) return `
-      <div class="lambda-explain"><b>API Gateway:</b> ${escapeHtml(target.trigger)}의 경로·메서드와 이벤트에서 필요한 값의 위치를 먼저 정합니다. 없는 키를 바로 인덱싱하지 말고 <code>or {}</code>와 기본값으로 검증합니다.</div>
-      ${codeBlock('events/practice.json', target.event)}
-      <div class="lambda-practice-grid"><article><h3>API 이벤트</h3><ul><li>경로 값: <code>pathParameters</code></li><li>쿼리: <code>queryStringParameters</code></li><li>JSON 본문: <code>json.loads(event["body"])</code></li></ul></article><article><h3>비동기 이벤트</h3><p>EventBridge·SQS는 실패 시 재시도될 수 있으므로 쓰기 작업은 중복 실행되어도 안전한 키와 상태 전이를 사용합니다.</p></article></div>`;
-    if (index === 4) return `
-      <div class="lambda-explain"><b>최소 패키지:</b> 전체 백엔드 requirements를 복사하지 않고 이 함수가 import하는 패키지만 넣습니다. 네이티브 바이너리가 있으면 Lambda와 같은 Linux 환경에서 빌드합니다.</div>
-      ${codeBlock('lambda/requirements.txt', target.requirements)}
-      <div class="lambda-command-list"><code>sam validate</code><code>sam build --use-container</code></div>
-      <div class="lambda-practice-grid"><article><h3>권장 디렉터리</h3><p><code>lambda/handler.py</code>, 서비스 모듈, <code>requirements.txt</code>, 루트 <code>template.yaml</code>로 작게 시작합니다.</p></article><article><h3>Layer 선택</h3><p>여러 함수가 같은 무거운 의존성을 공유할 때만 Layer를 고려하고, 첫 실습은 함수별 패키지가 이해하기 쉽습니다.</p></article></div>`;
-    if (index === 5) return `
-      <div class="lambda-explain"><b>SAM 연결:</b> ${escapeHtml(target.network)}. URL·비밀번호를 코드나 SAM 템플릿 원문에 커밋하지 않고, <code>Events.HttpApi</code>로 API Gateway 경로를 함께 선언합니다.</div>
-      ${codeBlock('template.yaml · Lambda + HttpApi', samTemplate(target))}
-      <div class="lambda-practice-grid"><article><h3>비밀값</h3><p>Secrets Manager 또는 배포 환경의 동적 참조를 사용하고 실행 역할에는 필요한 secret 읽기 권한만 부여합니다.</p></article><article><h3>VPC 주의</h3><p>private DB 접근을 위해 VPC에 붙이면 외부 API 접근에는 private subnet의 NAT 또는 적절한 VPC endpoint가 추가로 필요할 수 있습니다.</p></article></div>`;
-    if (index === 6) return `
-      <div class="lambda-explain"><b>로컬 HTTP 루프:</b> 소스를 바꿀 때마다 다시 빌드하고 <code>start-api</code>를 실행한 뒤 실제 URL로 경로·쿼리·본문을 확인합니다. 실제 비밀번호가 든 env 파일은 Git에 추가하지 않습니다.</div>
-      <div class="lambda-command-list"><code>sam validate --lint</code><code>sam build --use-container</code><code>sam local invoke DatabasePracticeFunction --event events/practice.json --env-vars env.local.json</code><code>sam local start-api --port 3001 --env-vars env.local.json</code><code>curl --fail-with-body http://127.0.0.1:3001/practice/1</code></div>
-      ${codeBlock('검증할 응답 형태', `{"statusCode":200,"headers":{"content-type":"application/json"},"body":"{...}"}`)}
-      <div class="lambda-practice-grid"><article><h3>성공 테스트</h3><p>정상 ID·종목·벡터로 200과 JSON 직렬화를 확인합니다.</p></article><article><h3>실패 테스트</h3><p>누락 입력, 존재하지 않는 데이터, DB timeout을 각각 4xx/5xx로 구분합니다.</p></article></div>`;
-    return `
-      <div class="lambda-explain"><b>API 배포:</b> guided 배포로 스택·리전·권한을 확인하고 CloudFormation Output에서 API URL을 얻습니다. HTTPS 호출과 Lambda 로그 확인까지가 완료입니다.</div>
-      <div class="lambda-command-list"><code>sam deploy --guided</code><code>aws cloudformation describe-stacks --stack-name db-python-practice --query 'Stacks[0].Outputs'</code><code>curl --fail-with-body "$API_URL/practice/1"</code><code>sam logs --name DatabasePracticeFunction --stack-name db-python-practice --tail</code></div>
-      <div class="lambda-practice-grid"><article><h3>운영 체크</h3><ul><li>CloudWatch 오류·duration·timeout</li><li>DB 연결 수와 동시성 상한</li><li>재시도·중복 쓰기 여부</li><li>민감값 로그 노출 여부</li></ul></article><article><h3>다음 개선</h3><ul><li>RDS Proxy 또는 연결 제한</li><li>구조화 로그와 X-Ray</li><li>예약 동시성·DLQ</li><li>CI에서 sam build/test</li></ul></article></div>`;
+    const intro = text => `<div class="lambda-explain">${text}</div>`;
+    if (index === 0) return stepLayout(
+      intro(`<b>목표:</b> 현재 Python 파일에서 DB 연결과 Flask 의존 경계를 찾습니다. 선택한 실습 구현은 <code>${escapeHtml(target.lambdaDir)}</code>에 있습니다.`),
+      `${codeBlock('현재 소스 패턴', target.source)}${codeBlock('저장소에서 확인할 명령', `rg -n "create_engine|Redis.from_url|QdrantClient|session_scope" python-stock-backend\nfind ${target.lambdaDir} -maxdepth 1 -type f -print\nsed -n '1,220p' ${target.template}`)}`,
+      transcriptBlock('실행 결과 예시', `$ find ${target.lambdaDir} -maxdepth 1 -type f -print\n${target.lambdaDir}/event.json\n${target.lambdaDir}/requirements.txt\n${target.lambdaDir}/${target.handler.split(' · ')[0]}\n\n확인 대상: ${target.files.join(', ')}`),
+      [
+        { title: '검색 결과가 없음', output: 'rg: no matches found', cause: '저장소 루트가 아닌 디렉터리에서 실행했거나 검색 이름이 다릅니다.', fix: 'repo 루트로 이동한 뒤 위 명령을 실행하고 선택 대상의 파일 목록을 확인합니다.' },
+        { title: 'Docker 호스트명을 AWS에서도 사용', output: 'Name or service not known: mariadb', cause: 'Compose 서비스명은 해당 Docker 네트워크 안에서만 해석됩니다.', fix: 'AWS 배포 시 RDS/Aurora·ElastiCache·외부 Qdrant의 실제 엔드포인트로 바꿉니다.' },
+      ]
+    );
+    if (index === 1) return stepLayout(
+      intro('<b>핵심:</b> Flask의 <code>request</code>와 <code>jsonify</code>를 서비스 계층에서 제거하고 일반 Python 값만 입출력합니다.'),
+      `${codeBlock('분리할 서비스 함수', target.service)}${codeBlock('정적 문법 확인', `python3 -m py_compile ${target.lambdaDir}/*.py`)}`,
+      transcriptBlock('성공 시 실행내역', `$ python3 -m py_compile ${target.lambdaDir}/*.py\n# 출력 없음, 종료 코드 0\n\n완료 조건: Flask 앱 생성 없이 서비스 모듈을 import할 수 있음`),
+      [
+        { title: 'Flask 컨텍스트 오류', output: 'RuntimeError: Working outside of request context', cause: '서비스 함수가 request, session 또는 jsonify를 직접 사용합니다.', fix: '핸들러에서 입력을 꺼내 평범한 str/int/dict로 서비스 함수에 전달합니다.' },
+        { title: '모듈 import 실패', output: "ModuleNotFoundError: No module named '...'", cause: '함수 디렉터리에 모듈이 없거나 requirements.txt에 의존성이 빠졌습니다.', fix: '같은 Lambda CodeUri 안에 모듈을 두고 STEP 5에서 컨테이너 빌드합니다.' },
+      ]
+    );
+    if (index === 2) return stepLayout(
+      intro(`<b>핸들러:</b> SAM의 Handler는 <code>${escapeHtml(target.handler.replace(' · ', '.'))}</code>입니다. 클라이언트는 warm start에서 재사용하도록 모듈 전역에 둡니다.`),
+      codeBlock(target.handler, target.handlerCode),
+      transcriptBlock('단일 이벤트 실행 명령', `$ ./working/scripts/sam-build.sh ${target.scriptTarget}\n$ ./working/scripts/sam-local-invoke.sh ${target.scriptTarget}\n\n호출 이벤트: ${target.lambdaDir}/event.json\n함수 논리 ID: DatabasePracticeFunction`),
+      [
+        { title: 'Handler를 찾지 못함', output: 'Runtime.ImportModuleError: Unable to import module', cause: '템플릿 Handler의 파일명/함수명과 실제 코드가 다릅니다.', fix: `${target.template}의 Handler와 ${target.lambdaDir} 파일을 함께 확인합니다.` },
+        { title: '환경변수 없음', output: `KeyError: '${target.directEnv}'`, cause: 'local-env.json에 직접 접속 URL이 없고 Secret ARN도 유효하지 않습니다.', fix: '로컬은 working/env/local-env.json을 채우고 AWS는 Secrets Manager ARN을 파라미터로 전달합니다.' },
+      ]
+    );
+    if (index === 3) return stepLayout(
+      intro(`<b>API 계약:</b> 실제 템플릿은 <code>${target.method} ${escapeHtml(target.route)}</code>를 선언합니다. 입력 위치와 실패 상태 코드를 먼저 고정합니다.`),
+      `${codeBlock(`${target.lambdaDir}/event.json`, target.event)}${codeBlock('템플릿에서 확인할 항목', `Events:\n  Api:\n    Type: HttpApi\n    Properties:\n      Path: ${target.route}\n      Method: ${target.method}`)}`,
+      transcriptBlock('검증 명령과 기대 결과', `$ sam validate --lint --template-file ${target.template}\n${target.template} is a valid SAM Template\n\npathParameters → 경로 값\nqueryStringParameters → 쿼리 값\nbody → JSON 문자열`),
+      [
+        { title: '로컬 API 404', output: '404 Not Found', cause: 'curl 경로 또는 HTTP 메서드가 템플릿 Events와 다릅니다.', fix: `${target.method} ${target.route} 계약과 testPath를 맞춥니다.` },
+        { title: 'API Gateway 502', output: 'Malformed Lambda proxy response', cause: 'statusCode가 숫자가 아니거나 body가 문자열이 아닙니다.', fix: '응답을 statusCode, headers, JSON 문자열 body 구조로 반환합니다.' },
+      ]
+    );
+    if (index === 4) return stepLayout(
+      intro('<b>컨테이너 빌드:</b> 이 저장소의 스크립트는 템플릿 검증 후 Lambda와 같은 Linux 빌드 이미지를 사용합니다. 산출물은 타깃별 <code>working/.aws-sam</code> 아래에 생깁니다.'),
+      `${codeBlock(`${target.lambdaDir}/requirements.txt`, target.requirements)}${codeBlock('repo 루트에서 실행', `./working/scripts/preflight-check.sh\n./working/scripts/sam-build.sh ${target.scriptTarget}\n\n# 결과\nworking/.aws-sam/${target.scriptTarget}/template.yaml`)}`,
+      transcriptBlock('이 저장소에서 확인한 실행내역', `$ ./working/scripts/preflight-check.sh\nSAM CLI, version 1.162.1\nDocker version 29.4.3\ndocker : daemon ready\n\n$ ./working/scripts/sam-build.sh ${target.scriptTarget}\nBuild Succeeded\nBuilt template: .../working/.aws-sam/${target.scriptTarget}/template.yaml`),
+      [
+        { title: 'Docker daemon 연결 실패', output: 'Error: Building functions requires Docker', cause: 'Docker 미설치 또는 daemon이 꺼져 있습니다.', fix: 'preflight-check.sh에서 docker : daemon ready를 먼저 확인합니다.' },
+        { title: '빌드 이미지가 docker images에 안 보임', output: 'docker images | grep sam  # 결과 없음', cause: 'SAM/BuildKit 캐시는 중간 빌드 캐시로 관리되어 일반 이미지 목록에 항상 남지 않을 수 있습니다.', fix: 'docker image ls -a와 docker buildx du를 확인하고, 실제 산출물은 working/.aws-sam/<target>에서 확인합니다.' },
+        { title: '네이티브 패키지 빌드 실패', output: 'Failed building wheel for psycopg', cause: '호스트 OS에서 빌드했거나 패키지 버전/아키텍처가 맞지 않습니다.', fix: '반드시 sam-build.sh의 --use-container 경로를 사용합니다.' },
+      ]
+    );
+    if (index === 5) return stepLayout(
+      intro(`<b>SAM 연결:</b> ${escapeHtml(target.network)}. 로컬 URL은 env 파일로, AWS 비밀값은 Secrets Manager로 분리합니다.`),
+      codeBlock(`${target.template} · 핵심 발췌`, samTemplate(target)),
+      transcriptBlock('AWS 배포 전 확인', `$ sam validate --lint --template-file ${target.template}\n$ aws secretsmanager describe-secret --secret-id <SECRET_ARN>\n$ aws ec2 describe-subnets --subnet-ids <PRIVATE_SUBNET_IDS>\n$ aws ec2 describe-security-groups --group-ids <LAMBDA_SG_ID>\n\n주의: 실제 ARN, 비밀번호, API key는 HTML이나 Git에 기록하지 않습니다.`),
+      [
+        { title: 'Secret 권한 거부', output: 'AccessDeniedException: secretsmanager:GetSecretValue', cause: 'Lambda 실행 역할 정책 또는 Secret 리소스 ARN이 다릅니다.', fix: `실행 역할에 ${target.secretParam}의 ARN만 읽도록 권한을 부여합니다.` },
+        { title: 'DB 연결 시간 초과', output: 'OperationalError: connection timed out', cause: 'private subnet 라우팅, Lambda SG, DB SG 또는 포트 허용이 맞지 않습니다.', fix: 'DB SG inbound의 source를 Lambda SG로 지정하고 subnet/route/NAT 요구를 점검합니다.' },
+      ]
+    );
+    if (index === 6) return stepLayout(
+      intro('<b>로컬 HTTP 검증:</b> 터미널 1에서 API를 실행하고 터미널 2에서 실제 경로를 호출합니다. <code>local-env.json</code>의 예시 비밀번호는 실제 값으로 교체해야 합니다.'),
+      `${codeBlock('터미널 1 · 서버 시작', `./working/scripts/sam-build.sh ${target.scriptTarget}\n./working/scripts/sam-local-start-api.sh ${target.scriptTarget} 3001`)}${codeBlock('터미널 2 · HTTP 호출', localCurl(target))}`,
+      transcriptBlock(target.scriptTarget === 'member' ? 'MariaDB member 실측 실행내역' : '정상 실행 시 출력 예시', target.scriptTarget === 'member'
+        ? `$ curl -i http://127.0.0.1:3013/members/1\nHTTP/1.1 200 OK\n{"member_id":1,"username":"이코인","email":"jj@jj.com","asset":98190003}\n\n$ curl -i http://127.0.0.1:3013/members/not-a-number\nHTTP/1.1 400 BAD REQUEST`
+        : `$ ${localCurl(target)}\nHTTP 200\ncontent-type: application/json\n{ ... 선택한 저장소의 조회 결과 ... }`),
+      [
+        { title: 'Docker network 없음', output: 'Docker network not found: stock-coin-trade_internal', cause: '대상 DB Compose가 실행되지 않았거나 OHLCV용 네트워크가 없습니다.', fix: 'DB 컨테이너를 먼저 실행하거나 SAM_DOCKER_NETWORK를 올바른 네트워크로 지정합니다.' },
+        { title: '로컬 JWT 경고', output: "Authorizer 'PracticeJwtAuthorizer' ... was not found, skipping", cause: 'SAM local start-api가 일부 JWT authorizer 검증을 로컬에서 수행하지 않습니다.', fix: '로컬에서는 handler/API 계약을 확인하고 JWT 401/403은 배포된 API Gateway에서 별도로 검증합니다.' },
+        { title: 'DB 인증 실패', output: 'Access denied / password authentication failed', cause: 'working/env/local-env.json이 예시 자격 증명 상태입니다.', fix: 'Git에 커밋하지 않는 로컬 값으로 교체하고 URL 인코딩도 확인합니다.' },
+      ]
+    );
+    return stepLayout(
+      intro('<b>AWS 배포:</b> guided 배포에서 Secret ARN, VPC, JWT 값을 입력하고 CloudFormation Output의 API URL과 CloudWatch 로그까지 확인합니다. 이 단계는 유효한 AWS 자격 증명과 실제 인프라가 필요합니다.'),
+      `${codeBlock('빌드와 guided 배포', `aws sts get-caller-identity\n./working/scripts/sam-deploy.sh ${target.scriptTarget}\n\n# 생성 스택\nstock-coin-trade-${target.scriptTarget}-practice`)}${codeBlock('Output·호출·로그', `API_URL="$(aws cloudformation describe-stacks \\\n  --stack-name stock-coin-trade-${target.scriptTarget}-practice \\\n  --query 'Stacks[0].Outputs[?OutputKey==\x60ApiUrl\x60].OutputValue' \\\n  --output text)"\n\n# JWT 보호 API는 Authorization 헤더 추가\ncurl --fail-with-body "$API_URL${target.testPath}"\nsam logs --stack-name stock-coin-trade-${target.scriptTarget}-practice \\\n  --name DatabasePracticeFunction --tail`)}`,
+      transcriptBlock('정상 배포 시 확인할 실행내역', `CloudFormation stack changeset\nCREATE_COMPLETE  AWS::Lambda::Function\nCREATE_COMPLETE  AWS::ApiGatewayV2::Api\nCREATE_COMPLETE  AWS::CloudFormation::Stack\n\nOutputs\nApiUrl  https://<api-id>.execute-api.<region>.amazonaws.com\n\n※ 이 저장소에서는 로컬 빌드·member DB/API 호출까지 실측했습니다. AWS 배포 완료로 오해하지 않도록 클라우드 결과는 기대 형태로 표시합니다.`),
+      [
+        { title: 'AWS 자격 증명 오류', output: 'Unable to locate credentials / InvalidClientTokenId', cause: '선택 profile의 access key 또는 세션 토큰이 없거나 만료됐습니다.', fix: 'aws sts get-caller-identity가 성공하는 profile/region으로 다시 실행합니다.' },
+        { title: 'CloudFormation 롤백', output: 'ROLLBACK_COMPLETE', cause: '필수 파라미터, IAM 권한, subnet/SG 또는 Secret ARN이 유효하지 않습니다.', fix: 'Events와 describe-stack-events를 확인하고 원인을 수정한 뒤 실패 스택을 정리하여 재배포합니다.' },
+        { title: 'API 401/403 또는 5xx', output: '401 Unauthorized / 503 Service Unavailable', cause: 'JWT issuer/audience 또는 Lambda→DB 네트워크/Secret이 맞지 않습니다.', fix: '401/403은 authorizer 설정을, 5xx는 sam logs와 Lambda timeout/VPC/DB 로그를 순서대로 확인합니다.' },
+      ]
+    );
   }
 
   function renderSteps() {

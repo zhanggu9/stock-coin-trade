@@ -1,9 +1,9 @@
 import json
 from sqlalchemy import create_engine
 from ohlcv_service import load_summary
-from secret_config import secret_values
+from secret_config import environment_values
 
-config = secret_values(("OHLCV_DATABASE_URL",), "OHLCV_SECRET_ARN")
+config = environment_values(("OHLCV_DATABASE_URL",))
 engine = create_engine(config["OHLCV_DATABASE_URL"], pool_pre_ping=True)
 
 

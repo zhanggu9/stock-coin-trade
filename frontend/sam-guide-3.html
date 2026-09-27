@@ -3,566 +3,240 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>SAM 활용 3 — AWS 배포와 운영 — EDUMGT</title>
+  <title>SAM 활용 3 — Docker DB 연동과 AWS 배포 — EDUMGT</title>
   <link rel="icon" href="/img/favicon.png">
   <link rel="stylesheet" href="/css/style.css?v=20260920-chart-f13">
   <link rel="stylesheet" href="/css/lambda-db-practice.css?v=20260927-split1-f13">
-  <link rel="stylesheet" href="/css/sam-guide.css?v=20260927-aws-verified">
+  <link rel="stylesheet" href="/css/sam-guide.css?v=20260927-direct-env-f14">
   <link rel="stylesheet" href="/css/tech-glossary.css?v=20260927-1-f13">
 </head>
 <body class="lambda-practice-body sam-guide-body">
   <div id="header-mount"></div>
   <main class="lambda-practice-shell">
     <section class="lambda-hero">
-      <div><span>SAM × STOCK-COIN-TRADE · AWS</span><h1>SAM 활용 3 — AWS 배포와 운영</h1><p>SAM 활용 1과 같은 STEP·실행 명령·오류 해결 구성으로, DB 모듈부터 Lambda·API Gateway·CloudFormation 배포와 검증까지 이어갑니다.</p></div>
-      <div class="lambda-hero-badge"><i class="fa-brands fa-aws" aria-hidden="true"></i><b>SAM 3 / 3</b><small>deploy → operate</small></div>
+      <div><span>SAM × LOCAL/EC2 DOCKER DATABASE</span><h1>SAM 활용 3 — 저장소 Docker DB를 Lambda·API Gateway에 연결</h1><p>이 저장소는 별도 RDS·ElastiCache를 만들지 않습니다. 로컬에서는 SAM 컨테이너가 Compose DB에 직접 붙고, AWS Lambda는 같은 VPC의 EC2 Docker 포트에 붙습니다. 배포값은 Secret ARN 목록이 아니라 커밋하지 않는 <code>working/env/lambda.env</code> 하나로 관리합니다.</p></div>
+      <div class="lambda-hero-badge"><i class="fa-brands fa-aws" aria-hidden="true"></i><b>SAM 3 / 3</b><small>Docker DB → API</small></div>
     </section>
 
-    <section class="lambda-boundary" aria-label="SAM 활용 3 흐름">
-      <div><b>실행 확인</b><span>자격증명 · 로컬 DB · validate/build</span></div><i>→</i>
-      <div><b>배포</b><span>sam deploy --guided --config-env &lt;target&gt;</span></div><i>→</i>
-      <div><b>검증</b><span>ApiUrl Output · curl · sam logs</span></div><i>→</i>
-      <div><b>운영</b><span>반복 배포 · 정리 · CI</span></div>
+    <section class="lambda-boundary" aria-label="연결 흐름">
+      <div><b>SAM local</b><span>Docker 서비스명 + Docker network</span></div><i>→</i>
+      <div><b>AWS Lambda</b><span>EC2 private IP/DNS + VPC</span></div><i>→</i>
+      <div><b>HTTP API</b><span>API Gateway 경로</span></div><i>→</i>
+      <div><b>검증</b><span>curl · logs · DB 응답</span></div>
     </section>
 
-    <section class="lambda-sam-guide" aria-labelledby="sam3-pre-title">
-      <header class="lambda-sam-head"><div><span>01 · PREREQUISITES</span><h2 id="sam3-pre-title">배포 전에 갖춰야 하는 것</h2></div></header>
-      <div class="lambda-sam-summary">
-        <article><b>AWS 자격증명·리전</b><p><code>samconfig.toml</code>은 모든 타깃을 <code>ap-northeast-2</code>로 고정합니다. 배포에 쓰는 IAM 주체는 CloudFormation, Lambda, API Gateway, IAM 역할 생성(<code>CAPABILITY_IAM</code>), S3 아티팩트 버킷, Secrets Manager 읽기, EC2 describe 권한이 필요합니다.</p></article>
-        <article><b>Secrets Manager secret</b><p>타깃마다 JSON 한 개. 템플릿은 값이 아니라 <b>ARN</b>만 파라미터로 받습니다. 실행 역할에는 <code>AWSSecretsManagerGetSecretValuePolicy</code>로 해당 ARN 읽기만 부여됩니다.</p></article>
-        <article><b>VPC · 보안 그룹 · 서브넷</b><p>DB가 private 서브넷에 있으면 Lambda도 같은 VPC의 private 서브넷 두 개 이상에 배치합니다. VPC 안의 Lambda는 인터넷이 없으므로 Secrets Manager <b>VPC Endpoint</b> 또는 NAT가 필요합니다.</p></article>
-      </div>
-      <div class="lambda-sam-details" style="margin-top:11px">
-        <article><div class="lambda-sam-section-title"><span>CHECK</span><h3>자격증명과 권한 빠른 점검</h3><p>IAM 역할 생성 권한이 없으면 <code>CAPABILITY_IAM</code> 배포가 <code>ROLLBACK_COMPLETE</code>로 끝납니다. 먼저 확인합니다.</p></div><section class="lambda-code"><header><span>aws cli</span><button type="button" data-copy-code>복사</button></header><pre><code>aws sts get-caller-identity
-aws configure get region                     # ap-northeast-2 권장
-
-# 기본 프로필이 만료됐다면 유효한 명명 프로필을 이 셸에 고정
-export AWS_PROFILE=sagemaker-admin
-export AWS_REGION=ap-northeast-2
-aws sts get-caller-identity
-
-# 배포 주체가 IAM 역할을 만들 수 있는지 (시뮬레이션)
-aws iam simulate-principal-policy \
-  --policy-source-arn "$(aws sts get-caller-identity --query Arn --output text)" \
-  --action-names cloudformation:CreateStack cloudformation:DeleteStack \
-    lambda:CreateFunction lambda:UpdateFunctionCode iam:CreateRole iam:PassRole \
-    apigateway:POST secretsmanager:CreateSecret ec2:CreateNetworkInterface \
-  --query 'EvaluationResults[].[EvalActionName,EvalDecision]' --output table</code></pre></section></article>
-        <article><div class="lambda-sam-section-title"><span>ENV FILE</span><h3>배포 입력값을 개인 env 파일에 모으기</h3><p><code>env/lambda.env.example</code>을 복사해 ARN·SG·서브넷·JWT 값을 채웁니다. 이 파일은 커밋하지 않습니다.</p></div><section class="lambda-code"><header><span>env/lambda.env</span><button type="button" data-copy-code>복사</button></header><pre><code>cd /home/ubuntu/stock-coin-trade/working
-cp env/lambda.env.example env/lambda.env
-echo 'working/env/lambda.env' &gt;&gt; ../.git/info/exclude
-
-# 이후 단계에서 채울 항목
-# QUANT_DB_SECRET_ARN=...   MEMBER_DB_SECRET_ARN=...
-# VPC_SECURITY_GROUP_IDS=sg-...   VPC_SUBNET_IDS=subnet-...,subnet-...
-# JWT_ISSUER=...            JWT_AUDIENCE=...</code></pre></section></article>
-      </div>
-      <div class="lambda-sam-details" style="margin-top:11px">
-        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>ACTUAL RUN · 2026-09-27 KST</span><h3>이 저장소와 AWS 계정에서 직접 확인한 결과</h3><p>예상 출력이 아니라 이 문서를 정리하면서 실행한 결과입니다. 계정 ID와 비밀값은 표시하지 않습니다. 기본 프로필은 만료됐고, 유효한 명명 프로필로 AWS 리소스를 읽기 전용 확인했습니다.</p></div><div class="sam-split"><div class="sam-split-code"><section class="lambda-code sam-transcript"><header><span>실행 기록</span></header><pre><code>$ sam --version
-SAM CLI, version 1.162.1
-$ docker version --format 'client={{.Client.Version}} server={{.Server.Version}}'
-client=29.4.3 server=29.4.3
-
-$ aws sts get-caller-identity
-InvalidClientTokenId                         # default 프로필은 만료
-$ aws sts get-caller-identity --profile sagemaker-admin
-Account=&lt;ACCOUNT_ID&gt;, Arn=...:user/sagemaker-admin
-
-$ working/scripts/sam-build.sh member         # 나머지 4개 타깃도 동일 실행
-... is a valid SAM Template
-Build Succeeded
-
-$ sam local invoke ... member
-{"statusCode": 200, "body": "{...member_id: 1...}"}
-$ curl http://127.0.0.1:3013/members/1
-HTTP 200
-$ curl http://127.0.0.1:3013/members/not-a-number
-HTTP 400</code></pre></section></div><aside class="sam-errors"><header><i>⚠</i> 실제 확인된 AWS 상태</header><div class="sam-err"><b>기본 프로필 토큰 무효</b><code>InvalidClientTokenId</code><p><span>원인</span>기본 shared credentials의 키가 만료되었거나 비활성화됨</p><p class="fix"><span>해결</span><code>--profile sagemaker-admin</code>처럼 유효한 프로필을 명시하거나 기본 자격증명을 갱신</p></div><div class="sam-err"><b>기존 mydbtest API는 HTTP 500</b><code>GET /prod/markets → 500
-GET /prod/markets/1 → 500</code><p><span>원인</span>기존 함수는 VPC가 없고 DB 환경변수를 직접 사용합니다. 로그 그룹도 없어 현재 500의 내부 원인을 CloudWatch에서 확인할 수 없음</p><p class="fix"><span>해결</span>이 문서의 Secret·로그·네트워크 절차로 별도 SAM 스택을 만든 뒤 200 응답까지 확인</p></div><div class="sam-err"><b>클라우드 배포 확인은 별도 단계</b><p><span>원인</span>로컬 200은 코드·DB 모듈·라우팅 검증이며 AWS 리소스 생성 성공을 의미하지 않음</p><p class="fix"><span>해결</span>STEP 3의 changeset 검토 후 배포하고 Outputs·API 호출·로그를 모두 확인해야 완료</p></div></aside></div></article>
-      </div>
-      <p class="lambda-sam-note"><b>보안 확인:</b> <code>aws configure list</code>는 자격증명 출처만 확인하고 키 원문을 출력하지 않습니다. 저장소의 <code>.env</code>, 셸 히스토리, HTML에는 액세스 키·DB 비밀번호·Secret 값을 남기지 않습니다.</p>
+    <section class="lambda-sam-guide" aria-labelledby="sam3-model">
+      <header class="lambda-sam-head"><div><span>00 · CONNECTION MODEL</span><h2 id="sam3-model">먼저 구분: 로컬 Docker 이름과 AWS Lambda 주소는 다릅니다</h2></div></header>
+      <table class="sam-table"><thead><tr><th>타깃</th><th>SAM local에서 사용할 주소</th><th>AWS Lambda에서 사용할 주소</th><th>현재 상태</th></tr></thead><tbody>
+        <tr><td>member · MariaDB</td><td><code>mariadb:3306</code><br><code>stock-coin-trade_internal</code></td><td><code>EC2_PRIVATE_IP:3306</code></td><td class="ok">Compose 서비스 있음</td></tr>
+        <tr><td>quant · PostgreSQL</td><td><code>postgres:5432</code><br><code>stock-coin-trade_internal</code></td><td><code>EC2_PRIVATE_IP:5432</code></td><td class="ok">Compose 서비스 있음</td></tr>
+        <tr><td>ohlcv · pg-stock</td><td><code>pg-stock:5432</code><br><code>postgresql_default</code></td><td><code>EC2_PRIVATE_IP:55432</code></td><td class="warn">외부 Docker 프로젝트 확인 필요</td></tr>
+        <tr><td>session · Redis</td><td><code>redis:6379</code><br><code>stock-coin-trade_internal</code></td><td><code>EC2_PRIVATE_IP:6379</code></td><td class="ok">Compose 서비스 있음</td></tr>
+        <tr><td>knowledge · Qdrant</td><td><code>qdrant:6333</code></td><td><code>EC2_PRIVATE_IP:6333</code></td><td class="warn">현재 <code>:memory:</code>이면 독립 서버가 아니므로 먼저 Qdrant 컨테이너 필요</td></tr>
+      </tbody></table>
+      <p class="lambda-sam-note"><b>핵심:</b> 개발 PC의 <code>mariadb</code> 같은 이름은 Docker 네트워크 내부 DNS입니다. AWS Lambda는 개발 PC 컨테이너에 접근할 수 없습니다. EC2 배포에서는 같은 VPC의 EC2 private IP/DNS와 EC2 호스트에 publish된 포트를 사용합니다.</p>
     </section>
 
-    <section class="lambda-sam-guide" aria-labelledby="sam3-walk-title">
-      <header class="lambda-sam-head"><div><span>02 · WALKTHROUGH</span><h2 id="sam3-walk-title">mydbtest 와 같은 Lambda + API Gateway 를 SAM 으로 만들기 (STEP 1~3)</h2></div><a href="/sam-guide-1.html">복습: SAM 활용 1</a></header>
-      <p class="lambda-sam-note"><b>기준 함수:</b> <code>arn:aws:lambda:ap-northeast-2:&lt;ACCOUNT_ID&gt;:function:mydbtest</code>. 실제 AWS CLI 조회 결과 런타임은 <code>python3.14</code>, 핸들러는 <code>handler.lambda_handler</code>, 메모리는 256 MB, 타임아웃은 15초, VPC 연결은 없고 REST API <code>mydbtest-rest-api</code>의 <code>/markets</code>·<code>/markets/{id}</code>가 Lambda proxy로 연결돼 있었습니다. 새 함수는 <code>mydbtest-sam</code>으로 분리해 기존 함수를 건드리지 않습니다.</p>
-      <p class="lambda-sam-note"><b>API 종류 차이:</b> 기존 것은 API Gateway v1 REST API이고 아래 SAM 예시는 v2 HTTP API입니다. Lambda proxy 동작은 같지만 API ID, CLI 명령(<code>aws apigateway</code> / <code>aws apigatewayv2</code>), JWT 설정 방식과 과금 기능이 다릅니다. 기존 REST API 자체를 그대로 재현하려면 이벤트 타입을 <code>Api</code>로 바꿉니다.</p>
-      <div class="lambda-sam-flow"><span><small>STEP 1</small><b>프로젝트 · 핸들러 코드</b></span><i>→</i><span><small>STEP 2</small><b>템플릿 · 빌드 · 로컬 호출</b></span><i>→</i><span><small>STEP 3</small><b>배포 · API 검증 · 정리</b></span></div>
-
+    <section class="lambda-sam-guide" aria-labelledby="sam3-env">
+      <header class="lambda-sam-head"><div><span>01 · ENVIRONMENT</span><h2 id="sam3-env">로컬 값과 AWS 배포값 준비</h2></div></header>
       <div class="lambda-sam-details">
-        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>STEP 1 · A</span><h3>프로젝트 폴더 만들기</h3><p><code>sam init</code> 없이 최소 구조를 직접 만듭니다. SAM 활용 1의 sam-app-01 과 같은 규칙(템플릿 루트 + CodeUri 폴더 + events)입니다.</p></div><div class="sam-split"><div class="sam-split-code"><section class="lambda-code"><header><span>layout</span><button type="button" data-copy-code>복사</button></header><pre><code>mkdir -p ~/mydbtest-sam/src ~/mydbtest-sam/events
-cd ~/mydbtest-sam
-printf 'pymysql==1.1.1\n' &gt; src/requirements.txt
-printf '{"rawPath":"/dbtest","requestContext":{"http":{"method":"GET"}},"queryStringParameters":{"table":"member"}}\n' &gt; events/get.json
+        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>STEP 1 · LOCAL</span><h3>루트 .env → SAM local JSON 자동 생성</h3><p>실제 비밀번호를 복사해 JSON에 반복해서 적지 않습니다. 스크립트가 루트 <code>.env</code>를 읽고 URL 인코딩하여 커밋 제외 파일을 만듭니다.</p></div><div class="sam-split"><div class="sam-split-code">
+          <section class="lambda-code"><header><span>repo 루트에서 실행</span><button type="button" data-copy-code>복사</button></header><pre><code>./working/scripts/prepare-local-env.sh
+python3 -m json.tool working/env/local-env.generated.json &gt;/dev/null
+git check-ignore -v working/env/local-env.generated.json
 
-find . -type f | sort
-# ./events/get.json
-# ./src/requirements.txt      ← 다음 블록에서 src/app.py, 그다음 template.yaml 추가</code></pre></section></div><aside class="sam-errors"><header><i>⚠</i> 발생할 수 있는 오류</header><div class="sam-err"><b>이벤트 JSON 오타</b><code>Error: Invalid value for '--event': ... is not valid JSON</code><p><span>원인</span>printf 로 만든 get.json 의 따옴표·중괄호 누락</p><p class="fix"><span>해결</span><code>python3 -m json.tool events/get.json</code> 으로 검증</p></div><div class="sam-err"><b>requirements 에 개행이 없음</b><p><span>원인</span>printf 에서 <code>\n</code> 을 빼면 한 줄에 붙어 pip 가 패키지를 못 찾음</p><p class="fix"><span>해결</span><code>cat -A src/requirements.txt</code> 로 줄 끝 <code>$</code> 확인</p></div></aside></div></article>
-        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>STEP 1 · B</span><h3>핸들러 src/app.py</h3><p>접속 정보는 환경변수(로컬) 또는 Secrets Manager JSON(AWS) 에서 읽습니다. 연결은 핸들러 밖에서 만들지 않고 매 호출 열고 닫아 DB 연결 테스트라는 목적에 맞춥니다. 비밀번호는 응답과 로그에 절대 넣지 않습니다.</p></div><div class="sam-split"><div class="sam-split-code"><section class="lambda-code"><header><span>src/app.py</span><button type="button" data-copy-code>복사</button></header><pre><code>import json, os, time
-import pymysql
+# 비밀값을 출력하지 않고 키만 확인
+python3 - &lt;&lt;'PY'
+import json
+x=json.load(open("working/env/local-env.generated.json"))
+print(sorted(x["DatabasePracticeFunction"]))
+PY</code></pre></section>
+          <section class="lambda-code sam-transcript"><header><span>생성 결과</span></header><pre><code>Generated: .../working/env/local-env.generated.json
+['DATABASE_URL', 'OHLCV_DATABASE_URL', 'QDRANT_API_KEY',
+ 'QDRANT_COLLECTION', 'QDRANT_URL', 'QUANT_DATABASE_URL',
+ 'REDIS_SESSION_KEY_PREFIX', 'REDIS_URL']</code></pre></section>
+        </div><aside class="sam-errors"><header><i>!</i> 예상 오류와 해결</header>
+          <div class="sam-err"><b>.env 값이 change-me</b><code>.env 필수 값 누락 또는 change-me 상태</code><p><span>원인</span>첫 설치용 예시값이 남아 있음</p><p class="fix"><span>해결</span>실제 Compose 컨테이너를 만들 때 사용한 값과 루트 .env를 맞춘 뒤 다시 생성</p></div>
+          <div class="sam-err"><b>한글 비밀번호로 PyMySQL 실패</b><code>UnicodeEncodeError: 'latin-1' codec...</code><p><span>원인</span><code>비밀번호</code>라는 문서 자리표시자를 실제 값처럼 사용</p><p class="fix"><span>해결</span>직접 JSON을 만들지 말고 <code>prepare-local-env.sh</code>로 재생성</p></div>
+        </aside></div></article>
 
-def _db_config():
-    keys = ("DB_HOST", "DB_PORT", "DB_USER", "DB_PASSWORD", "DB_NAME")
-    cfg = {k: os.environ.get(k) for k in keys}
-    if all(cfg.values()):                       # 로컬: env.json 으로 주입
-        return cfg
-    arn = os.environ.get("DB_SECRET_ARN")       # AWS: Secret JSON 에 같은 키
-    if not arn:
-        raise RuntimeError("DB_SECRET_ARN 또는 DB_* 환경변수가 필요합니다.")
-    import boto3
-    raw = boto3.client("secretsmanager").get_secret_value(SecretId=arn)["SecretString"]
-    return {k: json.loads(raw)[k] for k in keys}
+        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>STEP 1 · AWS</span><h3>lambda.env에 직접 접속 URL 입력</h3><p>이 파일에는 ARN을 적지 않습니다. EC2 private 주소를 넣고 URL 전체를 작은따옴표로 감쌉니다. <code>sam-deploy.sh</code>가 자동으로 읽습니다.</p></div><div class="sam-split"><div class="sam-split-code">
+          <section class="lambda-code"><header><span>working/env/lambda.env</span><button type="button" data-copy-code>복사</button></header><pre><code>cp working/env/lambda.env.example working/env/lambda.env
+chmod 600 working/env/lambda.env
 
-def _resp(status, body):
-    return {"statusCode": status, "headers": {"content-type": "application/json"},
-            "body": json.dumps(body, ensure_ascii=False, default=str)}
-
-def lambda_handler(event, context):
-    table = (event.get("queryStringParameters") or {}).get("table", "")
-    if table and not table.replace("_", "").isalnum():
-        return _resp(400, {"ok": False, "message": "table 이름이 올바르지 않습니다."})
-    cfg = _db_config()
-    started = time.perf_counter()
-    try:
-        conn = pymysql.connect(host=cfg["DB_HOST"], port=int(cfg["DB_PORT"]), user=cfg["DB_USER"],
-                               password=cfg["DB_PASSWORD"], database=cfg["DB_NAME"],
-                               connect_timeout=5, cursorclass=pymysql.cursors.DictCursor)
-    except pymysql.MySQLError as exc:
-        return _resp(503, {"ok": False, "message": "DB 연결 실패", "error": exc.args[0]})
-    try:
-        with conn.cursor() as cur:
-            cur.execute("SELECT VERSION() AS version, NOW() AS now, DATABASE() AS db")
-            info = cur.fetchone()
-            if table:
-                cur.execute(f"SELECT COUNT(*) AS cnt FROM `{table}`")
-                info["row_count"] = cur.fetchone()["cnt"]
-                info["table"] = table
-    finally:
-        conn.close()
-    info.update(ok=True, elapsed_ms=round((time.perf_counter() - started) * 1000, 1))
-    return _resp(200, info)</code></pre></section></div><aside class="sam-errors"><header><i>⚠</i> 발생할 수 있는 오류</header><div class="sam-err"><b>pymysql 모듈 없음</b><code>ModuleNotFoundError: No module named 'pymysql'</code><p><span>원인</span>requirements.txt 누락 또는 <code>sam build</code> 없이 소스 템플릿으로 호출</p><p class="fix"><span>해결</span><code>sam build --use-container</code> 후 <code>.aws-sam/build/</code> 템플릿으로 호출</p></div><div class="sam-err"><b>접속 정보 없음</b><code>RuntimeError: DB_SECRET_ARN 또는 DB_* 환경변수가 필요합니다.</code><p><span>원인</span>로컬 env.json 의 최상위 키가 함수 논리 ID(<code>MyDbTestFunction</code>)와 다르거나 --env-vars 를 안 넘김</p><p class="fix"><span>해결</span>env.json 키 이름 확인, <code>--env-vars env.json</code> 지정</p></div><div class="sam-err"><b>DB 에 닿지 못함 → 503</b><code>{"ok": false, "message": "DB 연결 실패", "error": 2003}</code><p><span>원인</span>호스트가 <code>127.0.0.1</code> 이거나 Docker 네트워크 미지정, DB 컨테이너 중지</p><p class="fix"><span>해결</span>호스트를 Compose 서비스명(<code>mariadb</code>)으로, <code>--docker-network stock-coin-trade_internal</code> 지정</p></div><div class="sam-err"><b>인증 실패 → 503</b><code>"error": 1045   # Access denied for user</code><p><span>원인</span>DB_USER/DB_PASSWORD 가 .env 의 계정과 다름</p><p class="fix"><span>해결</span>env.json 값을 <code>.env</code> 의 MARIADB_USER/PASSWORD 와 맞춤</p></div><div class="sam-err"><b>DB 이름 오류 → 503</b><code>"error": 1049   # Unknown database</code><p><span>원인</span>DB_NAME 오타</p><p class="fix"><span>해결</span><code>docker exec crypto-mock-mariadb mysql -e "SHOW DATABASES"</code> 로 확인</p></div></aside></div></article>
+LAMBDA_MEMBER_DATABASE_URL='mysql+pymysql://USER:ENCODED_PASSWORD@10.0.1.10:3306/mockinv'
+LAMBDA_QUANT_DATABASE_URL='postgresql+psycopg://USER:ENCODED_PASSWORD@10.0.1.10:5432/quant_research'
+LAMBDA_OHLCV_DATABASE_URL='postgresql+psycopg://USER:ENCODED_PASSWORD@10.0.1.10:55432/admin'
+LAMBDA_REDIS_URL='redis://10.0.1.10:6379/0'
+LAMBDA_QDRANT_URL='http://10.0.1.10:6333'
+LAMBDA_QDRANT_API_KEY=''
+VPC_SECURITY_GROUP_IDS='sg-lambda-id'
+VPC_SUBNET_IDS='subnet-private-a,subnet-private-b'
+JWT_ISSUER='https://cognito-idp.ap-northeast-2.amazonaws.com/POOL_ID'
+JWT_AUDIENCE='APP_CLIENT_ID'</code></pre></section>
+        </div><aside class="sam-errors"><header><i>!</i> lambda.env 작성 규칙</header>
+          <div class="sam-err"><b>EC2 주소 선택</b><code>10.x.x.x 또는 private DNS</code><p><span>원인</span>Lambda와 EC2가 같은 VPC이므로 public 도메인보다 private 경로가 단순하고 안전함</p><p class="fix"><span>해결</span><code>aws ec2 describe-instances</code>에서 PrivateIpAddress 확인</p></div>
+          <div class="sam-err"><b>URL 특수문자</b><code>@ : / # %</code><p><span>원인</span>비밀번호의 특수문자가 URL 구분자로 해석됨</p><p class="fix"><span>해결</span><code>python3 -c 'import urllib.parse; print(urllib.parse.quote_plus(input()))'</code>로 비밀번호만 인코딩</p></div>
+          <div class="sam-err"><b>보안 범위</b><p><span>원인</span><code>NoEcho</code>는 CloudFormation 출력만 가리며 Lambda 환경변수 읽기 권한 보유자는 값을 볼 수 있음</p><p class="fix"><span>해결</span>lambda.env를 커밋하지 않고 IAM의 함수 구성 조회 권한을 최소화</p></div>
+        </aside></div></article>
       </div>
+    </section>
 
-      <div class="lambda-sam-details" style="margin-top:11px">
-        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>STEP 2 · A</span><h3>template.yaml — Lambda + HTTP API + Secret + VPC</h3><p>기존 mydbtest 가 콘솔에서 눌러 만든 함수·트리거·역할·VPC 설정을 한 파일에 선언합니다. <code>FunctionName</code> 을 고정해 ARN 이 <code>…:function:mydbtest-sam</code> 이 되게 합니다.</p></div><div class="sam-split"><div class="sam-split-code"><section class="lambda-code"><header><span>template.yaml</span><button type="button" data-copy-code>복사</button></header><pre><code>AWSTemplateFormatVersion: '2010-09-09'
-Transform: AWS::Serverless-2016-10-31
-Description: mydbtest 와 같은 DB 연결 테스트 Lambda + HTTP API (SAM 버전)
+    <section class="lambda-sam-guide" aria-labelledby="sam3-local">
+      <header class="lambda-sam-head"><div><span>02 · BUILD · LOCAL</span><h2 id="sam3-local">Docker DB를 붙여 validate → build → invoke</h2></div></header>
+      <div class="lambda-sam-details">
+        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>STEP 2</span><h3>타깃별 스크립트 실행</h3><p>스크립트가 환경 JSON 생성, Docker network 확인, 빌드 결과 선택까지 수행합니다.</p></div><div class="sam-split"><div class="sam-split-code">
+          <section class="lambda-code"><header><span>member 예시</span><button type="button" data-copy-code>복사</button></header><pre><code>docker compose --profile local-db up -d mariadb postgres
+docker compose up -d redis
 
-Parameters:
-  DbSecretArn:
+./working/scripts/preflight-check.sh
+./working/scripts/sam-build.sh member
+./working/scripts/sam-local-invoke.sh member
+
+# HTTP 경로 검증: 터미널 1
+./working/scripts/sam-local-start-api.sh member 3013
+# 터미널 2
+curl -i http://127.0.0.1:3013/members/1
+curl -i http://127.0.0.1:3013/members/not-a-number</code></pre></section>
+          <section class="lambda-code sam-transcript"><header><span>이 저장소에서 확인한 member 결과</span></header><pre><code>Build Succeeded
+HTTP/1.1 200 OK
+{"member_id":1,"username":"이코인","email":"jj@jj.com","asset":98190003}
+
+HTTP/1.1 400 BAD REQUEST
+{"message":"member_id가 필요합니다."}</code></pre></section>
+        </div><aside class="sam-errors"><header><i>!</i> 예상 오류와 해결</header>
+          <div class="sam-err"><b>Docker network 없음</b><code>Docker network not found</code><p><span>원인</span>Compose DB가 실행되지 않음</p><p class="fix"><span>해결</span>위 <code>docker compose up</code> 실행 후 <code>docker network ls</code> 확인</p></div>
+          <div class="sam-err"><b>Docker Desktop 포트 500</b><code>ports are not available ... /forwards/expose ... 500</code><p><span>원인</span>WSL2 Docker Desktop의 SAM Runtime 임시 포트 전달 오류이며 DB 코드 오류가 아님</p><p class="fix"><span>해결</span>스크립트는 <code>--container-host-interface 0.0.0.0</code>을 적용합니다. 반복되면 실행 중인 작업을 확인한 뒤 Docker Desktop/WSL을 재시작하고 다시 호출합니다.</p></div>
+          <div class="sam-err"><b>knowledge 연결 실패</b><code>qdrant:6333 connection refused</code><p><span>원인</span>현재 <code>QDRANT_URL=:memory:</code>는 백엔드 프로세스 내부 저장소이며 독립 서버가 아님</p><p class="fix"><span>해결</span>Qdrant 컨테이너를 Compose에 추가하기 전에는 knowledge Lambda 검증 대상에서 제외</p></div>
+        </aside></div></article>
+      </div>
+    </section>
+
+    <section class="lambda-sam-guide" aria-labelledby="sam3-template">
+      <header class="lambda-sam-head"><div><span>03 · TEMPLATE</span><h2 id="sam3-template">직접 환경변수 방식의 SAM 템플릿</h2></div></header>
+      <div class="lambda-sam-details"><article class="sam-step-wide"><div class="lambda-sam-section-title"><span>STEP 3</span><h3>Secret 정책 없이 URL Parameter → Lambda Environment</h3><p>다섯 템플릿 모두 같은 패턴입니다. DB 서버는 만들지 않고 기존 EC2 Docker에 접속합니다.</p></div><div class="sam-split"><div class="sam-split-code">
+        <section class="lambda-code"><header><span>template/template-member.yaml 핵심</span><button type="button" data-copy-code>복사</button></header><pre><code>Parameters:
+  DatabaseUrl:
     Type: String
-    Description: DB_HOST/DB_PORT/DB_USER/DB_PASSWORD/DB_NAME 키를 가진 Secret ARN
+    NoEcho: true
   VpcSecurityGroupIds:
     Type: List&lt;AWS::EC2::SecurityGroup::Id&gt;
   VpcSubnetIds:
     Type: List&lt;AWS::EC2::Subnet::Id&gt;
 
 Resources:
-  MyDbTestFunction:
+  DatabasePracticeFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: mydbtest-sam            # 기존 mydbtest 와 구분
-      CodeUri: src/
-      Handler: app.lambda_handler
-      Runtime: python3.12                   # 기존 함수 런타임에 맞춤 (STEP 3 에서 확인)
-      Architectures: [x86_64]
-      Timeout: 10
-      MemorySize: 256
+      CodeUri: ../lambda/member/
+      Handler: lambda_member.lambda_handler
+      Runtime: python3.11
       Environment:
         Variables:
-          DB_SECRET_ARN: !Ref DbSecretArn   # 값이 아니라 ARN 만
-          # sam local은 선언된 변수만 env.json으로 덮어쓸 수 있다.
-          # AWS에서는 빈 값이므로 코드가 DB_SECRET_ARN을 사용한다.
-          DB_HOST: ''
-          DB_PORT: ''
-          DB_USER: ''
-          DB_PASSWORD: ''
-          DB_NAME: ''
-      Policies:
-        - AWSSecretsManagerGetSecretValuePolicy:
-            SecretArn: !Ref DbSecretArn
-      VpcConfig:                            # DB 가 private 이면 필수
+          DATABASE_URL: !Ref DatabaseUrl
+      VpcConfig:
         SecurityGroupIds: !Ref VpcSecurityGroupIds
         SubnetIds: !Ref VpcSubnetIds
       Events:
-        DbTest:
-          Type: HttpApi                     # API Gateway v2 (HTTP API)
+        Api:
+          Type: HttpApi
           Properties:
-            Path: /dbtest
-            Method: GET
-
-Outputs:
-  ApiUrl:
-    Value: !Sub 'https://${ServerlessHttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/dbtest'
-  FunctionArn:
-    Value: !GetAtt MyDbTestFunction.Arn     # arn:aws:lambda:ap-northeast-2:&lt;ACCOUNT_ID&gt;:function:mydbtest-sam</code></pre></section></div><aside class="sam-errors"><header><i>⚠</i> 발생할 수 있는 오류</header><div class="sam-err"><b>지원하지 않는 Runtime</b><code>E2531 Runtime 'python3.14' ... deprecated/unsupported</code><p><span>원인</span>SAM CLI/cfn-lint 버전이 오래돼 신규 런타임을 모르거나, 실제로 지원 종료된 버전</p><p class="fix"><span>해결</span>SAM CLI 업그레이드 또는 기존 mydbtest 와 같은 지원 런타임으로 변경</p></div><div class="sam-err"><b>Output 의 ServerlessHttpApi 참조 실패</b><code>Error: ... Unresolved resource dependencies [ServerlessHttpApi]</code><p><span>원인</span>HttpApi 이벤트에 <code>ApiId</code> 로 별도 API 를 지정하면 암묵적 <code>ServerlessHttpApi</code> 가 만들어지지 않음</p><p class="fix"><span>해결</span>암묵 API 를 쓰거나(현재 템플릿) Output 을 지정한 API 논리 ID 로 변경</p></div><div class="sam-err"><b>함수 이름 충돌 (배포 시)</b><code>Function mydbtest-sam already exists in stack ...</code><p><span>원인</span>같은 FunctionName 이 다른 스택에 이미 있음</p><p class="fix"><span>해결</span>FunctionName 변경 또는 기존 스택 삭제</p></div><div class="sam-err"><b>파라미터 타입 오류 (배포 시)</b><code>Parameter validation failed: parameter value ... for parameter name VpcSubnetIds does not exist</code><p><span>원인</span><code>List&lt;AWS::EC2::Subnet::Id&gt;</code> 타입은 실제 존재하는 ID 만 허용</p><p class="fix"><span>해결</span>STEP 3·A 에서 조회한 실제 서브넷/SG ID 입력, 리전 일치 확인</p></div></aside></div></article>
-        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>STEP 2 · B</span><h3>검증 · 빌드 · 로컬 호출</h3><p>로컬에서는 Secret 대신 <code>env.json</code> 으로 <code>DB_*</code> 를 넣고, 저장소의 Compose MariaDB(<code>mariadb</code> 서비스명)에 Docker 네트워크로 붙습니다. 이 파일은 커밋하지 않습니다.</p></div><div class="sam-split"><div class="sam-split-code"><section class="lambda-code"><header><span>validate → build → invoke</span><button type="button" data-copy-code>복사</button></header><pre><code>cd ~/mydbtest-sam
-sam validate --lint
-sam build --use-container            # pymysql 을 Lambda 유사 이미지에서 설치
-
-cat &gt; env.json &lt;&lt;'JSON'
-{"MyDbTestFunction":{"DB_HOST":"mariadb","DB_PORT":"3306","DB_USER":"mockinv","DB_PASSWORD":"비밀번호","DB_NAME":"mockinv"}}
-JSON
-
-# 단일 호출
-sam local invoke MyDbTestFunction --event events/get.json \
-  --env-vars env.json --docker-network stock-coin-trade_internal
-# {"statusCode": 200, "body": "{\"version\": \"11.4.x-MariaDB\", \"now\": ..., \"db\": \"mockinv\", \"row_count\": 12, \"table\": \"member\", \"ok\": true, \"elapsed_ms\": 14.2}"}
-
-# 로컬 API (터미널 1 / 2)
-sam local start-api --env-vars env.json --docker-network stock-coin-trade_internal --port 3005
-curl -s 'http://127.0.0.1:3005/dbtest?table=member' | python3 -m json.tool
-curl -s -o /dev/null -w '%{http_code}\n' 'http://127.0.0.1:3005/dbtest?table=member;drop'   # 400
-# 잘못된 비밀번호로 env.json 을 바꿔 503 분기도 확인</code></pre></section></div><aside class="sam-errors"><header><i>⚠</i> 발생할 수 있는 오류</header><div class="sam-err"><b>Docker 네트워크 없음</b><code>Error: ... network stock-coin-trade_internal not found</code><p><span>원인</span>저장소 Compose 스택이 내려가 있음</p><p class="fix"><span>해결</span>저장소 루트에서 <code>docker compose up -d mariadb</code> 후 재시도</p></div><div class="sam-err"><b>Runtime 과 로컬 Python 불일치</b><code>Error: PythonPipBuilder:Validation - Binary validation failed for python ... runtime: python3.12</code><p><span>원인</span>컨테이너 없이 빌드하면 로컬 Python 버전이 Runtime 과 같아야 함</p><p class="fix"><span>해결</span><code>sam build --use-container</code> 사용 (SAM 활용 1 STEP 3 참고)</p></div><div class="sam-err"><b>400 이 아니라 200 이 나옴</b><p><span>원인</span>table 검증 정규식을 잘못 고쳐 <code>;</code> 가 통과</p><p class="fix"><span>해결</span><code>table.replace("_","").isalnum()</code> 조건 유지, 테스트 <code>?table=member;drop</code> 재실행</p></div><div class="sam-err"><b>start-api 포트 충돌</b><code>OSError: [Errno 98] Address already in use</code><p><span>원인</span>3005 포트를 다른 sam local 이 쓰는 중</p><p class="fix"><span>해결</span>이전 터미널을 종료하거나 <code>--port</code> 변경</p></div></aside></div></article>
-      </div>
-
-      <div class="lambda-sam-details" style="margin-top:11px">
-        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>STEP 3 · A</span><h3>기존 mydbtest 설정 읽어 맞추기 → Secret 준비</h3><p>배포 전에 기존 함수의 런타임·타임아웃·VPC·환경변수 키를 읽어 템플릿과 Secret JSON 을 같은 값으로 맞춥니다. 값(비밀번호)은 출력하지 않고 키만 확인합니다.</p></div><div class="sam-split"><div class="sam-split-code"><section class="lambda-code"><header><span>compare + secret</span><button type="button" data-copy-code>복사</button></header><pre><code>aws lambda get-function-configuration --function-name mydbtest --region ap-northeast-2 \
-  --query '{Runtime:Runtime,Handler:Handler,Timeout:Timeout,Memory:MemorySize,Subnets:VpcConfig.SubnetIds,SGs:VpcConfig.SecurityGroupIds,EnvKeys:keys(Environment.Variables)}'
-# → Runtime 이 다르면 template.yaml 의 Runtime 수정, Subnets/SGs 는 guided 입력값으로 재사용
-
-# 기존 함수에 붙은 API Gateway 확인 (있으면 경로·메서드를 같게)
-aws apigatewayv2 get-apis --query 'Items[].[Name,ApiId,ApiEndpoint]' --output table
-
-# Secret 생성 (파일에서 읽고 즉시 삭제)
-umask 077
-cat &gt; /tmp/mydbtest.json &lt;&lt;'JSON'
-{"DB_HOST":"db-endpoint","DB_PORT":"3306","DB_USER":"USER","DB_PASSWORD":"PW","DB_NAME":"mockinv"}
-JSON
-DB_SECRET_ARN=$(aws secretsmanager create-secret --name mydbtest-sam/db \
-  --secret-string file:///tmp/mydbtest.json --query ARN --output text)
-rm -f /tmp/mydbtest.json</code></pre></section></div><aside class="sam-errors"><header><i>⚠</i> 발생할 수 있는 오류</header><div class="sam-err"><b>AWS 자격증명 없음/만료</b><code>An error occurred (InvalidClientTokenId) ... The security token included in the request is invalid.</code><p><span>원인</span><code>aws configure</code> 미설정 또는 임시 토큰 만료</p><p class="fix"><span>해결</span><code>aws configure</code> 로 키·리전 설정 후 <code>aws sts get-caller-identity</code> 로 확인</p></div><div class="sam-err"><b>기존 함수를 찾지 못함</b><code>An error occurred (ResourceNotFoundException) ... Function not found: arn:aws:lambda:ap-northeast-2:...:function:mydbtest</code><p><span>원인</span>리전이 다르거나 함수명 오타, 다른 계정 자격증명</p><p class="fix"><span>해결</span><code>--region ap-northeast-2</code> 명시, <code>aws lambda list-functions --query "Functions[].FunctionName"</code> 로 이름 확인</p></div><div class="sam-err"><b>Secret 이름 중복</b><code>An error occurred (ResourceExistsException) ... The operation failed because the secret mydbtest-sam/db already exists.</code><p><span>원인</span>같은 이름으로 이미 만들었거나 삭제 대기(복구 기간) 중</p><p class="fix"><span>해결</span>값 갱신은 <code>put-secret-value</code>, 새로 만들려면 다른 이름 또는 <code>--force-delete-without-recovery</code> 후 재생성</p></div><div class="sam-err"><b>권한 부족</b><code>An error occurred (AccessDeniedException) ... is not authorized to perform: secretsmanager:CreateSecret</code><p><span>원인</span>배포 주체 IAM 정책에 Secrets Manager 권한 없음</p><p class="fix"><span>해결</span>01 의 <code>simulate-principal-policy</code> 로 확인 후 관리자에게 권한 요청</p></div></aside></div></article>
-        <article class="sam-step-wide"><div class="lambda-sam-section-title"><span>STEP 3 · B</span><h3>배포 → API 검증 → 로그 → 정리</h3><p>첫 배포는 guided 로 파라미터를 <code>samconfig.toml</code> 에 저장하고, 이후는 <code>sam deploy</code> 만 반복합니다. 완료 기준은 ApiUrl 로 200 / 400 을 받고 <code>FunctionArn</code> 이 기대한 이름인 것입니다.</p></div><div class="sam-split"><div class="sam-split-code"><section class="lambda-code"><header><span>deploy → verify → delete</span><button type="button" data-copy-code>복사</button></header><pre><code>sam deploy --guided --stack-name mydbtest-sam --region ap-northeast-2
-#  Parameter DbSecretArn:          $DB_SECRET_ARN
-#  Parameter VpcSecurityGroupIds:  sg-...            ← STEP 3·A 에서 읽은 값
-#  Parameter VpcSubnetIds:         subnet-a,subnet-b
-#  MyDbTestFunction has no authentication. Is this okay? y   ← 테스트 함수이므로 허용 (운영이면 06 의 JWT)
-
-API_URL=$(aws cloudformation describe-stacks --stack-name mydbtest-sam \
-  --query 'Stacks[0].Outputs[?OutputKey==`ApiUrl`].OutputValue' --output text)
-aws cloudformation describe-stacks --stack-name mydbtest-sam \
-  --query 'Stacks[0].Outputs[?OutputKey==`FunctionArn`].OutputValue' --output text
-# arn:aws:lambda:ap-northeast-2:&lt;ACCOUNT_ID&gt;:function:mydbtest-sam
-
-curl -s "$API_URL?table=member" | python3 -m json.tool                        # 200
-curl -s -o /dev/null -w '%{http_code}\n' "$API_URL?table=bad;name"            # 400
-sam logs --stack-name mydbtest-sam --name MyDbTestFunction --tail            # 503 이면 SG/서브넷/Secret 확인
-
-# 코드 수정 후 반복
-sam build --use-container &amp;&amp; sam deploy
-
-# 정리
-sam delete --stack-name mydbtest-sam --no-prompts
-aws secretsmanager delete-secret --secret-id "$DB_SECRET_ARN" --recovery-window-in-days 7</code></pre></section></div><aside class="sam-errors"><header><i>⚠</i> 발생할 수 있는 오류</header><div class="sam-err"><b>IAM 역할 생성 권한 필요</b><code>Error: Failed to create changeset ... Requires capabilities : [CAPABILITY_IAM]</code><p><span>원인</span>guided 질문 "Allow SAM CLI IAM role creation" 에 N 을 답했거나 --capabilities 누락</p><p class="fix"><span>해결</span>질문에 Y, 또는 <code>--capabilities CAPABILITY_IAM</code> 추가</p></div><div class="sam-err"><b>스택이 ROLLBACK_COMPLETE 로 남음</b><code>Error: Failed to create/update the stack: mydbtest-sam, ... is in ROLLBACK_COMPLETE state and can not be updated.</code><p><span>원인</span>첫 배포가 실패(권한·잘못된 서브넷/SG·Secret ARN 오타)하면 스택이 재사용 불가 상태로 남음</p><p class="fix"><span>해결</span><code>describe-stack-events</code> 로 CREATE_FAILED 원인 확인 → <code>aws cloudformation delete-stack</code> → 원인 수정 후 재배포</p></div><div class="sam-err"><b>서브넷·SG 가 다른 VPC</b><code>Resource handler returned message: "The security group sg-... does not exist in VPC vpc-..."</code><p><span>원인</span>SG 와 서브넷을 서로 다른 VPC 에서 골라 옴</p><p class="fix"><span>해결</span>STEP 3·A 조회값을 같은 VPC 기준으로 다시 선택</p></div><div class="sam-err"><b>호출은 되는데 Task timed out</b><code>Task timed out after 10.00 seconds</code><p><span>원인</span>VPC 안의 Lambda 가 Secrets Manager/DB 에 닿지 못함 (엔드포인트·NAT·SG 인바운드 없음)</p><p class="fix"><span>해결</span>04 VPC·NETWORK 절차: DB SG 에 Lambda SG 인바운드, Secrets Manager VPC Endpoint 생성</p></div><div class="sam-err"><b>배포는 성공, 503 응답</b><code>{"ok": false, "message": "DB 연결 실패", "error": 2003}</code><p><span>원인</span>Secret 의 DB_HOST 가 사설 IP/엔드포인트가 아니거나 DB 가 외부 접속을 막음</p><p class="fix"><span>해결</span>Secret 값 수정(<code>put-secret-value</code>) → 다음 호출부터 반영. 이 저장소의 EC2 Docker DB 는 <code>DB_EXTERNAL_ALLOWED_CIDR</code> 확인</p></div><div class="sam-err"><b>삭제 후에도 비용 발생</b><p><span>원인</span><code>sam delete</code> 는 스택 밖 리소스(Secret, VPC Endpoint)를 지우지 않음</p><p class="fix"><span>해결</span>08 의 정리 명령으로 Secret·엔드포인트 별도 삭제</p></div></aside></div></article>
-      </div>
-      <div class="lambda-server-result"><h3>STEP 별 완료 기준</h3><span><b>STEP 1</b> src/app.py · requirements · events 준비</span><span><b>STEP 2</b> validate 통과, local invoke 200 · 400 · 503</span><span><b>STEP 3</b> FunctionArn = …:function:mydbtest-sam, ApiUrl 200, sam delete 완료</span><p>기존 mydbtest 와 차이가 있다면 대부분 런타임 버전, VPC 서브넷, 환경변수 키 이름입니다. STEP 3·A 의 조회 결과를 템플릿에 반영한 뒤 재배포하면 같은 기능의 함수가 코드로 관리됩니다.</p></div>
-      <table class="sam-table" aria-label="SAM 구현 범위 판정">
-        <thead><tr><th>항목</th><th>SAM 배포 시</th><th>현재 검증</th><th>판정</th></tr></thead>
-        <tbody>
-          <tr><td>Python DB 연동 모듈·의존성</td><td><code>CodeUri</code>와 <code>requirements.txt</code>를 Lambda ZIP에 포함</td><td>5개 타깃 컨테이너 빌드 성공, member 실제 MariaDB 조회 200</td><td class="ok">구현됨</td></tr>
-          <tr><td>Lambda·실행 역할</td><td><code>AWS::Serverless::Function</code>과 최소 Secret 읽기 정책 생성</td><td><code>sam validate --lint</code> 통과</td><td class="ok">템플릿 구현됨</td></tr>
-          <tr><td>API Gateway HTTP API</td><td><code>Events: Type: HttpApi</code>가 API·route·integration·invoke permission 생성</td><td><code>sam local start-api</code>에서 200·400 확인</td><td class="ok">구현됨</td></tr>
-          <tr><td>MariaDB·PostgreSQL·Redis·Qdrant 서버와 스키마</td><td>현재 템플릿은 생성하지 않고 URL/ARN으로 기존 저장소에 접속</td><td>로컬 member DB만 연결 확인</td><td class="warn">별도 준비</td></tr>
-          <tr><td>Secret 값·VPC·SG·서브넷</td><td>Secret ARN과 기존 네트워크 ID를 파라미터로 받음</td><td>AWS CLI 조회·권한 확인 완료, 새 리소스 생성 전</td><td class="warn">입력 필요</td></tr>
-          <tr><td>AWS 공개 URL 종단간 200</td><td><code>sam deploy</code> 후 Outputs URL로 확인</td><td>기존 mydbtest REST API는 현재 500, 새 SAM 스택은 아직 미생성</td><td class="warn">STEP 3 필요</td></tr>
-        </tbody>
-      </table>
-      <p class="lambda-sam-note"><b>결론:</b> 이 코드 방식은 DB 클라이언트 모듈, Lambda, IAM 역할, API Gateway 연결까지 구현합니다. 그러나 데이터베이스 서버·스키마와 네트워크 자체를 만들지는 않습니다. 실제 운영 완료 조건은 도달 가능한 DB, Secret, VPC/SG를 준비하고 새 스택의 API URL에서 200을 확인하는 것입니다.</p>
+            Path: /members/{member_id}
+            Method: GET</code></pre></section>
+      </div><aside class="sam-errors"><header><i>!</i> 구현 범위</header>
+        <div class="sam-err"><b>SAM이 만드는 것</b><p><span>해결</span>Lambda 함수, 실행 역할, API Gateway HTTP API, 호출 권한, VPC 연결</p></div>
+        <div class="sam-err"><b>SAM이 만들지 않는 것</b><p><span>원인</span>MariaDB/PostgreSQL/Redis/Qdrant 컨테이너와 데이터는 기존 EC2 Compose 소유</p><p class="fix"><span>해결</span>EC2 Docker 상태·볼륨·백업은 기존 운영 절차로 관리</p></div>
+      </aside></div></article></div>
     </section>
 
-    <section class="lambda-sam-guide" aria-labelledby="sam3-secret-title">
-      <header class="lambda-sam-head"><div><span>03 · SECRETS MANAGER</span><h2 id="sam3-secret-title">타깃별 Secret 만들기</h2></div><a href="/learning/aws-ssm-key-management.html">참고: 키 적재·연결 가이드</a></header>
-      <table class="sam-table">
-        <thead><tr><th>타깃</th><th>템플릿 파라미터</th><th>Secret JSON 키</th><th>값 예시 (AWS 쪽 엔드포인트)</th></tr></thead>
-        <tbody>
-          <tr><td><b>member</b></td><td><code>DatabaseSecretArn</code></td><td><code>DATABASE_URL</code></td><td><code>mysql+pymysql://USER:PW@rds-endpoint:3306/mockinv</code></td></tr>
-          <tr><td><b>quant</b></td><td><code>QuantSecretArn</code></td><td><code>QUANT_DATABASE_URL</code></td><td><code>postgresql+psycopg://USER:PW@rds-endpoint:5432/quant_research</code></td></tr>
-          <tr><td><b>ohlcv</b></td><td><code>OhlcvSecretArn</code></td><td><code>OHLCV_DATABASE_URL</code></td><td><code>postgresql+psycopg://USER:PW@rds-endpoint:5432/admin</code></td></tr>
-          <tr><td><b>session</b></td><td><code>RedisSecretArn</code></td><td><code>REDIS_URL</code></td><td><code>rediss://elasticache-endpoint:6379/0</code></td></tr>
-          <tr><td><b>knowledge</b></td><td><code>QdrantSecretArn</code></td><td><code>QDRANT_URL</code>, <code>QDRANT_API_KEY</code></td><td><code>https://qdrant-endpoint</code> + API Key</td></tr>
-        </tbody>
-      </table>
+    <section class="lambda-sam-guide" aria-labelledby="sam3-network">
+      <header class="lambda-sam-head"><div><span>04 · EC2 NETWORK</span><h2 id="sam3-network">Lambda → EC2 Docker 포트 열기</h2></div></header>
       <div class="lambda-sam-details">
-        <article><div class="lambda-sam-section-title"><span>CREATE</span><h3>secret 생성과 ARN 저장</h3><p>비밀번호를 셸 히스토리에 남기지 않도록 파일에서 읽어 넣고, 파일은 바로 지웁니다. 생성 결과의 ARN을 <code>env/lambda.env</code>에 기록합니다.</p></div><section class="lambda-code"><header><span>quant 예시</span><button type="button" data-copy-code>복사</button></header><pre><code>umask 077
-cat &gt; /tmp/quant-secret.json &lt;&lt;'JSON'
-{"QUANT_DATABASE_URL":"postgresql+psycopg://USER:PW@rds-endpoint:5432/quant_research"}
-JSON
+        <article><div class="lambda-sam-section-title"><span>EC2</span><h3>컨테이너 포트 publish 확인</h3></div><section class="lambda-code"><header><span>EC2에서 실행</span><button type="button" data-copy-code>복사</button></header><pre><code># .env
+DB_EXTERNAL_BIND=0.0.0.0
+MARIADB_EXTERNAL_PORT=3306
+QUANT_EXTERNAL_PORT=5432
+OHLCV_EXTERNAL_PORT=55432
+REDIS_EXTERNAL_PORT=6379
+QDRANT_EXTERNAL_PORT=6333
 
-aws secretsmanager create-secret \
-  --name stock-coin-trade/quant-db \
-  --description "quant Lambda 읽기 전용 DB URL" \
-  --secret-string file:///tmp/quant-secret.json \
-  --query ARN --output text
-rm -f /tmp/quant-secret.json
-# arn:aws:secretsmanager:ap-northeast-2:123456789012:secret:stock-coin-trade/quant-db-AbCdEf
-#  → env/lambda.env 의 QUANT_DB_SECRET_ARN 에 기록</code></pre></section></article>
-        <article><div class="lambda-sam-section-title"><span>VERIFY</span><h3>키 이름이 코드와 같은지 확인</h3><p><code>secret_config.py</code>는 JSON 키가 없으면 <code>Secret JSON 키 누락</code>으로 즉시 실패합니다. 배포 전에 키 이름만 확인합니다(값은 출력하지 않음).</p></div><section class="lambda-code"><header><span>키만 확인</span><button type="button" data-copy-code>복사</button></header><pre><code>source env/lambda.env
-aws secretsmanager get-secret-value --secret-id "$QUANT_DB_SECRET_ARN" \
-  --query SecretString --output text | python3 -c 'import sys,json; print(list(json.load(sys.stdin)))'
-# ['QUANT_DATABASE_URL']
-
-# 값 교체는 put-secret-value (템플릿 재배포 불필요, 다음 cold start 부터 반영)
-# aws secretsmanager put-secret-value --secret-id "$QUANT_DB_SECRET_ARN" --secret-string file:///tmp/new.json</code></pre></section></article>
+docker compose ps
+ss -lnt | grep -E ':(3306|5432|55432|6379|6333)\b'</code></pre></section></article>
+        <article><div class="lambda-sam-section-title"><span>SECURITY GROUP</span><h3>인터넷 전체가 아니라 Lambda SG만 허용</h3></div><section class="lambda-code"><header><span>AWS CLI 예시</span><button type="button" data-copy-code>복사</button></header><pre><code>EC2_SG=sg-ec2-id
+LAMBDA_SG=sg-lambda-id
+for port in 3306 5432 55432 6379 6333; do
+  aws ec2 authorize-security-group-ingress \
+    --group-id "$EC2_SG" --protocol tcp --port "$port" \
+    --source-group "$LAMBDA_SG"
+done</code></pre></section></article>
       </div>
+      <p class="lambda-sam-note"><b>주의:</b> EC2의 <code>DB_EXTERNAL_ALLOWED_CIDR</code> 문서 규칙과 Lambda SG 규칙을 함께 적용합니다. <code>0.0.0.0/0</code>으로 DB 포트를 공개하지 않습니다. Lambda subnet과 EC2가 서로 라우팅 가능한 같은 VPC인지 확인합니다.</p>
     </section>
 
-    <section class="lambda-sam-guide" aria-labelledby="sam3-vpc-title">
-      <header class="lambda-sam-head"><div><span>04 · VPC · NETWORK</span><h2 id="sam3-vpc-title">Lambda가 DB와 Secrets Manager에 닿게 만들기</h2></div></header>
-      <div class="lambda-sam-flow"><span><small>Lambda SG</small><b>아웃바운드만</b></span><i>→</i><span><small>DB SG</small><b>인바운드: Lambda SG</b></span><i>→</i><span><small>서브넷</small><b>private × 2 AZ</b></span><i>→</i><span><small>Secrets Manager</small><b>VPC Endpoint</b></span></div>
-      <div class="lambda-sam-details">
-        <article><div class="lambda-sam-section-title"><span>FIND</span><h3>VPC · 서브넷 · 보안 그룹 찾기</h3><p>DB(RDS 또는 EC2 안의 Docker)가 있는 VPC를 기준으로 private 서브넷 두 개와 Lambda 전용 SG를 정합니다. EC2의 Docker DB에 붙는 경우 EC2 인스턴스의 SG가 "DB SG"입니다.</p></div><section class="lambda-code"><header><span>describe</span><button type="button" data-copy-code>복사</button></header><pre><code>aws ec2 describe-vpcs --query 'Vpcs[].[VpcId,CidrBlock,IsDefault]' --output table
-VPC_ID=vpc-xxxxxxxx
+    <section class="lambda-sam-guide" aria-labelledby="sam3-deploy">
+      <header class="lambda-sam-head"><div><span>05 · DEPLOY</span><h2 id="sam3-deploy">lambda.env를 읽어 타깃별 배포</h2></div></header>
+      <div class="lambda-sam-details"><article class="sam-step-wide"><div class="lambda-sam-section-title"><span>STEP 5</span><h3>프롬프트에 값을 반복 입력하지 않는 배포</h3><p><code>sam-deploy.sh</code>가 타깃에 필요한 URL·VPC·JWT 값만 골라 <code>--parameter-overrides</code>로 전달합니다. 직접 URL은 samconfig.toml에 저장하지 않습니다.</p></div><div class="sam-split"><div class="sam-split-code">
+        <section class="lambda-code"><header><span>배포와 Output</span><button type="button" data-copy-code>복사</button></header><pre><code>aws sts get-caller-identity
+cd /home/ubuntu/stock-coin-trade
 
-aws ec2 describe-subnets --filters Name=vpc-id,Values=$VPC_ID \
-  --query 'Subnets[].[SubnetId,AvailabilityZone,MapPublicIpOnLaunch,CidrBlock]' --output table
-# MapPublicIpOnLaunch=False 인 서브넷 두 개 → VPC_SUBNET_IDS
+./working/scripts/sam-deploy.sh member
+./working/scripts/sam-deploy.sh quant
+./working/scripts/sam-deploy.sh ohlcv
+./working/scripts/sam-deploy.sh session
+# Qdrant 서버 준비 뒤 실행
+./working/scripts/sam-deploy.sh knowledge
 
-# Lambda 전용 SG (인바운드 없음, 아웃바운드 전체)
-aws ec2 create-security-group --vpc-id $VPC_ID \
-  --group-name stock-coin-trade-lambda --description "Lambda practice" \
-  --query GroupId --output text
-# sg-lambda → VPC_SECURITY_GROUP_IDS</code></pre></section></article>
-        <article><div class="lambda-sam-section-title"><span>ALLOW</span><h3>DB 쪽 인바운드와 VPC Endpoint</h3><p>DB SG에 "Lambda SG에서 오는 DB 포트"만 허용합니다. 그리고 Secrets Manager 인터페이스 엔드포인트를 같은 private 서브넷에 만듭니다(NAT가 이미 있으면 생략 가능).</p></div><section class="lambda-code"><header><span>SG rule + endpoint</span><button type="button" data-copy-code>복사</button></header><pre><code>DB_SG=sg-db   LAMBDA_SG=sg-lambda
-
-# PostgreSQL 5432 (MariaDB 는 3306, Redis 6379, Qdrant 6333)
-aws ec2 authorize-security-group-ingress --group-id $DB_SG \
-  --protocol tcp --port 5432 --source-group $LAMBDA_SG
-
-# Secrets Manager 엔드포인트 (Lambda SG 에서 443 허용하는 endpoint SG 필요)
-aws ec2 create-vpc-endpoint --vpc-id $VPC_ID \
-  --vpc-endpoint-type Interface \
-  --service-name com.amazonaws.ap-northeast-2.secretsmanager \
-  --subnet-ids subnet-a subnet-b \
-  --security-group-ids sg-endpoint \
-  --private-dns-enabled</code></pre></section></article>
-      </div>
-      <p class="lambda-sam-note"><b>이 저장소의 현재 상태:</b> 운영 DB는 EC2 안의 Docker 컨테이너이고 외부 노출은 <code>DB_EXTERNAL_BIND</code>·<code>DB_EXTERNAL_ALLOWED_CIDR</code>로 제한돼 있습니다(<a href="/db-backup-policy.html">DB 백업 정책</a> 참고). Lambda를 붙이려면 ① 같은 VPC의 private 서브넷에 배치하고 EC2 SG에 Lambda SG 인바운드를 열거나 ② RDS로 옮기는 선택이 필요합니다. 이 선택이 자기주도 미션 3의 주제입니다.</p>
+aws cloudformation describe-stacks \
+  --stack-name stock-coin-trade-member-practice \
+  --query 'Stacks[0].Outputs' --output table</code></pre></section>
+      </div><aside class="sam-errors"><header><i>!</i> 예상 오류와 해결</header>
+        <div class="sam-err"><b>lambda.env 없음</b><code>배포 설정 없음: working/env/lambda.env</code><p class="fix"><span>해결</span>example을 복사하고 실제 EC2 주소·VPC 값을 입력</p></div>
+        <div class="sam-err"><b>자리표시자 차단</b><code>자리표시자를 실제 값으로 바꾸세요</code><p><span>원인</span><code>CHANGE_ME</code> 또는 <code>EXAMPLE</code>이 남아 있음</p><p class="fix"><span>해결</span>해당 키만 수정한 뒤 재실행</p></div>
+        <div class="sam-err"><b>Task timed out</b><code>Task timed out after 15 seconds</code><p><span>원인</span>EC2 private 주소, SG source, host publish 포트 중 하나가 맞지 않음</p><p class="fix"><span>해결</span>Lambda SG → EC2 SG 규칙과 EC2 <code>ss -lnt</code>를 확인</p></div>
+      </aside></div></article></div>
     </section>
 
-    <section class="lambda-sam-guide" aria-labelledby="sam3-deploy-title">
-      <header class="lambda-sam-head"><div><span>05 · DEPLOY</span><h2 id="sam3-deploy-title">config-env로 타깃별 스택 배포</h2></div></header>
+    <section class="lambda-sam-guide" aria-labelledby="sam3-auth">
+      <header class="lambda-sam-head"><div><span>06 · AUTH · VERIFY</span><h2 id="sam3-auth">JWT 타깃과 배포 API 검증</h2></div></header>
       <div class="lambda-sam-details">
-        <article><div class="lambda-sam-section-title"><span>CONFIG</span><h3>samconfig.toml 환경 구조 이해</h3><p>Hello World의 <code>[default.*]</code> 대신 <code>[member.*]</code>, <code>[quant.*]</code>… 처럼 타깃별 환경이 있습니다. <code>--config-env quant</code>로 고르면 스택명·리전·capabilities가 자동 적용되고, guided 로 입력한 파라미터도 이 환경 아래에 저장됩니다.</p></div><section class="lambda-code"><header><span>template/samconfig.toml 발췌</span><button type="button" data-copy-code>복사</button></header><pre><code>[quant.global.parameters]
-stack_name = "stock-coin-trade-quant-practice"
-
-[quant.deploy.parameters]
-capabilities = "CAPABILITY_IAM"     # 실행 역할 생성 허용
-confirm_changeset = true            # 변경 내역을 보고 y/N
-resolve_s3 = true                   # 아티팩트 버킷 자동 생성
-region = "ap-northeast-2"
-# guided 이후 추가됨:
-# parameter_overrides = "QuantSecretArn=arn:... VpcSecurityGroupIds=sg-... VpcSubnetIds=subnet-a,subnet-b"</code></pre></section></article>
-        <article><div class="lambda-sam-section-title"><span>RUN</span><h3>스크립트로 첫 배포 (guided)</h3><p><code>sam-deploy.sh</code>는 빌드 → guided 배포 → Outputs 표 출력까지 합니다. 질문에는 <code>env/lambda.env</code>의 값을 그대로 붙여 넣습니다. changeset 확인에서 생성될 리소스 목록을 읽고 <code>y</code>를 입력합니다.</p></div><section class="lambda-code"><header><span>sam-deploy.sh quant</span><button type="button" data-copy-code>복사</button></header><pre><code>cd /home/ubuntu/stock-coin-trade/working
-source env/lambda.env
-scripts/sam-deploy.sh quant
-
-# guided 질문 예시
-#  Stack Name [stock-coin-trade-quant-practice]:      ← Enter
-#  AWS Region [ap-northeast-2]:                        ← Enter
-#  Parameter QuantSecretArn []:        $QUANT_DB_SECRET_ARN
-#  Parameter VpcSecurityGroupIds []:   $VPC_SECURITY_GROUP_IDS
-#  Parameter VpcSubnetIds []:          $VPC_SUBNET_IDS
-#  Confirm changes before deploy [Y/n]:  Y
-#  Allow SAM CLI IAM role creation [Y/n]: Y
-#  DatabasePracticeFunction has no authentication. Is this okay? [y/N]: y   ← 공개 읽기 실습
-#  Save arguments to configuration file [Y/n]: Y  (환경: quant)
-
-# 마지막에 Outputs 표: ApiUrl = https://xxxx.execute-api.ap-northeast-2.amazonaws.com</code></pre></section></article>
-        <article><div class="lambda-sam-section-title"><span>REPEAT</span><h3>두 번째부터: guided 없이 반복 배포</h3><p>파라미터가 저장됐으므로 코드 수정 후에는 빌드와 배포만 반복합니다. 다른 타깃과 스택·빌드 폴더가 분리돼 있어 서로 영향을 주지 않습니다.</p></div><section class="lambda-code"><header><span>build → deploy</span><button type="button" data-copy-code>복사</button></header><pre><code>scripts/sam-build.sh quant
-sam deploy \
-  --template-file .aws-sam/quant/template.yaml \
-  --config-file template/samconfig.toml \
-  --config-env quant
-# 변경 없음이면 "No changes to deploy" → CI 에서는 --no-fail-on-empty-changeset 추가
-
-# 스택 상태 확인
-aws cloudformation describe-stacks --stack-name stock-coin-trade-quant-practice \
-  --query 'Stacks[0].[StackStatus,LastUpdatedTime]' --output text</code></pre></section></article>
-        <article><div class="lambda-sam-section-title"><span>FAIL</span><h3>배포 실패 읽는 법</h3><p>CloudFormation은 실패 시 자동 롤백합니다. 첫 배포 실패는 <code>ROLLBACK_COMPLETE</code> 상태로 남아 재배포가 막히므로 스택을 지우고 다시 시도합니다.</p></div><section class="lambda-code"><header><span>events</span><button type="button" data-copy-code>복사</button></header><pre><code>aws cloudformation describe-stack-events \
-  --stack-name stock-coin-trade-quant-practice \
-  --query 'StackEvents[?ResourceStatus==`CREATE_FAILED`].[LogicalResourceId,ResourceStatusReason]' \
-  --output table
-# 흔한 원인: IAM CreateRole 권한 없음 / 서브넷·SG 가 다른 VPC / Secret ARN 오타
-
-aws cloudformation delete-stack --stack-name stock-coin-trade-quant-practice
-aws cloudformation wait stack-delete-complete --stack-name stock-coin-trade-quant-practice</code></pre></section></article>
-      </div>
-    </section>
-
-    <section class="lambda-sam-guide" aria-labelledby="sam3-jwt-title">
-      <header class="lambda-sam-head"><div><span>06 · JWT AUTHORIZER</span><h2 id="sam3-jwt-title">member · session — 토큰 없이는 배포되지 않는 API</h2></div></header>
-      <div class="lambda-sam-details">
-        <article><div class="lambda-sam-section-title"><span>TEMPLATE</span><h3>HttpApi 의 DefaultAuthorizer</h3><p><code>template-member.yaml</code>은 <code>AWS::Serverless::HttpApi</code>를 직접 선언하고 <code>JwtConfiguration</code>에 issuer·audience 파라미터를 요구합니다. 값이 없으면 changeset 생성 단계에서 실패하므로 "실수로 공개 배포"가 되지 않습니다.</p></div><section class="lambda-code"><header><span>template-member.yaml 발췌</span><button type="button" data-copy-code>복사</button></header><pre><code>PracticeHttpApi:
-  Type: AWS::Serverless::HttpApi
-  Properties:
-    Auth:
-      DefaultAuthorizer: PracticeJwtAuthorizer
-      Authorizers:
-        PracticeJwtAuthorizer:
-          IdentitySource: $request.header.Authorization
-          JwtConfiguration:
-            issuer: !Ref JwtIssuer        # https://cognito-idp.ap-northeast-2.amazonaws.com/&lt;pool-id&gt;
-            audience: !Ref JwtAudience    # 앱 클라이언트 ID</code></pre></section></article>
-        <article><div class="lambda-sam-section-title"><span>COGNITO</span><h3>실습용 User Pool 로 issuer·audience 만들기</h3><p>가장 짧은 경로는 Cognito User Pool 하나와 앱 클라이언트(시크릿 없음, USER_PASSWORD_AUTH 허용)입니다. issuer는 풀 ID로, audience는 클라이언트 ID로 결정됩니다.</p></div><section class="lambda-code"><header><span>cognito-idp</span><button type="button" data-copy-code>복사</button></header><pre><code>POOL_ID=$(aws cognito-idp create-user-pool --pool-name sct-practice --query UserPool.Id --output text)
-CLIENT_ID=$(aws cognito-idp create-user-pool-client --user-pool-id $POOL_ID \
-  --client-name sct-practice-cli --no-generate-secret \
-  --explicit-auth-flows ALLOW_USER_PASSWORD_AUTH ALLOW_REFRESH_TOKEN_AUTH \
-  --query UserPoolClient.ClientId --output text)
-
-echo "JWT_ISSUER=https://cognito-idp.ap-northeast-2.amazonaws.com/$POOL_ID" &gt;&gt; env/lambda.env
-echo "JWT_AUDIENCE=$CLIENT_ID" &gt;&gt; env/lambda.env
-
-# 테스트 사용자
-aws cognito-idp admin-create-user --user-pool-id $POOL_ID --username tester --message-action SUPPRESS
-aws cognito-idp admin-set-user-password --user-pool-id $POOL_ID --username tester \
-  --password 'Change-Me-1234!' --permanent</code></pre></section></article>
-        <article><div class="lambda-sam-section-title"><span>DEPLOY</span><h3>member 배포와 토큰 발급</h3><p>guided 질문에 <code>JwtIssuer</code>·<code>JwtAudience</code>가 추가로 나옵니다. 배포 후 ID 토큰을 받아 Bearer 로 호출합니다.</p></div><section class="lambda-code"><header><span>deploy + token</span><button type="button" data-copy-code>복사</button></header><pre><code>scripts/sam-deploy.sh member      # JwtIssuer / JwtAudience 입력
-
-ID_TOKEN=$(aws cognito-idp initiate-auth --auth-flow USER_PASSWORD_AUTH \
-  --client-id $CLIENT_ID \
-  --auth-parameters USERNAME=tester,PASSWORD='Change-Me-1234!' \
-  --query AuthenticationResult.IdToken --output text)
-
-API_URL=$(aws cloudformation describe-stacks --stack-name stock-coin-trade-member-practice \
-  --query 'Stacks[0].Outputs[?OutputKey==`ApiUrl`].OutputValue' --output text)</code></pre></section></article>
-        <article><div class="lambda-sam-section-title"><span>VERIFY</span><h3>유효 · 누락 · 만료 토큰 3종 검사</h3><p>로컬 <code>start-api</code>가 못 하던 검증입니다. 세 경우의 상태 코드가 모두 기대와 같아야 완료입니다.</p></div><section class="lambda-code"><header><span>3 cases</span><button type="button" data-copy-code>복사</button></header><pre><code>curl -s -o /dev/null -w '%{http_code}\n' "$API_URL/members/1"                              # 401 (누락)
-curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $ID_TOKEN" "$API_URL/members/1"   # 200
-curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${ID_TOKEN}x" "$API_URL/members/1" # 401 (변조)
-
-# 만료 검사: 토큰 유효기간(기본 1시간) 후 같은 토큰으로 재호출 → 401</code></pre></section></article>
-      </div>
-    </section>
-
-    <section class="lambda-sam-guide" aria-labelledby="sam3-ops-title">
-      <header class="lambda-sam-head"><div><span>07 · VERIFY · LOGS</span><h2 id="sam3-ops-title">배포된 API 검증과 로그</h2></div></header>
-      <div class="lambda-sam-details">
-        <article><div class="lambda-sam-section-title"><span>API</span><h3>Output 의 ApiUrl 로 호출</h3><p>공개 읽기 타깃(quant)은 200·400을, 존재하지 않는 경로는 404를 돌려줘야 합니다.</p></div><section class="lambda-code"><header><span>curl</span><button type="button" data-copy-code>복사</button></header><pre><code>API_URL=$(aws cloudformation describe-stacks --stack-name stock-coin-trade-quant-practice \
+        <article><div class="lambda-sam-section-title"><span>JWT</span><h3>member · session</h3><p>두 API는 <code>JWT_ISSUER</code>와 <code>JWT_AUDIENCE</code>가 필요합니다. 로컬 SAM은 authorizer를 생략할 수 있으므로 인증은 배포 API에서 확인합니다.</p></div><section class="lambda-code"><header><span>401 / 200 확인</span><button type="button" data-copy-code>복사</button></header><pre><code>API_URL=$(aws cloudformation describe-stacks \
+  --stack-name stock-coin-trade-member-practice \
   --query 'Stacks[0].Outputs[?OutputKey==`ApiUrl`].OutputValue' --output text)
 
-curl --fail-with-body "$API_URL/quant/prices?symbol=005930&amp;limit=5" | python3 -m json.tool
-curl -s -o /dev/null -w '%{http_code}\n' "$API_URL/quant/prices?limit=abc"   # 400
-curl -s -o /dev/null -w '%{http_code}\n' "$API_URL/nope"                     # 404
-
-# 응답 시간 (cold vs warm)
-for i in 1 2 3; do curl -s -o /dev/null -w '%{time_total}\n' "$API_URL/quant/prices?limit=1"; done</code></pre></section></article>
-        <article><div class="lambda-sam-section-title"><span>LOGS</span><h3>sam logs 와 함수 구성</h3><p>5xx 가 나면 API Gateway가 아니라 Lambda 로그를 봅니다. <code>secret_config</code>의 RuntimeError, VPC 타임아웃, 메모리 초과가 대부분입니다.</p></div><section class="lambda-code"><header><span>sam logs</span><button type="button" data-copy-code>복사</button></header><pre><code>sam logs --stack-name stock-coin-trade-quant-practice \
+curl -i "$API_URL/members/1"                       # 401 기대
+curl -i -H "Authorization: Bearer $ID_TOKEN" \
+  "$API_URL/members/1"                            # 200 기대</code></pre></section></article>
+        <article><div class="lambda-sam-section-title"><span>LOGS</span><h3>5xx는 Lambda 로그부터 확인</h3></div><section class="lambda-code"><header><span>운영 점검</span><button type="button" data-copy-code>복사</button></header><pre><code>sam logs --stack-name stock-coin-trade-member-practice \
   --name DatabasePracticeFunction --tail
 
-# 오류만, 최근 30분
-sam logs --stack-name stock-coin-trade-quant-practice \
-  --name DatabasePracticeFunction --filter "ERROR" --start-time '30min ago'
+aws lambda get-function-configuration \
+  --function-name &lt;실제 함수 이름&gt; \
+  --query '{Vpc:VpcConfig,Keys:Environment.Variables|keys(@)}'
 
-# 구성 확인 (VPC, 환경변수 ARN, 타임아웃)
-FN=$(aws cloudformation describe-stack-resource --stack-name stock-coin-trade-quant-practice \
-  --logical-resource-id DatabasePracticeFunction --query StackResourceDetail.PhysicalResourceId --output text)
-aws lambda get-function-configuration --function-name $FN \
-  --query '[Timeout,MemorySize,VpcConfig.SubnetIds,Environment.Variables]'</code></pre></section></article>
+# 값은 출력하지 않고 환경변수 키만 확인</code></pre></section></article>
       </div>
-      <div class="lambda-server-result"><h3>로그로 진단하기</h3><span><b>Task timed out</b> VPC 에서 DB/Secrets 에 못 닿음 → SG·엔드포인트</span><span><b>RuntimeError: …ARN…</b> 파라미터 누락 → parameter_overrides</span><span><b>Secret JSON 키 누락</b> secret 키 이름 불일치</span><span><b>OperationalError</b> DB 계정·호스트 오류</span><p>로그 그룹은 <code>/aws/lambda/&lt;함수명&gt;</code>입니다. 보존 기간을 두지 않으면 영구 보관되므로 미션에서 <code>RetentionInDays</code>를 추가합니다.</p></div>
+      <div class="lambda-server-result"><h3>응답 판정</h3><span><b>200</b> DB 데이터와 JSON 확인</span><span><b>400</b> 입력 검증 확인</span><span><b>401/403</b> JWT issuer·audience 확인</span><span><b>503</b> EC2 Docker 계정·주소·포트 확인</span><p>Lambda 환경변수 전체를 출력하는 CLI 명령은 DB URL과 비밀번호를 노출할 수 있으므로 문서에서도 키 목록만 조회합니다.</p></div>
     </section>
 
-    <section class="lambda-sam-guide" aria-labelledby="sam3-iter-title">
-      <header class="lambda-sam-head"><div><span>08 · ITERATE · CLEANUP</span><h2 id="sam3-iter-title">빠른 반복, 되돌리기, 정리와 비용</h2></div></header>
+    <section class="lambda-sam-guide" aria-labelledby="sam3-cleanup">
+      <header class="lambda-sam-head"><div><span>07 · CLEANUP · LIMITS</span><h2 id="sam3-cleanup">정리와 완료 기준</h2></div></header>
       <div class="lambda-sam-details">
-        <article><div class="lambda-sam-section-title"><span>SYNC</span><h3>코드만 바뀔 때는 sam sync</h3><p>CloudFormation changeset 없이 함수 코드를 직접 올려 수십 초 안에 반영합니다. 템플릿(권한·VPC·이벤트)이 바뀌면 다시 <code>sam deploy</code>를 사용합니다. 실습 스택에서만 사용하고 운영 스택에는 쓰지 않습니다.</p></div><section class="lambda-code"><header><span>sam sync</span><button type="button" data-copy-code>복사</button></header><pre><code>sam sync --code --watch \
-  --template-file template/template-quant.yaml \
-  --config-file template/samconfig.toml --config-env quant
-# lambda/quant/*.py 저장 → 자동 업로드 → curl 로 확인. Ctrl+C 로 종료
+        <article><div class="lambda-sam-section-title"><span>DELETE</span><h3>Lambda 스택만 삭제</h3><p>DB 컨테이너와 데이터 볼륨은 이 스택 소유가 아니므로 삭제되지 않습니다.</p></div><section class="lambda-code"><header><span>타깃 스택 정리</span><button type="button" data-copy-code>복사</button></header><pre><code>sam delete \
+  --stack-name stock-coin-trade-member-practice \
+  --region ap-northeast-2
 
-# 되돌리기: 이전 커밋으로 코드 복구 후 build + deploy (sync 는 상태를 남기지 않음)</code></pre></section></article>
-        <article><div class="lambda-sam-section-title"><span>DELETE</span><h3>타깃별 정리와 남는 비용</h3><p><code>sam delete</code>는 해당 스택의 Lambda·API·역할·로그 그룹을 지웁니다. Secret, VPC Endpoint, Cognito, 아티팩트 S3 버킷은 스택 밖 리소스라 따로 정리합니다.</p></div><section class="lambda-code"><header><span>cleanup</span><button type="button" data-copy-code>복사</button></header><pre><code>sam delete --stack-name stock-coin-trade-quant-practice \
-  --config-file template/samconfig.toml --config-env quant --no-prompts
-
-# 스택 밖 리소스 (필요할 때만)
-aws secretsmanager delete-secret --secret-id "$QUANT_DB_SECRET_ARN" --recovery-window-in-days 7
-aws ec2 delete-vpc-endpoints --vpc-endpoint-ids vpce-xxxx      # 시간당 과금 → 실습 후 삭제
-aws cognito-idp delete-user-pool --user-pool-id $POOL_ID
-
-# 비용 감각: Lambda·API Gateway 는 실습 수준이면 프리티어 안, VPC Endpoint 와 NAT 는 시간당 과금</code></pre></section></article>
+# 필요 없어진 EC2 SG 인바운드 규칙도 별도 제거
+# working/env/lambda.env는 유지하거나 안전하게 직접 삭제</code></pre></section></article>
+        <article><div class="lambda-sam-section-title"><span>DONE</span><h3>완료 조건</h3><p>다섯 조건을 모두 확인해야 AWS 연동 완료입니다.</p></div><div class="lambda-checkpoint"><div><span>✓ 로컬 invoke DB 200</span><span>✓ EC2 private 주소 사용</span><span>✓ Lambda SG만 DB 포트 허용</span><span>✓ CloudFormation CREATE_COMPLETE</span><span>✓ 배포 API 200·401 확인</span></div></div></article>
       </div>
+      <p class="lambda-sam-note"><b>현재 제한:</b> member 로컬 MariaDB 호출은 실제 200으로 확인했습니다. AWS 종단간 결과는 유효한 EC2 private 주소·VPC 값으로 배포한 뒤 확인해야 합니다. Qdrant는 현재 인메모리 구성이라 독립 컨테이너가 준비되기 전에는 knowledge Lambda의 네트워크 연동이 완료된 것이 아닙니다.</p>
     </section>
 
-    <section class="lambda-sam-guide" aria-labelledby="sam3-ci-title">
-      <header class="lambda-sam-head"><div><span>09 · CI</span><h2 id="sam3-ci-title">GitHub Actions 로 타깃 배포 자동화 (설계)</h2></div><a href="https://github.com/edumgt/stock-coin-trade/blob/main/.github/workflows/deploy-ec2.yml" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-github" aria-hidden="true"></i> 현재 deploy-ec2.yml</a></header>
-      <div class="lambda-sam-details">
-        <article><div class="lambda-sam-section-title"><span>DESIGN</span><h3>현재 EC2 배포와 나란히 두는 별도 워크플로</h3><p>현재 <code>deploy-ec2.yml</code>은 main 푸시 시 rsync + docker compose 로 EC2를 갱신합니다. Lambda 는 <code>working/**</code> 변경에만 반응하는 별도 워크플로로 두고, GitHub OIDC 로 AWS 역할을 맡아 액세스 키 없이 배포합니다.</p></div><section class="lambda-code"><header><span>.github/workflows/deploy-lambda.yml (초안)</span><button type="button" data-copy-code>복사</button></header><pre><code>name: Deploy Lambda (SAM)
-on:
-  push:
-    branches: [main]
-    paths: ['working/**']
-  workflow_dispatch:
-    inputs:
-      target: { description: 'member|quant|ohlcv|session|knowledge', default: quant }
-permissions: { id-token: write, contents: read }
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    env: { TARGET: ${{ github.event.inputs.target || 'quant' }} }
-    steps:
-      - uses: actions/checkout@v4
-      - uses: aws-actions/setup-sam@v2
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}   # OIDC 신뢰 역할
-          aws-region: ap-northeast-2
-      - run: |
-          cd working
-          sam validate --lint --template-file template/template-$TARGET.yaml
-          sam build --use-container --template-file template/template-$TARGET.yaml --build-dir .aws-sam/$TARGET
-          sam deploy --template-file .aws-sam/$TARGET/template.yaml \
-            --config-file template/samconfig.toml --config-env $TARGET \
-            --no-confirm-changeset --no-fail-on-empty-changeset \
-            --parameter-overrides "${{ secrets[format('SAM_PARAMS_{0}', env.TARGET)] }}"</code></pre></section></article>
-        <article><div class="lambda-sam-section-title"><span>NOTES</span><h3>CI 에서 달라지는 점</h3><p>대화형 guided 는 못 쓰므로 파라미터를 Secrets 에 넣고 <code>--parameter-overrides</code>로 전달합니다. changeset 확인도 끕니다. 배포 후 스모크 테스트를 같은 잡에 붙입니다.</p></div><section class="lambda-code"><header><span>post-deploy smoke</span><button type="button" data-copy-code>복사</button></header><pre><code>      - name: 스모크 테스트
-        run: |
-          API_URL=$(aws cloudformation describe-stacks \
-            --stack-name stock-coin-trade-$TARGET-practice \
-            --query 'Stacks[0].Outputs[?OutputKey==`ApiUrl`].OutputValue' --output text)
-          case "$TARGET" in
-            quant) curl --fail-with-body "$API_URL/quant/prices?symbol=005930&amp;limit=1" ;;
-            ohlcv) curl --fail-with-body "$API_URL/ohlcv/summary" ;;
-            *)     echo "JWT 타깃은 토큰 발급 단계가 필요합니다" ;;
-          esac
-
-# GitHub Secrets 예: SAM_PARAMS_quant = "QuantSecretArn=arn:... VpcSecurityGroupIds=sg-... VpcSubnetIds=subnet-a,subnet-b"</code></pre></section></article>
-      </div>
-    </section>
-
-    <section class="lambda-sam-guide" aria-labelledby="sam3-mission-title">
-      <header class="lambda-sam-head"><div><span>10 · SELF-DIRECTED</span><h2 id="sam3-mission-title">자기주도 미션 — 운영 가능한 상태로 끌어올리기</h2></div><a href="/lambda-db-practice.html">이어서: Lambda/API 실습</a></header>
-      <p class="lambda-sam-note"><b>진행 방법:</b> 미션 1·2는 실제 AWS 계정에서 실습 스택을 만들었다 지우는 과제입니다. 끝나면 반드시 08의 정리를 실행해 비용을 남기지 않습니다. 미션 3~6은 템플릿·워크플로를 저장소에 반영하는 과제이므로 PR 로 남깁니다.</p>
-      <div class="sam-missions">
-        <article class="sam-mission"><span>MISSION 1</span><h3>quant 공개 API 배포 → 검증 → 삭제</h3><p>03~05, 07, 08을 순서대로 수행합니다. 첫 배포 실패가 나면 05의 events 조회로 원인을 찾아 기록합니다.</p><span class="sam-check"><b>확인:</b> ApiUrl 로 200·400·404 를 받고, <code>sam delete</code> 후 <code>describe-stacks</code>가 "does not exist" 를 돌려줍니다.</span></article>
-        <article class="sam-mission"><span>MISSION 2</span><h3>member 에 JWT 적용 후 3종 검사</h3><p>06을 수행합니다. 토큰 누락·유효·변조를 각각 확인하고, Cognito 사용자 하나를 <code>admin-disable-user</code> 로 비활성화한 뒤 새 토큰 발급이 막히는지도 봅니다.</p><span class="sam-check"><b>확인:</b> 401 / 200 / 401 이 나오고, 비활성화 사용자는 <code>initiate-auth</code>가 실패합니다.</span></article>
-        <article class="sam-mission"><span>MISSION 3</span><h3>EC2 Docker DB 에 Lambda 붙이기 설계서</h3><p>04의 노트를 바탕으로 "같은 VPC private 서브넷 + EC2 SG 인바운드" 안과 "RDS 이전" 안을 비교합니다. 비용, 보안, 백업 정책(<a href="/db-backup-policy.html">DB 백업 정책</a>)과의 관계를 표로 정리합니다.</p><span class="sam-check"><b>확인:</b> 두 안 각각의 SG 규칙과 필요한 엔드포인트가 명시된 1페이지 설계서(<code>working/DESIGN-vpc.md</code>)가 PR 로 올라갑니다.</span></article>
-        <article class="sam-mission"><span>MISSION 4</span><h3>로그 보존 기간과 오류 알람을 템플릿에 추가</h3><p><code>template-quant.yaml</code>에 로그 그룹(<code>RetentionInDays: 14</code>)과 <code>Errors ≥ 1</code> CloudWatch 알람을 추가합니다.</p><section class="lambda-code"><header><span>추가할 리소스</span><button type="button" data-copy-code>복사</button></header><pre><code>  FunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${DatabasePracticeFunction}
-      RetentionInDays: 14
-  FunctionErrorAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      Namespace: AWS/Lambda
-      MetricName: Errors
-      Dimensions: [{ Name: FunctionName, Value: !Ref DatabasePracticeFunction }]
-      Statistic: Sum
-      Period: 60
-      EvaluationPeriods: 1
-      Threshold: 1
-      ComparisonOperator: GreaterThanOrEqualToThreshold</code></pre></section><span class="sam-check"><b>확인:</b> <code>sam validate --lint</code> 통과, 배포 후 <code>limit=abc</code>는 400(오류 아님)이고 일부러 잘못된 Secret ARN 으로 재배포하면 알람이 ALARM 상태가 됩니다.</span></article>
-        <article class="sam-mission"><span>MISSION 5</span><h3>deploy-lambda.yml 워크플로 완성</h3><p>09의 초안을 실제 파일로 만들고, AWS 쪽에 GitHub OIDC 공급자와 신뢰 역할을 만듭니다. 첫 실행은 <code>workflow_dispatch</code>로 <code>quant</code>만 배포합니다.</p><ol><li>OIDC 공급자 + 역할(신뢰 조건: <code>repo:edumgt/stock-coin-trade:ref:refs/heads/main</code>)</li><li>Secrets: <code>AWS_DEPLOY_ROLE_ARN</code>, <code>SAM_PARAMS_quant</code></li><li>수동 실행 → 스모크 테스트 통과 → <code>paths: working/**</code> 푸시 트리거 확인</li></ol><span class="sam-check"><b>확인:</b> Actions 로그에 changeset 없이 배포와 스모크 테스트가 초록으로 끝납니다.</span></article>
-        <article class="sam-mission"><span>MISSION 6</span><h3>Flask API 하나를 Lambda 로 대체해 보기</h3><p>프런트가 부르는 <code>/api/quant/...</code> 중 읽기 전용 하나를 골라, nginx 에서 해당 경로만 배포된 ApiUrl 로 프록시합니다(<code>docker/nginx.conf</code>). 나머지는 그대로 Flask 가 처리합니다.</p><span class="sam-check"><b>확인:</b> 브라우저 화면이 그대로 동작하고, <code>sam logs</code>에 프런트 호출이 찍히며, nginx 설정을 되돌리면 다시 Flask 로 돌아갑니다. 이것이 <a href="/lambda-db-practice.html">Lambda/API 실습</a>의 출발점입니다.</span></article>
-      </div>
-    </section>
-
-    <section class="lambda-checkpoint"><h2>SAM 활용 3 완료 기준</h2><div><span>✓ Secret 은 ARN 만 파라미터로 전달</span><span>✓ Lambda SG → DB SG 인바운드 설명</span><span>✓ config-env 로 타깃별 스택 배포</span><span>✓ ApiUrl 200·400·404 확인</span><span>✓ JWT 3종 검사</span><span>✓ sam logs 로 원인 진단</span><span>✓ sam delete 와 스택 밖 리소스 정리</span><span>✓ 미션 1·2 완료, 3~6 중 하나 PR</span></div></section>
-
-    <section class="lambda-official"><h2>AWS 공식 참고 문서</h2><div><a href="https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/using-sam-cli-deploy.html" target="_blank" rel="noopener noreferrer">sam deploy</a><a href="https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-config.html" target="_blank" rel="noopener noreferrer">samconfig.toml</a><a href="https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-httpapi-httpapiauth.html" target="_blank" rel="noopener noreferrer">HttpApi JWT Auth</a><a href="https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc.html" target="_blank" rel="noopener noreferrer">Lambda VPC</a><a href="https://docs.aws.amazon.com/secretsmanager/latest/userguide/vpc-endpoint-overview.html" target="_blank" rel="noopener noreferrer">Secrets Manager VPC Endpoint</a><a href="https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/using-sam-cli-sync.html" target="_blank" rel="noopener noreferrer">sam sync</a><a href="https://github.com/aws-actions/configure-aws-credentials" target="_blank" rel="noopener noreferrer">GitHub OIDC → AWS</a></div></section>
+    <section class="lambda-official"><h2>연결 문서</h2><div><a href="/sam-guide-1.html">SAM 활용 1</a><a href="/sam-guide-2.html">SAM 활용 2</a><a href="/lambda-db-practice.html">Lambda DB 실습</a><a href="/db-backup-policy.html">Docker DB 백업 정책</a><a href="https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc.html" target="_blank" rel="noopener noreferrer">Lambda VPC 공식 문서</a></div></section>
   </main>
   <div id="lambda-toast" class="lambda-toast" role="status" aria-live="polite"></div>
   <script src="/js/config.js"></script>
-  <script src="/js/common.js?v=20260927-sam3-f13"></script>
+  <script src="/js/common.js?v=20260927-sam3-direct-f14"></script>
   <script src="/js/sam-guide.js?v=20260927-1-f13"></script>
   <script src="/js/tech-glossary.js?v=20260927-3" data-glossary-root="main"></script>
 </body>

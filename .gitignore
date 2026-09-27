@@ -27,6 +27,8 @@ replay_pid*
 .env
 .env.*
 !.env.example
+working/env/lambda.env
+working/env/local-env.generated.json
 
 # Node / test artifacts (for capture scripts)
 node_modules/
@@ -70,3 +72,4 @@ deploy.md
 
 /sam-installation
 /sam-app*
+/mydbtest-sam/

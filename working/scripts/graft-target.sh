@@ -24,20 +24,15 @@ SRC="$WORKING_ROOT/lambda/$TARGET"
 # ── 타깃별 정의: 함수 논리 ID | 핸들러 모듈 | 경로 | 메서드 | 로컬 환경변수(공백 구분, KEY=값) ──
 case "$TARGET" in
   quant)     FN=QuantPricesFunction;      MOD=lambda_quant;            PATH_="/quant/prices";              METHOD=GET
-             ENVS="QUANT_DATABASE_URL=postgresql+psycopg://USER:PASSWORD@postgres:5432/quant_research"
-             ARN_ENV=QUANT_SECRET_ARN ;;
+             ENVS="QUANT_DATABASE_URL=postgresql+psycopg://USER:PASSWORD@postgres:5432/quant_research" ;;
   member)    FN=MemberFunction;           MOD=lambda_member;           PATH_="/members/{member_id}";       METHOD=GET
-             ENVS="DATABASE_URL=mysql+pymysql://USER:PASSWORD@mariadb:3306/mockinv"
-             ARN_ENV=DATABASE_SECRET_ARN ;;
+             ENVS="DATABASE_URL=mysql+pymysql://USER:PASSWORD@mariadb:3306/mockinv" ;;
   ohlcv)     FN=OhlcvSummaryFunction;     MOD=lambda_ohlcv_summary;    PATH_="/ohlcv/summary";             METHOD=GET
-             ENVS="OHLCV_DATABASE_URL=postgresql+psycopg://USER:PASSWORD@pg-stock:5432/admin"
-             ARN_ENV=OHLCV_SECRET_ARN ;;
+             ENVS="OHLCV_DATABASE_URL=postgresql+psycopg://USER:PASSWORD@pg-stock:5432/admin" ;;
   session)   FN=SessionCheckFunction;     MOD=lambda_session_check;    PATH_="/internal/session-check";    METHOD=GET
-             ENVS="REDIS_URL=redis://redis:6379/0 REDIS_SESSION_KEY_PREFIX=stock-coin-trade:session:"
-             ARN_ENV=REDIS_SECRET_ARN ;;
+             ENVS="REDIS_URL=redis://redis:6379/0 REDIS_SESSION_KEY_PREFIX=stock-coin-trade:session:" ;;
   knowledge) FN=KnowledgeSearchFunction;  MOD=lambda_knowledge_search; PATH_="/knowledge/search";          METHOD=POST
-             ENVS="QDRANT_URL=http://qdrant:6333 QDRANT_API_KEY=LOCAL_DEV_NO_AUTH QDRANT_COLLECTION=market_knowledge"
-             ARN_ENV=QDRANT_SECRET_ARN ;;
+             ENVS="QDRANT_URL=http://qdrant:6333 QDRANT_API_KEY=LOCAL_DEV_NO_AUTH QDRANT_COLLECTION=market_knowledge" ;;
   *) printf '지원 타깃: quant | member | ohlcv | session | knowledge\n' >&2; exit 2 ;;
 esac
 
@@ -69,8 +64,7 @@ FUNC_BLOCK="  $FN:
       Architectures: [x86_64]
       Environment:
         Variables:
-          $ARN_ENV: ''                        # AWS 배포 시 Secret ARN 입력
-$ENV_YAML          # ↑ 로컬 전용: env.json 이 덮어씀 (템플릿에 선언돼야 sam local 이 전달함)
+$ENV_YAML          # 로컬에서는 env.json, AWS에서는 template Parameter로 직접 값을 전달한다.
       Events:
         Api:
           Type: HttpApi

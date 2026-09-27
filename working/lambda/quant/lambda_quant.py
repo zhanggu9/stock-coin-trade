@@ -1,9 +1,9 @@
 import json
 from sqlalchemy import create_engine
 from quant_service import recent_prices
-from secret_config import secret_values
+from secret_config import environment_values
 
-config = secret_values(("QUANT_DATABASE_URL",), "QUANT_SECRET_ARN")
+config = environment_values(("QUANT_DATABASE_URL",))
 engine = create_engine(config["QUANT_DATABASE_URL"], pool_pre_ping=True)
 
 

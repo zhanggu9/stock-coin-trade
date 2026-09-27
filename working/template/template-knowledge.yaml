@@ -3,9 +3,18 @@ Transform: AWS::Serverless-2016-10-31
 Description: Qdrant 지식 DB 유사도 검색 Lambda (lambda/knowledge)
 
 Parameters:
-  QdrantSecretArn:
+  QdrantUrl:
     Type: String
-    Description: QDRANT_URL과 QDRANT_API_KEY 키를 가진 Secrets Manager secret ARN
+    Description: EC2 Docker Qdrant 접속 URL
+  QdrantApiKey:
+    Type: String
+    NoEcho: true
+    Default: ""
+    Description: Qdrant API key (인증을 사용하지 않는 현재 Docker 구성은 빈 값)
+  VpcSecurityGroupIds:
+    Type: List<AWS::EC2::SecurityGroup::Id>
+  VpcSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
 
 Resources:
   DatabasePracticeFunction:
@@ -16,21 +25,14 @@ Resources:
       CodeUri: ../lambda/knowledge/
       Timeout: 15
       MemorySize: 512
-      Policies:
-        - AWSSecretsManagerGetSecretValuePolicy:
-            SecretArn: !Ref QdrantSecretArn
       Environment:
         Variables:
-          QDRANT_SECRET_ARN: !Ref QdrantSecretArn
-          # sam local의 env.json이 이 값을 덮어쓴다. AWS에서는 빈 값이므로 Secret을 사용한다.
-          QDRANT_URL: ""
-          QDRANT_API_KEY: ""
+          QDRANT_URL: !Ref QdrantUrl
+          QDRANT_API_KEY: !Ref QdrantApiKey
           QDRANT_COLLECTION: market_knowledge
-      # 외부 Qdrant면 HTTPS egress가 필요하다. Lambda를 DB VPC에 넣었다면
-      # private subnet의 NAT 게이트웨이 또는 적절한 VPC 엔드포인트를 확인한다.
-      # VpcConfig:
-      #   SecurityGroupIds: [sg-lambda-egress]
-      #   SubnetIds: [subnet-private-a, subnet-private-b]
+      VpcConfig:
+        SecurityGroupIds: !Ref VpcSecurityGroupIds
+        SubnetIds: !Ref VpcSubnetIds
       Events:
         Api:
           Type: HttpApi
