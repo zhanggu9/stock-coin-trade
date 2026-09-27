@@ -54,19 +54,22 @@ jobs:
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new "$REMOTE_USER@$HOST" \
             "cd $APP_DIR && docker compose -p stock-coin-trade -f docker-compose.yml -f docker-compose.ssl.yml up -d --build --remove-orphans && docker compose -p stock-coin-trade ps"
 
-      - name: HTTPS 헬스체크
+      - name: 헬스체크 (인스턴스 내부)
+        # 보안그룹이 80/443을 특정 IP로 제한할 수 있으므로, 러너에서 공개 HTTPS로
+        # 확인하지 않고 인스턴스에 SSH로 접속해 localhost로 확인한다.
         run: |
-          # 백엔드 재빌드·재기동(및 DB 대기 후 워커 재시작) 시간을 감안해 초기 대기 후 넉넉히 재시도한다.
-          sleep 12
-          ok=0
-          for i in $(seq 1 20); do
-            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 https://st.edumgt.co.kr/api/stocks/list || echo 000)
-            echo "시도 $i: HTTP $code"
-            if [ "$code" = "200" ]; then ok=1; break; fi
-            sleep 6
-          done
-          if [ "$ok" != "1" ]; then echo "::error::헬스체크 실패 (백엔드 기동 지연 또는 오류)"; exit 1; fi
-          echo "배포 및 헬스체크 성공"
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new "$REMOTE_USER@$HOST" '
+            sleep 12
+            ok=0
+            for i in $(seq 1 20); do
+              code=$(curl -sk -o /dev/null -w "%{http_code}" --max-time 15 https://localhost/api/stocks/list || echo 000)
+              echo "시도 $i: HTTP $code"
+              if [ "$code" = "200" ]; then ok=1; break; fi
+              sleep 6
+            done
+            [ "$ok" = "1" ] || { echo "::error::헬스체크 실패 (백엔드 기동 지연 또는 오류)"; exit 1; }
+            echo "배포 및 헬스체크 성공"
+          '
 
       - name: SSH 키 정리
         if: always()
