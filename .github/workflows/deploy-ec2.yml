@@ -56,14 +56,16 @@ jobs:
 
       - name: HTTPS 헬스체크
         run: |
+          # 백엔드 재빌드·재기동(및 DB 대기 후 워커 재시작) 시간을 감안해 초기 대기 후 넉넉히 재시도한다.
+          sleep 12
           ok=0
-          for i in $(seq 1 12); do
+          for i in $(seq 1 20); do
             code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 https://st.edumgt.co.kr/api/stocks/list || echo 000)
             echo "시도 $i: HTTP $code"
             if [ "$code" = "200" ]; then ok=1; break; fi
             sleep 6
           done
-          if [ "$ok" != "1" ]; then echo "::error::헬스체크 실패"; exit 1; fi
+          if [ "$ok" != "1" ]; then echo "::error::헬스체크 실패 (백엔드 기동 지연 또는 오류)"; exit 1; fi
           echo "배포 및 헬스체크 성공"
 
       - name: SSH 키 정리
