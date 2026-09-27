@@ -37,6 +37,41 @@ def _check_rate_limit(api_key_id: int) -> bool:
         return True
 
 
+# 키 없이 열린 공개 엔드포인트(OHLCV 조회)는 IP 단위로만 완만하게 제한한다.
+PUBLIC_RATE_MAX = 120        # requests / window (per client IP)
+_public_buckets: dict[str, list] = {}
+
+
+def _client_ip() -> str:
+    forwarded = request.headers.get("X-Forwarded-For", "")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.remote_addr or "unknown"
+
+
+def _check_public_rate_limit(ip: str) -> bool:
+    now = time.time()
+    with _rate_lock:
+        bucket = [t for t in _public_buckets.get(ip, []) if now - t < RATE_LIMIT_WINDOW]
+        if len(bucket) >= PUBLIC_RATE_MAX:
+            _public_buckets[ip] = bucket
+            return False
+        bucket.append(now)
+        _public_buckets[ip] = bucket
+        return True
+
+
+def public_endpoint(f):
+    """인증 없이 누구나 호출할 수 있는 공개 엔드포인트. IP 단위 호출 제한만 둔다."""
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if not _check_public_rate_limit(_client_ip()):
+            return jsonify({"error": "RATE_LIMITED",
+                            "message": f"분당 {PUBLIC_RATE_MAX}회 호출 제한을 초과했습니다."}), 429
+        return f(*args, **kwargs)
+    return wrapper
+
+
 def require_api_key(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
@@ -116,7 +151,7 @@ def quote(symbol):
 
 
 @open_api_bp.get("/ohlcv/tickers")
-@require_api_key
+@public_endpoint
 def ohlcv_tickers():
     """Discover tickers that have collected OHLCV data."""
     try:
@@ -155,7 +190,7 @@ def ohlcv_tickers():
 
 
 @open_api_bp.get("/ohlcv/<ticker_code>")
-@require_api_key
+@public_endpoint
 def ohlcv_history(ticker_code):
     """Return paginated daily OHLCV for one ticker and year/date range."""
     code = ticker_code.upper().strip()
