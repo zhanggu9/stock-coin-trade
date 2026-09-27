@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>DB 백업 정책 — EDUMGT</title>
+  <link rel="icon" href="/img/favicon.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/style.css?v=20260920-chart">
+  <link rel="stylesheet" href="/css/db-backup-policy.css?v=20260927-1">
+</head>
+<body>
+  <div id="header-mount"></div>
+  <main class="backup-page">
+    <section class="backup-hero">
+      <span>EC2 · SYSTEMD · FULL LOGICAL BACKUP</span>
+      <h1>DB 백업 정책</h1>
+      <p>EC2에서 실행 중인 MariaDB와 PostgreSQL의 모든 데이터베이스를 6시간마다 압축 SQL로 저장합니다. 각 파일은 SHA-256으로 무결성을 확인하고, 생성 후 72시간이 지난 백업은 자동 삭제합니다.</p>
+    </section>
+
+    <section class="backup-summary" aria-label="백업 정책 요약">
+      <article><small>실행 주기</small><strong>매일 00·06·12·18시</strong></article>
+      <article><small>기준 시간대</small><strong>Asia/Seoul</strong></article>
+      <article><small>보관 기간</small><strong>3일 · 72시간</strong></article>
+      <article><small>저장 위치</small><strong>/var/backups/stock-coin-trade</strong></article>
+    </section>
+
+    <section class="backup-card">
+      <header><b>01</b><div><h2>백업 방식</h2><p>서비스 중단 없이 논리 백업을 만들고 압축·검증·보존 처리를 한 번에 수행합니다.</p></div></header>
+      <div class="backup-body">
+        <div class="backup-flow">
+          <article><b>MariaDB</b><h3>모든 DB 일관성 덤프</h3><p><code>mariadb-dump --all-databases</code>와 <code>--single-transaction</code>으로 테이블·트리거·이벤트·프로시저를 저장합니다.</p></article>
+          <article><b>PostgreSQL</b><h3>역할과 모든 DB 덤프</h3><p><code>pg_dumpall --clean --if-exists</code>로 역할, 권한, 전체 데이터베이스를 복원 가능한 SQL로 저장합니다.</p></article>
+          <article><b>압축·검증</b><h3>gzip + SHA-256</h3><p>먼저 <code>.partial</code>에 기록하고 <code>gzip -t</code>가 성공한 뒤 최종 파일로 이동합니다. 체크섬 파일도 함께 만듭니다.</p></article>
+          <article><b>보존</b><h3>72시간 후 삭제</h3><p><code>find -mmin +4320</code> 기준으로 SQL 압축 파일, 체크섬과 미완성 파일을 제거합니다.</p></article>
+        </div>
+        <p class="backup-note"><b>범위:</b> 현재 EC2의 <code>crypto-mock-mariadb</code>와 <code>crypto-mock-postgres</code> 전체입니다. Qdrant 인메모리 데이터와 Redis 세션은 이 SQL 백업 대상이 아닙니다.</p>
+      </div>
+    </section>
+
+    <section class="backup-card">
+      <header><b>02</b><div><h2>파일과 환경변수</h2><p>백업값은 저장소에 비밀번호를 쓰지 않고 EC2 <code>.env</code>와 컨테이너 환경에서 읽습니다.</p></div></header>
+      <div class="backup-body backup-grid">
+        <article><h3>설치 파일</h3><dl><dt>실행 스크립트</dt><dd><code>scripts/ec2/backup-databases.sh</code></dd><dt>서비스</dt><dd><code>stock-coin-trade-db-backup.service</code></dd><dt>타이머</dt><dd><code>stock-coin-trade-db-backup.timer</code></dd><dt>운영 로그</dt><dd><code>journalctl -u stock-coin-trade-db-backup.service</code></dd></dl></article>
+        <article><h3>.env 설정</h3><dl><dt>DB_BACKUP_ROOT</dt><dd><code>/var/backups/stock-coin-trade</code></dd><dt>DB_BACKUP_RETENTION_DAYS</dt><dd><code>3</code></dd><dt>MARIADB_BACKUP_CONTAINER</dt><dd><code>crypto-mock-mariadb</code></dd><dt>POSTGRES_BACKUP_CONTAINER</dt><dd><code>crypto-mock-postgres</code></dd></dl></article>
+      </div>
+      <div class="backup-body" style="padding-top:0">
+        <div class="backup-table-wrap"><table class="backup-table"><thead><tr><th>DBMS</th><th>디렉터리</th><th>파일명</th><th>내용</th></tr></thead><tbody><tr><td>MariaDB</td><td><code>.../mariadb/</code></td><td><code>mariadb_all_YYYYMMDDTHHMMSS+0900.sql.gz</code></td><td>모든 DB, 테이블, 데이터, 트리거, 이벤트, 루틴</td></tr><tr><td>PostgreSQL</td><td><code>.../postgresql/</code></td><td><code>postgresql_all_YYYYMMDDTHHMMSS+0900.sql.gz</code></td><td>로그인 역할, 권한과 모든 데이터베이스</td></tr></tbody></table></div>
+      </div>
+    </section>
+
+    <section class="backup-card">
+      <header><b>03</b><div><h2>실행 스크립트 핵심</h2><p>실제 운영 파일의 핵심 명령입니다. 비밀번호는 명령행에 직접 쓰지 않습니다.</p></div></header>
+      <div class="backup-body"><pre class="backup-code"># MariaDB 전체 백업
+docker exec crypto-mock-mariadb sh -ec '
+  export MYSQL_PWD="$MARIADB_ROOT_PASSWORD"
+  exec mariadb-dump -uroot --all-databases --single-transaction \
+    --quick --routines --events --triggers --hex-blob
+' | gzip -9 &gt; mariadb_all_TIMESTAMP.sql.gz.partial
+
+# PostgreSQL 역할 + 전체 DB 백업
+docker exec crypto-mock-postgres sh -ec '
+  exec pg_dumpall --clean --if-exists -U "$POSTGRES_USER"
+' | gzip -9 &gt; postgresql_all_TIMESTAMP.sql.gz.partial
+
+# 3일(72시간) 초과 파일 삭제
+find /var/backups/stock-coin-trade -type f -mmin +4320 -delete</pre></div>
+    </section>
+
+    <section class="backup-card">
+      <header><b>04</b><div><h2>운영 점검과 수동 실행</h2><p>타이머, 최근 로그, 백업 파일과 체크섬을 순서대로 확인합니다.</p></div></header>
+      <div class="backup-body"><pre class="backup-code"># 다음 실행 시각과 마지막 실행 결과
+sudo systemctl list-timers stock-coin-trade-db-backup.timer
+sudo systemctl status stock-coin-trade-db-backup.timer
+
+# 즉시 1회 실행 및 로그 확인
+sudo systemctl start stock-coin-trade-db-backup.service
+sudo journalctl -u stock-coin-trade-db-backup.service -n 100 --no-pager
+
+# 생성 파일과 무결성 확인
+sudo find /var/backups/stock-coin-trade -maxdepth 2 -type f -ls
+cd /var/backups/stock-coin-trade/mariadb &amp;&amp; sudo sha256sum -c *.sha256
+cd /var/backups/stock-coin-trade/postgresql &amp;&amp; sudo sha256sum -c *.sha256</pre>
+        <p class="backup-note">이 정책은 EC2 로컬 EBS 장애까지 보호하지는 않습니다. 장기 보존 또는 인스턴스 장애 대비가 필요하면 암호화된 S3 버킷·수명주기 정책으로 복제하는 2차 백업을 추가해야 합니다.</p>
+      </div>
+    </section>
+
+    <section class="backup-card">
+      <header><b>05</b><div><h2>복원 연습</h2><p>운영 DB에 바로 덮어쓰지 말고 격리된 테스트 컨테이너에서 먼저 검증합니다.</p></div></header>
+      <div class="backup-body">
+        <ol class="backup-list"><li>복원할 파일의 <code>sha256sum -c</code>와 <code>gzip -t</code>를 먼저 통과시킵니다.</li><li>운영과 분리된 임시 MariaDB/PostgreSQL 컨테이너를 생성합니다.</li><li>MariaDB는 <code>gzip -dc FILE | mariadb -uroot</code>, PostgreSQL은 <code>gzip -dc FILE | psql -U ADMIN -d postgres</code> 방식으로 복원합니다.</li><li>테이블 수·주요 행 수·로그인·조회 API를 점검한 뒤에만 운영 복원을 승인합니다.</li></ol>
+        <div class="backup-links"><a href="/ohlcv-db.html">OHLCV DB</a><a href="/quant.html?tab=schema">DB 스키마</a><a href="/sam-guide.html">SAM 활용</a><a href="/lambda-db-practice.html">Lambda/API</a></div>
+      </div>
+    </section>
+  </main>
+  <script src="/js/config.js"></script>
+  <script src="/js/common.js?v=20260927-sam-split"></script>
+  <script>document.addEventListener('DOMContentLoaded', () => { if (typeof initPage === 'function') initPage(); });</script>
+</body>
+</html>
