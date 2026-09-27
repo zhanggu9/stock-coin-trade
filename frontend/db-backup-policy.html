@@ -34,7 +34,7 @@
           <article><b>압축·검증</b><h3>gzip + SHA-256</h3><p>먼저 <code>.partial</code>에 기록하고 <code>gzip -t</code>가 성공한 뒤 최종 파일로 이동합니다. 체크섬 파일도 함께 만듭니다.</p></article>
           <article><b>보존</b><h3>72시간 후 삭제</h3><p><code>find -mmin +4320</code> 기준으로 SQL 압축 파일, 체크섬과 미완성 파일을 제거합니다.</p></article>
         </div>
-        <p class="backup-note"><b>범위:</b> 현재 EC2의 <code>crypto-mock-mariadb</code>와 <code>crypto-mock-postgres</code> 전체입니다. Qdrant 인메모리 데이터와 Redis 세션은 이 SQL 백업 대상이 아닙니다.</p>
+        <p class="backup-note"><b>범위:</b> 현재 EC2의 <code>crypto-mock-mariadb</code>, <code>crypto-mock-postgres</code>(퀀트), <code>pg-stock</code>(OHLCV 원본) 전체입니다. Qdrant 인메모리 데이터와 Redis 세션은 이 SQL 백업 대상이 아닙니다.</p>
       </div>
     </section>
 
