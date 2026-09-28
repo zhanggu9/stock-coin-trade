@@ -1,0 +1,84 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: One Lambda exposed by API Gateway and an internet-facing ALB
+
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+  PublicSubnetA:
+    Type: AWS::EC2::Subnet::Id
+  PublicSubnetB:
+    Type: AWS::EC2::Subnet::Id
+
+Resources:
+  HelloWorldFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: hello_world/
+      Handler: app.lambda_handler
+      Runtime: python3.12
+      Architectures:
+        - x86_64
+      Timeout: 10
+      Events:
+        HelloWorldApiEvent:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: get
+
+  AlbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow public HTTP for the SAM ALB example
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Scheme: internet-facing
+      Type: application
+      SecurityGroups:
+        - !Ref AlbSecurityGroup
+      Subnets:
+        - !Ref PublicSubnetA
+        - !Ref PublicSubnetB
+
+  AlbInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref HelloWorldFunction
+      Principal: elasticloadbalancing.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+
+  LambdaTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    DependsOn: AlbInvokePermission
+    Properties:
+      TargetType: lambda
+      Targets:
+        - Id: !GetAtt HelloWorldFunction.Arn
+
+  HttpListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref LambdaTargetGroup
+
+Outputs:
+  HelloWorldApi:
+    Description: API Gateway endpoint
+    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/hello/'
+  AlbUrl:
+    Description: ALB endpoint
+    Value: !Sub 'http://${ApplicationLoadBalancer.DNSName}/'
