@@ -21,19 +21,17 @@
 - `requirements.txt`: 해당 함수의 최소 의존성
 - `event.json`: `sam local invoke` 입력
 
-## 3. Secrets Manager
+## 3. AWS 접속 설정
 
-SAM 템플릿에는 비밀번호를 넣지 않습니다. Secret JSON은 타깃별로 다음 키를 사용합니다.
+`working/env/lambda.env`에 EC2 사설 IP로 연결하는 DB URL과 VPC 값을 넣습니다.
+이 파일에는 비밀번호가 있으므로 Git에 커밋하지 않습니다. 현재 SAM 템플릿은 URL을
+`NoEcho` CloudFormation 파라미터로 받고 Lambda 환경 변수에 전달합니다.
+Secrets Manager ARN을 받는 구성은 아닙니다.
 
-```json
-{"DATABASE_URL":"mysql+pymysql://USER:PASSWORD@DB_ENDPOINT:3306/mockinv"}
-{"QUANT_DATABASE_URL":"postgresql+psycopg://USER:PASSWORD@DB_ENDPOINT:5432/quant_research"}
-{"OHLCV_DATABASE_URL":"postgresql+psycopg://USER:PASSWORD@DB_ENDPOINT:5432/admin"}
-{"REDIS_URL":"rediss://REDIS_ENDPOINT:6379/0"}
-{"QDRANT_URL":"https://QDRANT_ENDPOINT","QDRANT_API_KEY":"SECRET"}
-```
-
-배포 시에는 값이 아니라 Secret ARN을 입력합니다. Lambda 환경변수에는 ARN만 들어가며, 핸들러가 cold start에서 Secret JSON을 읽습니다. 실행 역할에는 해당 Secret 읽기 권한만 부여합니다. 로컬에서는 `env/local-env.json`의 직접 URL을 우선 사용합니다.
+OHLCV는 `LAMBDA_OHLCV_DATABASE_URL`, `VPC_ID`, `VPC_SUBNET_IDS`가 필요합니다.
+ALB까지 만들려면 `LAMBDA_OHLCV_CREATE_ALB='true'`로 설정합니다. HTTPS에는
+`LAMBDA_OHLCV_CERTIFICATE_ARN`도 넣습니다. `pg-stock`은 EC2 사설 IP의
+55432 포트에 연결돼 있어야 합니다.
 
 ## 4. 로컬 API Gateway 경로 테스트
 
@@ -66,12 +64,15 @@ curl --fail-with-body 'http://127.0.0.1:3001/quant/prices?symbol=005930&limit=30
 scripts/sam-deploy.sh member
 ```
 
-첫 실행의 guided 질문에서 다음을 입력합니다.
+OHLCV Lambda, HTTP API, ALB를 배포하려면 다음 명령을 실행합니다.
 
-- `DatabaseSecretArn` 등 타깃의 Secret ARN
-- `VpcSecurityGroupIds`: Lambda 전용 SG
-- `VpcSubnetIds`: private subnet 두 개 이상
-- member/session은 `JwtIssuer`, `JwtAudience`
+```bash
+scripts/sam-deploy.sh ohlcv
+```
+
+OHLCV 템플릿은 Lambda SG를 직접 생성합니다. 기존 VPC에 ALB용 두 번째
+서브넷을 생성하며, 기본 CIDR은 `172.31.1.0/24`입니다. 최초 배포 시 해당 CIDR이
+비어 있어야 합니다.
 
 각 타깃은 별도 build 디렉터리, `samconfig` 환경과 CloudFormation 스택을 사용하므로 다른 타깃을 교체하지 않습니다. 배포 후 스크립트가 `Outputs`의 `ApiUrl`을 표시합니다.
 
@@ -86,6 +87,24 @@ API_URL="$(aws cloudformation describe-stacks \
   --output text)"
 curl --fail-with-body "$API_URL/quant/prices?symbol=005930&limit=30"
 ```
+
+OHLCV 공개 조회 확인:
+
+```bash
+ALB_URL="$(aws cloudformation describe-stacks \
+  --stack-name stock-coin-trade-ohlcv-practice \
+  --query 'Stacks[0].Outputs[?OutputKey==`AlbUrl`].OutputValue' \
+  --output text)"
+# ALB 기본 DNS용 자체 서명 인증서를 명시적으로 신뢰합니다.
+curl --fail-with-body --cacert env/ohlcv-alb-selfsigned-cert.pem "$ALB_URL/ohlcv/health"
+curl --fail-with-body --cacert env/ohlcv-alb-selfsigned-cert.pem "$ALB_URL/ohlcv/summary"
+```
+
+ALB의 80 포트는 HTTPS 443으로 리다이렉트합니다. 인증서는 자체 서명이라 일반
+브라우저와 기본 `curl` 신뢰 저장소에는 포함되지 않습니다. 인증서 파일 없이
+테스트할 때만 `curl -k`를 사용할 수 있습니다. 인증서와 개인키는
+`working/env/ohlcv-alb-selfsigned-*.pem`에 0600 권한으로 보관하며 Git에서 제외됩니다.
+ACM에 가져온 인증서는 자동 갱신되지 않으므로 만료일인 2027-09-28 전에 갱신해야 합니다.
 
 JWT 보호 API:
 

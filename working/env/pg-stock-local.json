@@ -1,5 +1,5 @@
 {
   "DatabasePracticeFunction": {
-    "OHLCV_DATABASE_URL": "postgresql+psycopg://admin:admin1234@172.30.0.3:5432/admin"
+    "OHLCV_DATABASE_URL": "postgresql+psycopg://admin:admin1234@172.19.0.2:5432/admin"
   }
 }

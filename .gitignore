@@ -73,3 +73,5 @@ deploy.md
 /sam-installation
 /sam-app*
 /mydbtest-sam/
+
+**.aws-sam/
