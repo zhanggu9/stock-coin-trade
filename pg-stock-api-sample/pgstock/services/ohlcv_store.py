@@ -37,6 +37,7 @@ def engine():
 
 
 def json_value(value):
+    """SQLAlchemy가 반환한 날짜/Decimal을 JSON 직렬화 가능한 값으로 바꾼다."""
     if isinstance(value, Decimal):
         return float(value)
     if isinstance(value, date | datetime):
@@ -45,10 +46,12 @@ def json_value(value):
 
 
 def rows_of(result) -> list[dict]:
+    """SQLAlchemy 결과 행을 일반 dict 목록으로 변환한다."""
     return [{key: json_value(value) for key, value in row.items()} for row in result.mappings()]
 
 
 def summary() -> dict:
+    """대시보드가 한 번에 사용할 전체·연도·시장·동기화 집계를 읽는다."""
     with engine().connect() as conn:
         totals = rows_of(conn.execute(text("""
             SELECT ohlcv_rows, ticker_count, first_date, last_date, refreshed_at
@@ -73,6 +76,7 @@ def summary() -> dict:
 
 
 def ticker_summaries(query: str, limit: int, offset: int) -> dict:
+    """종목별 전체 기간과 연도별 행 수를 계산해 페이지로 반환한다."""
     with engine().connect() as conn:
         total = conn.execute(text("""
             SELECT count(DISTINCT ticker_code) FROM ohlcv
@@ -152,6 +156,7 @@ def filtered_rows(*, query: str, market: str, date_from: date | None, date_to: d
 # ── Open API(공개) 조회 ──────────────────────────────────────────────────────
 
 def public_tickers(*, query: str, market: str, year: int | None, limit: int, offset: int) -> dict:
+    """외부 공개 API용 종목 목록을 시장·연도·검색어로 필터링한다."""
     params: dict[str, Any] = {"query": f"%{query}%", "market": market, "limit": limit, "offset": offset}
     clauses = ["(:query = '%%' OR o.ticker_code ILIKE :query OR COALESCE(t.name,'') ILIKE :query)",
                "(:market = '' OR t.market = :market)"]

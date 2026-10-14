@@ -36,6 +36,11 @@ def _ohlcv_schedule_hours() -> str:
 
 
 def start_scheduler() -> BackgroundScheduler:
+    """한국시간 cron에 증분 수집 작업을 등록하고 스케줄러를 시작한다.
+
+    앱 기동 직후에는 집계 스냅샷을 준비하고, 이후 설정된 시각에만 수집 작업을
+    실행한다. max_instances=1로 같은 작업이 겹치지 않게 한다.
+    """
     scheduler = BackgroundScheduler(timezone="Asia/Seoul")
     try:
         result = bootstrap_ohlcv_aggregates()

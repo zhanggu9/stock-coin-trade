@@ -23,6 +23,7 @@ _rate_lock = threading.Lock()
 
 
 def _allow(buckets: dict, key, maximum: int) -> bool:
+    """고정 시간창 안의 호출 시각만 남겨 최대 호출 수를 원자적으로 검사한다."""
     now = time.time()
     with _rate_lock:
         bucket = [t for t in buckets.get(key, []) if now - t < RATE_LIMIT_WINDOW]
@@ -35,14 +36,17 @@ def _allow(buckets: dict, key, maximum: int) -> bool:
 
 
 def check_rate_limit(api_key_id: int) -> bool:
+    """인증된 API 키의 분당 호출 제한을 검사한다."""
     return _allow(_rate_buckets, api_key_id, RATE_LIMIT_MAX)
 
 
 def check_public_rate_limit(ip: str) -> bool:
+    """공개 엔드포인트의 IP별 분당 호출 제한을 검사한다."""
     return _allow(_public_buckets, ip, PUBLIC_RATE_MAX)
 
 
 def hash_key(raw_key: str) -> str:
+    """평문 API 키를 비교용 SHA-256 해시로 변환한다."""
     return hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
 
 

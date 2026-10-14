@@ -10,10 +10,12 @@ from pgstock.config import get_settings
 
 
 def database_url() -> str:
+    """현재 설정에서 PostgreSQL 접속 문자열을 읽는다."""
     return get_settings().ohlcv_database_url
 
 
 def create_ohlcv_engine():
+    """OHLCV 조회·배치가 공유할 작은 SQLAlchemy 커넥션 풀을 만든다."""
     return create_engine(database_url(), pool_pre_ping=True, pool_size=2, max_overflow=1)
 
 
@@ -68,7 +70,11 @@ def ensure_aggregate_tables(engine):
 
 
 def refresh_ohlcv_aggregates(engine=None):
-    """집계를 REPEATABLE READ 트랜잭션 하나에서 교체한다."""
+    """원본 테이블을 일관된 시점에 읽어 대시보드용 집계 스냅샷을 교체한다.
+
+    REPEATABLE READ와 PostgreSQL advisory lock을 사용해 수집 배치와 동시에
+    실행되어도 집계 테이블이 중간 상태를 보이지 않도록 한다.
+    """
     engine = engine or create_ohlcv_engine()
     ensure_aggregate_tables(engine)
     refreshed_at = datetime.now(UTC)
@@ -180,6 +186,7 @@ def claim_daily_batch(engine, batch_date=None):
 
 
 def finish_daily_batch(engine, batch_date, *, status, fetched_rows=0, upserted_rows=0, refreshed_at=None, error=None):
+    """하루 배치 원장에 완료/실패 결과와 처리량을 기록한다."""
     with engine.begin() as conn:
         conn.execute(text("""
             UPDATE ohlcv_daily_batch_runs

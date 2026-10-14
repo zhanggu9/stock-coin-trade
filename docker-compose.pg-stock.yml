@@ -16,7 +16,7 @@ services:
       - ohlcv-db
     # Lambda ENI가 EC2 사설 IP로 접근합니다. 퍼블릭 인터페이스에는 열지 않습니다.
     ports:
-      - "172.31.0.79:55432:5432"
+      - "127.0.0.1:55432:5432" # 로컬로 바꿔서 "172.31.0.79:55432:5432"
     environment:
       POSTGRES_DB: admin
       POSTGRES_USER: admin

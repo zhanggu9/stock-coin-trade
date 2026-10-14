@@ -22,10 +22,12 @@ _sync_lock = threading.Lock()
 
 
 def sync_enabled() -> bool:
+    """예약 증분 수집 기능이 환경설정상 활성화되어 있는지 반환한다."""
     return get_settings().ohlcv_sync_enabled
 
 
 def _ensure_status_table(engine):
+    """종목·연도별 수집 결과를 기록할 상태 테이블을 필요할 때 생성한다."""
     with engine.begin() as conn:
         conn.execute(text("""
             CREATE TABLE IF NOT EXISTS ohlcv_sync_status (
@@ -46,6 +48,7 @@ def _ensure_status_table(engine):
 
 
 def _save_status(engine, *, code, year, provider, status, start, end, fetched, upserted, error, started):
+    """한 종목의 한 연도 수집 결과를 upsert한다."""
     with engine.begin() as conn:
         conn.execute(text("""
             INSERT INTO ohlcv_sync_status
@@ -69,6 +72,7 @@ def _save_status(engine, *, code, year, provider, status, start, end, fetched, u
 
 
 def _ticker_universe(engine):
+    """설정값에 따라 major/all/명시적 코드 목록으로 수집 대상을 결정한다."""
     settings = get_settings()
     selection = settings.ohlcv_sync_tickers.strip()
     if not selection or selection.lower() == "major":
@@ -90,6 +94,7 @@ def _ticker_universe(engine):
 
 
 def _existing_years(engine, code):
+    """특정 종목의 연도별 마지막 거래일과 행 수를 조회한다."""
     with engine.connect() as conn:
         rows = conn.execute(text("""
             SELECT extract(year FROM trade_date)::int AS data_year,
@@ -116,6 +121,7 @@ def plan_year_ranges(existing, start_year, as_of, reconcile=False, correction_da
 
 
 def _download(provider, code, market, start, end):
+    """선택된 공급자를 호출하고 auto 모드에서는 Yahoo 실패 시 네이버로 전환한다."""
     if provider == "naver":
         return fetch_naver(code, start, end)
     if provider == "yahoo":
@@ -129,7 +135,11 @@ def _download(provider, code, market, start, end):
 
 
 def collect_ohlcv(*, reconcile=False, as_of=None, engine=None, downloader=None):
-    """설정된 종목마다 빠진 연도를 수집하고 올해 데이터를 갱신한다."""
+    """설정된 종목마다 빠진 연도를 수집하고 올해 데이터를 보정한다.
+
+    종목별로 과거 누락 연도는 전체 구간을 받고, 현재 연도는 correction_days만큼
+    되감아 재수집한다. 프로세스 안의 lock으로 스케줄러 중복 실행도 방지한다.
+    """
     if not _sync_lock.acquire(blocking=False):
         return {"status": "already_running", "tickers": 0, "ranges": 0, "failed": []}
     try:
@@ -174,6 +184,7 @@ def collect_ohlcv(*, reconcile=False, as_of=None, engine=None, downloader=None):
 
 
 def run_incremental_sync():
+    """스케줄러가 호출하는 증분 수집 진입점과 집계 갱신을 연결한다."""
     if not sync_enabled():
         return {"status": "disabled"}
     engine = create_ohlcv_engine()

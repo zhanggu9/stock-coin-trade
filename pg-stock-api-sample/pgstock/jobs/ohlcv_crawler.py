@@ -49,10 +49,17 @@ MAJOR_TICKERS = {
 
 
 def yahoo_symbol(code, market):
+    """국내 시장 코드에 맞는 Yahoo Finance 티커 접미사를 붙인다."""
     return f"{code}.KS" if market == "KOSPI" else f"{code}.KQ"
 
 
 def normalize_download(frame):
+    """Yahoo DataFrame을 내부 표준 행 목록으로 바꾸고 가격 이상치를 제거한다.
+
+    공급자마다 컬럼명·인덱스·멀티인덱스 형태가 다를 수 있으므로 이 경계에서
+    날짜와 가격 컬럼을 통일한다. 고가/저가 관계와 음수 값도 함께 검증해 잘못된
+    행이 데이터베이스에 들어가지 않게 한다.
+    """
     if frame is None or frame.empty:
         return []
     if isinstance(frame.columns, pd.MultiIndex):
@@ -127,6 +134,7 @@ def fetch_naver(code, start, end):
 
 
 def fetch_yahoo(code, market, start, end):
+    """Yahoo Finance에서 [start, end) 구간의 일봉을 받아 표준 행으로 반환한다."""
     frame = yf.download(
         yahoo_symbol(code, market),
         start=start.isoformat(),
@@ -139,6 +147,11 @@ def fetch_yahoo(code, market, start, end):
 
 
 def upsert_ticker(engine, code, name, market, rows):
+    """종목 메타데이터와 OHLCV 행을 하나의 트랜잭션으로 멱등 저장한다.
+
+    같은 종목·날짜가 이미 있으면 최신 공급자 값으로 갱신하되, 값이 실제로
+    달라진 경우에만 업데이트한다. 반환값은 INSERT/UPDATE가 반영한 행 수다.
+    """
     with engine.begin() as conn:
         conn.execute(text("""
             INSERT INTO tickers (ticker_code, name, market)
@@ -169,6 +182,7 @@ def upsert_ticker(engine, code, name, market, rows):
 
 
 def parse_args():
+    """CLI 일괄 수집기의 명령행 옵션을 정의하고 파싱한다."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--start", default="2020-01-01", help="inclusive date (YYYY-MM-DD)")
     parser.add_argument("--end", default=(date.today() + timedelta(days=1)).isoformat(), help="exclusive date (YYYY-MM-DD)")
@@ -181,6 +195,7 @@ def parse_args():
 
 
 def main():
+    """선택한 종목을 내려받아 저장하고 마지막에 집계 스냅샷을 갱신한다."""
     args = parse_args()
     start = date.fromisoformat(args.start)
     end = date.fromisoformat(args.end)

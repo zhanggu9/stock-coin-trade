@@ -18,17 +18,20 @@ logger = logging.getLogger(__name__)
 
 
 def _optional_number(raw: str) -> Decimal | None:
+    """빈 문자열은 필터 미사용으로, 값이 있으면 정확한 Decimal로 변환한다."""
     raw = raw.strip()
     return Decimal(raw) if raw else None
 
 
 def _optional_date(raw: str) -> date | None:
+    """빈 날짜 필터는 None으로 두고, 입력된 날짜는 ISO 형식으로 검증한다."""
     raw = raw.strip()
     return date.fromisoformat(raw) if raw else None
 
 
 @router.get("/summary")
 def summary() -> dict:
+    """대시보드용 사전 계산 집계와 마지막 동기화 상태를 반환한다."""
     try:
         return ohlcv_store.summary()
     except (IndexError, SQLAlchemyError):
@@ -38,6 +41,7 @@ def summary() -> dict:
 
 @router.get("/tickers")
 def tickers(q: str = Query(""), limit: int = Query(100), offset: int = Query(0)) -> dict:
+    """종목별 행 수·기간·연도별 적재량을 페이지 단위로 반환한다."""
     try:
         return ohlcv_store.ticker_summaries(q.strip().upper(), clamp(limit, 1, 200), max(0, offset))
     except (ValueError, SQLAlchemyError):

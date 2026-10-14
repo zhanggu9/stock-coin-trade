@@ -47,4 +47,5 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
+    """환경변수를 한 번만 읽어 애플리케이션 전체에서 동일한 설정을 공유한다."""
     return Settings()

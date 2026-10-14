@@ -16,6 +16,7 @@ def parse_int(value: Any, default: int | None = None) -> int | None:
 
 
 def parse_float(value: Any, default: float | None = None) -> float | None:
+    """임의 입력을 float로 변환하고 실패하면 기본값을 반환한다."""
     if isinstance(value, bool):
         return default
     try:
@@ -25,4 +26,5 @@ def parse_float(value: Any, default: float | None = None) -> float | None:
 
 
 def clamp(value: int, minimum: int, maximum: int) -> int:
+    """정수를 [minimum, maximum] 범위로 잘라 페이지 크기 등을 안전하게 제한한다."""
     return max(minimum, min(value, maximum))

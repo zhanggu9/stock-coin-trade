@@ -49,6 +49,7 @@ def authenticate_api_key(request: Request) -> tuple[int, int]:
 
 
 def require_api_key(request: Request) -> int:
+    """FastAPI 의존성으로 사용할 Bearer 인증 함수. 인증된 member_id를 반환한다."""
     return authenticate_api_key(request)[1]
 
 
@@ -56,6 +57,7 @@ ApiKeyMember = Annotated[int, Depends(require_api_key)]
 
 
 def _client_ip(request: Request) -> str:
+    """프록시 뒤에서도 공개 API 호출 제한에 사용할 클라이언트 IP를 구한다."""
     forwarded = request.headers.get("X-Forwarded-For", "")
     if forwarded:
         return forwarded.split(",")[0].strip()
@@ -69,6 +71,7 @@ def public_endpoint(request: Request) -> None:
 
 
 def _bounded_int(raw: str, name: str, default: int, minimum: int, maximum: int) -> int:
+    """문자열 페이지 파라미터를 정수로 바꾸고 허용 범위 안으로 제한한다."""
     value = parse_int(raw if raw != "" else default)
     if value is None:
         raise ValueError(f"{name}은 {minimum}~{maximum} 범위의 정수여야 합니다.")
@@ -76,6 +79,7 @@ def _bounded_int(raw: str, name: str, default: int, minimum: int, maximum: int) 
 
 
 def _date_arg(raw: str, name: str) -> date | None:
+    """선택적 날짜 문자열을 date로 변환하고 사용자 친화적인 오류를 만든다."""
     raw = raw.strip()
     if not raw:
         return None
