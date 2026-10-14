@@ -13,9 +13,22 @@
     <div class="sheet-tabs" role="tablist">
       <button type="button" class="sheet-tab active" id="tab-crawl" role="tab" aria-selected="true" aria-controls="panel-crawl">웹페이지 표 가져오기</button>
       <button type="button" class="sheet-tab" id="tab-sector" role="tab" aria-selected="false" aria-controls="panel-sector">섹터별 월별 종가</button>
+      <button type="button" class="sheet-tab" id="tab-ohlcv" role="tab" aria-selected="false" aria-controls="panel-ohlcv">OHLCV API 백테스트</button>
     </div>
     <section class="sheet-card" id="panel-crawl" role="tabpanel" aria-labelledby="tab-crawl"><form id="crawl-form" class="crawl-form"><label for="source-url">가져올 페이지 URL</label><div><input id="source-url" type="url" required placeholder="https://example.com/report"><button id="crawl-button" type="submit">시트 만들기</button></div><p>공개 HTML 페이지의 표를 우선 추출합니다. 로그인·차단된 페이지와 PDF는 지원하지 않습니다.</p></form></section>
     <section class="sheet-card" id="panel-sector" role="tabpanel" aria-labelledby="tab-sector" hidden><form id="sector-form" class="crawl-form"><label for="sector-select">섹터별 종목 월별 종가</label><div><select id="sector-select" required><option value="">섹터를 불러오는 중…</option></select><button id="sector-button" type="submit">섹터 시트 만들기</button></div><p>선택한 섹터의 상위 20개 종목을 가져와, 최근 24개월(yyyy-mm)의 월별 종가를 시트로 만듭니다.</p></form></section>
+    <section class="sheet-card" id="panel-ohlcv" role="tabpanel" aria-labelledby="tab-ohlcv" hidden>
+      <form id="ohlcv-backtest-form" class="crawl-form">
+        <div class="ohlcv-api-fields">
+          <div><label for="ohlcv-ticker">종목 코드</label><input id="ohlcv-ticker" name="ticker_code" value="005930" required maxlength="20" autocomplete="off"></div>
+          <div><label for="ohlcv-date-from">시작일</label><input id="ohlcv-date-from" name="date_from" type="date" required></div>
+          <div><label for="ohlcv-date-to">종료일</label><input id="ohlcv-date-to" name="date_to" type="date" required></div>
+          <div><label for="ohlcv-initial-cash">초기 자금 (원)</label><input id="ohlcv-initial-cash" name="initial_cash" type="number" min="1" max="1000000000000" step="10000" value="1000000" required></div>
+        </div>
+        <button id="ohlcv-backtest-button" type="submit">OHLCV API로 LEAN 백테스트</button>
+        <p>CSV를 만들지 않고 OHLCV 조회 API를 페이지 단위로 호출합니다. 실행 전략은 첫 유효 거래일 매수 후 보유하는 기준 전략입니다.</p>
+      </form>
+    </section>
     <section id="sheet-status" class="sheet-status" aria-live="polite">URL을 입력하면 데이터 시트를 만듭니다.</section>
     <section id="sheet-workspace" class="sheet-card workspace" hidden><div class="sheet-toolbar"><div><h2 id="sheet-title"></h2><a id="sheet-source" target="_blank" rel="noopener">원문 열기 ↗</a></div><div><button type="button" id="quant-analyze">퀀트분석</button><button type="button" id="lean-backtest">LEAN</button><button type="button" id="add-row">행 추가</button><button type="button" id="download-csv">CSV 다운로드</button></div></div><div class="table-scroll"><table id="data-sheet"></table></div><p class="sheet-footnote">셀을 클릭해 직접 수정할 수 있습니다. 추출 값은 원문과 대조해 확인하세요.</p></section>
   </main>

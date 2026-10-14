@@ -1,6 +1,7 @@
 const form = document.querySelector('#crawl-form');
 const sectorForm = document.querySelector('#sector-form');
 const sectorSelect = document.querySelector('#sector-select');
+const ohlcvForm = document.querySelector('#ohlcv-backtest-form');
 const statusEl = document.querySelector('#sheet-status');
 const workspace = document.querySelector('#sheet-workspace');
 const table = document.querySelector('#data-sheet');
@@ -12,6 +13,7 @@ let currentMeta = { title: '', sourceUrl: '', sourceType: '' };
 const tabs = [
   { button: document.querySelector('#tab-crawl'), panel: document.querySelector('#panel-crawl') },
   { button: document.querySelector('#tab-sector'), panel: document.querySelector('#panel-sector') },
+  { button: document.querySelector('#tab-ohlcv'), panel: document.querySelector('#panel-ohlcv') },
 ];
 function activateTab(target) {
   for (const { button, panel } of tabs) {
@@ -26,6 +28,20 @@ for (const { button } of tabs) button.addEventListener('click', () => activateTa
 initPage();
 loadSectors();
 restoreFromStorage();
+setOHLCVDateDefaults();
+
+function setOHLCVDateDefaults() {
+  const toLocalISO = value => {
+    const local = new Date(value.getTime() - value.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 10);
+  };
+  const end = new Date();
+  const start = new Date(end);
+  start.setFullYear(start.getFullYear() - 5);
+  document.querySelector('#ohlcv-date-from').value = toLocalISO(start);
+  document.querySelector('#ohlcv-date-to').value = toLocalISO(end);
+}
+
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"']/g, char => ({
@@ -246,6 +262,44 @@ sectorForm.addEventListener('submit', async event => {
     renderSheet(data);
   } catch (error) { statusEl.className = 'sheet-status error'; statusEl.textContent = error.message; }
   finally { button.disabled = false; }
+});
+ohlcvForm.addEventListener('submit', async event => {
+  event.preventDefault();
+  const tickerCode = document.querySelector('#ohlcv-ticker').value.trim().toUpperCase();
+  const dateFrom = document.querySelector('#ohlcv-date-from').value;
+  const dateTo = document.querySelector('#ohlcv-date-to').value;
+  const initialCash = Number(document.querySelector('#ohlcv-initial-cash').value);
+  if (!tickerCode || !dateFrom || !dateTo || !Number.isFinite(initialCash) || initialCash <= 0) {
+    statusEl.className = 'sheet-status error';
+    statusEl.textContent = '종목 코드, 날짜 범위와 양수 초기 자금을 입력하세요.';
+    return;
+  }
+
+  const confirmed = await showConfirmModal('OHLCV API에서 과거 일봉을 불러온 뒤 원격 LEAN 엔진에서 백테스트합니다. 실행하시겠습니까?');
+  if (!confirmed) return;
+
+  const button = document.querySelector('#ohlcv-backtest-button');
+  button.disabled = true;
+  const stopLoading = startLoadingStatus(tickerCode + ' OHLCV API 데이터를 조회하고 QuantConnect LEAN을 실행하는 중입니다…');
+  try {
+    const response = await apiFetch('/api/ai-sheet/lean-ohlcv-backtest', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ticker_code: tickerCode, date_from: dateFrom, date_to: dateTo, initial_cash: initialCash}),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'OHLCV API LEAN 백테스트에 실패했습니다.');
+    const stats = Object.entries(data.statistics || {}).map(([key, value]) => key + ' ' + value).join(' · ');
+    stopLoading();
+    statusEl.className = 'sheet-status';
+    statusEl.textContent = data.notice + ' 기간 ' + data.dateFrom + ' ~ ' + data.dateTo + ' · ' + data.rowsLoaded + '개 일봉 · API 페이지 ' + data.apiPages + '회 · ' + stats;
+  } catch (error) {
+    stopLoading();
+    statusEl.className = 'sheet-status error';
+    statusEl.textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
 });
 document.querySelector('#quant-analyze').addEventListener('click', runQuantAnalysis);
 document.querySelector('#lean-backtest').addEventListener('click', runLeanBacktest);
