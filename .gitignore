@@ -74,4 +74,5 @@ deploy.md
 /sam-app*
 /mydbtest-sam/
 
-**.aws-sam/pg-stock-data.sql
+**.aws-sam/
+pg-stock-data.sql
