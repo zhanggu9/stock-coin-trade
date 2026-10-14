@@ -76,3 +76,6 @@ deploy.md
 
 **.aws-sam/
 pg-stock-data.sql
+
+project-user_accessKeys.csv
+project-user_credentials.csv
