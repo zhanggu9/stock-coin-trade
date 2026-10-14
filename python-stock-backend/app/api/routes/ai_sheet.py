@@ -5,7 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Body
 from fastapi.responses import JSONResponse
 
-from app.services import ai_sheet
+from app.services import ai_sheet, lean_ohlcv
 from app.services.ai_sheet import SheetError
 
 from ..schemas import CrawlBody, SectorSheetBody, SheetBody
@@ -46,3 +46,17 @@ def quant_analyze(payload: SheetBody = Body(default_factory=SheetBody)):
 @router.post("/lean-backtest")
 def lean_backtest(payload: SheetBody = Body(default_factory=SheetBody)):
     return _run(lambda: ai_sheet.lean_backtest(payload.columns, payload.rows, payload.rowIndex or 0))
+
+
+@router.post("/lean-ohlcv-backtest")
+def lean_ohlcv_backtest(payload: dict = Body(default_factory=dict)):
+    """Run QuantConnect LEAN from the paginated OHLCV Open API (no CSV export)."""
+    try:
+        return lean_ohlcv.run_backtest(
+            ticker_code=payload.get("ticker_code", payload.get("tickerCode", "")),
+            date_from=payload.get("date_from", payload.get("dateFrom", "")),
+            date_to=payload.get("date_to", payload.get("dateTo", "")),
+            initial_cash=payload.get("initial_cash", payload.get("initialCash", 1_000_000)),
+        )
+    except lean_ohlcv.OHLCVBacktestError as exc:
+        return JSONResponse({"message": exc.message, **exc.extra}, status_code=exc.status_code)
