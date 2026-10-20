@@ -117,6 +117,8 @@ services:
       QUANT_DATABASE_URL: ${QUANT_DATABASE_URL:-postgresql+psycopg://${QUANT_DB_USER:-quant}:${QUANT_DB_PASSWORD:-quant}@postgres:5432/${QUANT_DB_NAME:-quant_research}}
       # pg-stock 원본은 매일 09:50·12:50·16:50 KST 배치로 갱신하고 대시보드는 별도 집계 스냅샷을 읽는다.
       OHLCV_DATABASE_URL: ${OHLCV_DATABASE_URL:-postgresql+psycopg://admin:admin1234@pg-stock:5432/admin}
+      OHLCV_API_BASE_URL: ${OHLCV_API_BASE_URL:-http://43.202.161.134:8010}
+      OHLCV_API_TOKEN: ${OHLCV_API_TOKEN:-}
       OHLCV_SYNC_ENABLED: ${OHLCV_SYNC_ENABLED:-true}
       OHLCV_SYNC_TICKERS: ${OHLCV_SYNC_TICKERS:-major}
       OHLCV_SYNC_PROVIDER: ${OHLCV_SYNC_PROVIDER:-naver}

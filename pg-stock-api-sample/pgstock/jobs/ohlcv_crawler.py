@@ -108,29 +108,43 @@ def fetch_naver(code, start, end):
     )
     response.raise_for_status()
     raw_rows = ast.literal_eval(response.text.strip())
-    rows = []
-    for raw in raw_rows[1:]:
-        if len(raw) < 6 or not raw[0]:
-            continue
-        trade_date = date.fromisoformat(f"{raw[0][:4]}-{raw[0][4:6]}-{raw[0][6:8]}")
-        open_price, high, low, close, volume = raw[1:6]
-        if not all(value is not None for value in (open_price, high, low, close, volume)):
-            continue
-        if min(open_price, high, low, close) <= 0 or volume < 0:
-            continue
-        if high < max(open_price, low, close) or low > min(open_price, high, close):
-            continue
-        rows.append({
-            "trade_date": trade_date,
-            "open": float(open_price),
-            "high": float(high),
-            "low": float(low),
-            "close": float(close),
-            # 네이버는 이 엔드포인트에서 수정 종가를 제공하지 않는다.
-            "adj_close": float(close),
-            "volume": int(volume),
-        })
-    return rows
+    return [row for row in (parse_naver_row(raw) for raw in raw_rows[1:]) if row is not None]
+
+
+def parse_naver_row(raw):
+    """네이버 일봉 한 행([날짜, 시가, 고가, 저가, 종가, 거래량, ...])을 표준 행으로 바꾼다. 쓸 수 없으면 None.
+
+    - 거래가 없던 날(거래정지 등)은 시가·고가·저가가 0으로 오므로 봉을 만들지 않는다.
+    - 네이버는 액면분할 등 이전 구간을 수정주가로 소급 조정하면서 반올림해, 종가가 고가보다 1원 높은 식의
+      작은 어긋남이 생긴다(예: 삼성전자우 2016-08-23 고가 27,999 / 종가 28,000). 고가·저가 기준 1%(최소 2원)
+      이내면 고가/저가를 시가·종가를 포함하도록 바로잡고, 그보다 크면 잘못된 행으로 보고 버린다.
+    """
+    if len(raw) < 6 or not raw[0]:
+        return None
+    trade_date = date.fromisoformat(f"{raw[0][:4]}-{raw[0][4:6]}-{raw[0][6:8]}")
+    open_price, high, low, close, volume = raw[1:6]
+    if not all(value is not None for value in (open_price, high, low, close, volume)):
+        return None
+    if min(open_price, high, low, close) <= 0 or volume < 0:
+        return None
+    top, bottom = max(open_price, close), min(open_price, close)
+    if high < low:
+        return None
+    if top > high or bottom < low:
+        tolerance = max(high * 0.01, 2)
+        if top - high > tolerance or low - bottom > tolerance:
+            return None
+        high, low = max(high, top), min(low, bottom)
+    return {
+        "trade_date": trade_date,
+        "open": float(open_price),
+        "high": float(high),
+        "low": float(low),
+        "close": float(close),
+        # 네이버는 이 엔드포인트에서 수정 종가를 따로 주지 않는다 (가격 자체가 수정주가).
+        "adj_close": float(close),
+        "volume": int(volume),
+    }
 
 
 def fetch_yahoo(code, market, start, end):
