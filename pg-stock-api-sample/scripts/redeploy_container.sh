@@ -7,6 +7,7 @@
 #
 # - 실행 중인 컨테이너의 환경변수(이미지 기본값 제외)·네트워크·포트·재시작 정책을 그대로 쓴다.
 # - OVERRIDES 의 값만 바꾼다 (기본: KOSPI·KOSDAQ 주식 전체, 2016년부터).
+# - EXTRA_ENV_FILE(기본 ~/pg-stock-api-deploy/minute.env)이 있으면 그 값(KIS 키, MINUTE_SYNC_ENABLED 등)도 넣는다.
 # - 새 컨테이너가 /health 에 90초 안에 응답하지 않으면 원래 컨테이너로 되돌린다.
 # - 원래 설정은 ~/pg-stock-api-deploy/ 에 백업한다.
 set -euo pipefail
@@ -15,6 +16,8 @@ NAME="${NAME:-pg-stock-api}"
 IMAGE="${IMAGE:-pg-stock-api-sample:latest}"
 OVERRIDES="${OVERRIDES:-OHLCV_SYNC_TICKERS=listed OHLCV_SYNC_START_YEAR=2016}"
 BACKUP_DIR="$HOME/pg-stock-api-deploy"
+EXTRA_ENV_FILE="${EXTRA_ENV_FILE:-$BACKUP_DIR/minute.env}"
+[ -r "$EXTRA_ENV_FILE" ] || EXTRA_ENV_FILE=""
 TS="$(date +%Y%m%d%H%M%S)"
 
 umask 077
@@ -24,9 +27,12 @@ OLD_IMAGE_ID="$(sudo docker inspect -f '{{.Image}}' "$NAME")"
 sudo docker image inspect "$OLD_IMAGE_ID" > "$BACKUP_DIR/image.$TS.json"
 
 # 이미지 기본값을 뺀 컨테이너 환경변수에 OVERRIDES를 적용해 env 파일을 만든다 (비밀값은 화면에 출력하지 않음).
-python3 - "$BACKUP_DIR/$NAME.$TS.json" "$BACKUP_DIR/image.$TS.json" "$BACKUP_DIR/app.env" $OVERRIDES <<'PY'
-import json, sys
+EXTRA_ENV_FILE="$EXTRA_ENV_FILE" python3 - "$BACKUP_DIR/$NAME.$TS.json" "$BACKUP_DIR/image.$TS.json" "$BACKUP_DIR/app.env" $OVERRIDES <<'PY'
+import json, os, sys
 container_path, image_path, out_path, *overrides = sys.argv[1:]
+extra = os.environ.get("EXTRA_ENV_FILE")
+if extra:
+    overrides += [line.strip() for line in open(extra) if "=" in line and not line.lstrip().startswith("#")]
 container = json.load(open(container_path))[0]
 image_env = set(json.load(open(image_path))[0]["Config"]["Env"] or [])
 env = {}
@@ -48,7 +54,7 @@ for cport, bindings in ports.items():
 net = container["HostConfig"]["NetworkMode"]
 restart = container["HostConfig"]["RestartPolicy"]["Name"] or "no"
 print(f"NETWORK={net}\nRESTART={restart}\nPORT_ARGS=\"{' '.join(args)}\"", file=open(out_path + ".run", "w"))
-print("환경변수:", ", ".join(env), "| 변경:", " ".join(overrides))
+print("환경변수:", ", ".join(env), "| 변경:", " ".join(o.split("=", 1)[0] + ("=***" if "KEY" in o or "SECRET" in o else "=" + o.split("=", 1)[1]) for o in overrides))
 PY
 # shellcheck disable=SC1091
 source "$BACKUP_DIR/app.env.run"

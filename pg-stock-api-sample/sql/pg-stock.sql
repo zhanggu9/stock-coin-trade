@@ -86,3 +86,36 @@ CREATE TABLE IF NOT EXISTS ohlcv_daily_batch_runs (
     aggregate_refreshed_at timestamptz,
     error_message varchar(500)
 );
+
+-- 1분봉 (KIS 주식일별분봉조회). 한 행 = 한 종목의 하루치 정규장 분봉. 배열 열은 lz4로 압축한다.
+-- 거래가 없던 분은 빠지며 bar_count = 0 은 그날 분봉이 없었다는 기록이다. hhmm 은 봉 시작 시각(예: 930 = 09:30).
+CREATE TABLE IF NOT EXISTS ohlcv_minute_day (
+    ticker_code varchar(20) NOT NULL,
+    trade_date date NOT NULL,
+    bar_count smallint NOT NULL,
+    hhmm smallint[] NOT NULL,
+    open integer[] NOT NULL,
+    high integer[] NOT NULL,
+    low integer[] NOT NULL,
+    close integer[] NOT NULL,
+    volume bigint[] NOT NULL,
+    source varchar(20) NOT NULL DEFAULT 'kis',
+    collected_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (ticker_code, trade_date)
+);
+CREATE INDEX IF NOT EXISTS idx_ohlcv_minute_day_trade_date ON ohlcv_minute_day (trade_date);
+ALTER TABLE ohlcv_minute_day ALTER COLUMN hhmm SET COMPRESSION lz4;
+ALTER TABLE ohlcv_minute_day ALTER COLUMN open SET COMPRESSION lz4;
+ALTER TABLE ohlcv_minute_day ALTER COLUMN high SET COMPRESSION lz4;
+ALTER TABLE ohlcv_minute_day ALTER COLUMN low SET COMPRESSION lz4;
+ALTER TABLE ohlcv_minute_day ALTER COLUMN close SET COMPRESSION lz4;
+ALTER TABLE ohlcv_minute_day ALTER COLUMN volume SET COMPRESSION lz4;
+
+-- 분봉 한 개 = 한 행으로 펼쳐 보는 뷰 (trade_time 은 한국시간 봉 시작 시각)
+CREATE OR REPLACE VIEW ohlcv_minute_bar AS
+SELECT d.ticker_code,
+       d.trade_date + make_interval(hours => b.hhmm / 100, mins => b.hhmm % 100) AS trade_time,
+       b.open, b.high, b.low, b.close, b.volume
+FROM ohlcv_minute_day d
+CROSS JOIN LATERAL unnest(d.hhmm, d.open, d.high, d.low, d.close, d.volume)
+     AS b(hhmm, open, high, low, close, volume);

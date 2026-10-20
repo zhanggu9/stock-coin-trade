@@ -12,6 +12,7 @@ from apscheduler.triggers.cron import CronTrigger
 
 from pgstock.config import get_settings
 from pgstock.jobs.ohlcv_aggregate import bootstrap_ohlcv_aggregates
+from pgstock.jobs.minute_kis import run_minute_sync
 from pgstock.jobs.ohlcv_sync import run_incremental_sync, sync_enabled
 
 log = logging.getLogger(__name__)
@@ -56,5 +57,19 @@ def start_scheduler() -> BackgroundScheduler:
             coalesce=True,
             misfire_grace_time=3600,
         )
+    settings = get_settings()
+    if settings.minute_sync_enabled:
+        if settings.kis_app_key and settings.kis_app_secret:
+            scheduler.add_job(
+                run_minute_sync,
+                CronTrigger(day_of_week="mon-fri", hour=settings.minute_sync_hour,
+                            minute=settings.minute_sync_minute, timezone="Asia/Seoul"),
+                id="ohlcv-minute-batch",
+                max_instances=1,
+                coalesce=True,
+                misfire_grace_time=3600,
+            )
+        else:
+            log.warning("MINUTE_SYNC_ENABLED=true 이지만 KIS_APP_KEY/KIS_APP_SECRET 이 없어 1분봉 수집을 등록하지 않습니다.")
     scheduler.start()
     return scheduler
