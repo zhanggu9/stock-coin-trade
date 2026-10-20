@@ -42,6 +42,17 @@ class Settings(BaseSettings):
     ohlcv_sync_max_tickers: int = 0
     ohlcv_sync_request_delay: float = 0.05     # 공급자 요청 사이 대기(초)
 
+    # ── 1분봉 (KIS Open API 주식일별분봉조회, 과거 약 1년 보관) ──────────
+    kis_app_key: str = ""                      # 실전 앱키 (모의투자 키는 초당 2건이라 전 종목 수집에 부족)
+    kis_app_secret: str = ""
+    kis_base_url: str = "https://openapi.koreainvestment.com:9443"
+    minute_sync_enabled: bool = False          # 매일 장 마감 후 최근 거래일의 빠진 1분봉 채우기
+    minute_sync_hour: int = 17                 # Asia/Seoul. 16:50 일봉 수집이 끝난 뒤
+    minute_sync_minute: int = 30
+    minute_catchup_days: int = 10              # 최근 몇 거래일까지 빠진 종목·일을 다시 확인할지
+    minute_requests_per_second: float = 15.0   # KIS 실전 한도 초당 20건보다 낮게
+    minute_workers: int = 2
+
     # ── Open API 쓰기 엔드포인트(/openapi/v1/ohlcv/ingest) 인증 ─────────
     # 원본은 MariaDB api_key 테이블을 조회하지만, 샘플은 쉼표로 나열한 고정 키를 쓴다.
     ohlcv_api_keys: str = ""

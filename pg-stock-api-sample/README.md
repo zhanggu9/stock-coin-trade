@@ -97,6 +97,28 @@ DB에 없는 날을 셉니다. 재수집 후에도 남는 누락은 대부분 �
 ssh -i /home/l/stock-coin-trade/test-0922.pem ubuntu@13.209.87.155 'bash -s' < scripts/redeploy_container.sh
 ```
 
+## 1분봉 (KIS, 과거 약 1년 + 매일 누적)
+
+KIS Open API 주식일별분봉조회(`FHKST03010230`)는 과거 1분봉을 **약 1년(거래일 약 250일)만** 보관합니다.
+그래서 처음에 남아 있는 1년치를 전 종목 받아 두고, 매일 장 마감 후 그날 분봉을 더해 기간을 늘립니다.
+네이버 차트 API는 최근 6거래일, 야후는 최근 30일만 줘서 과거 수집에는 쓸 수 없습니다.
+
+| 항목 | 값 |
+|---|---|
+| 저장 | `ohlcv_minute_day` (종목·하루당 1행, 분봉은 배열 열 + lz4 압축), 행 단위 조회는 뷰 `ohlcv_minute_bar` |
+| 대상 | 일봉 테이블에서 그날 거래량이 있던 KOSPI·KOSDAQ 주식 (상장 전·거래정지일 제외) |
+| 용량 (실측) | 종목·하루당 약 4~5KB → 전 종목 1년 약 3GB (분봉 1행씩 저장하면 약 15GB) |
+| 호출 | 1회 120분, 종목·하루당 평균 2.2회. 전 종목 1년치 약 150만 회 (초당 15회 기준 약 30시간) |
+
+```bash
+python -m pgstock.jobs.minute_backfill --dry-run   # 남은 종목·일 수와 예상 시간
+python -m pgstock.jobs.minute_backfill             # 보관된 가장 오래된 날부터 수집 (중단 후 다시 실행하면 이어받기)
+```
+
+`MINUTE_SYNC_ENABLED=true` 이면 스케줄러가 평일 17:30에 최근 `MINUTE_CATCHUP_DAYS` 거래일 중 빠진 종목·일을 채웁니다.
+백필과 정기 수집은 DB 잠금으로 동시에 돌지 않습니다. 서버에서는 `~/pg-stock-api-deploy/minute.env` 에 KIS 키와
+`MINUTE_SYNC_ENABLED=true` 를 두면 `scripts/redeploy_container.sh` 가 함께 반영합니다.
+
 ## 수집 흐름
 
 1. `scheduler.start_scheduler()` 가 기동 시 집계 스냅샷을 한 번 만들고, `run_incremental_sync` 를 cron 으로 등록합니다.
