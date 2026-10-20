@@ -30,15 +30,17 @@ class Settings(BaseSettings):
 
     # ── OHLCV 배치 ──────────────────────────────────────────────────────
     ohlcv_sync_enabled: bool = True
-    ohlcv_sync_tickers: str = "major"          # major | all | 005930,000660
+    # listed: KOSPI·KOSDAQ 상장 주식 전체(ETF·ETN·리츠·펀드 제외) | major: 대표 24종목 | all: tickers 테이블 | 005930,000660
+    ohlcv_sync_tickers: str = "listed"
     ohlcv_sync_provider: str = "naver"         # naver | yahoo | auto
-    ohlcv_sync_start_year: int = 2020
+    ohlcv_sync_start_year: int = 2016          # 이 해 1월 1일부터 (약 10년치)
     ohlcv_sync_correction_days: int = 7
     ohlcv_sync_hours: str = "9,12,16"          # Asia/Seoul cron 시(hour) 목록
     ohlcv_sync_hour: int = 16                  # OHLCV_SYNC_HOURS 가 비었을 때만 사용
     ohlcv_sync_interval_hours: int = 24
     ohlcv_sync_minute: int = 50
     ohlcv_sync_max_tickers: int = 0
+    ohlcv_sync_request_delay: float = 0.05     # 공급자 요청 사이 대기(초)
 
     # ── Open API 쓰기 엔드포인트(/openapi/v1/ohlcv/ingest) 인증 ─────────
     # 원본은 MariaDB api_key 테이블을 조회하지만, 샘플은 쉼표로 나열한 고정 키를 쓴다.

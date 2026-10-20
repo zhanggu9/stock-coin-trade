@@ -17,6 +17,8 @@ pg-stock-api-sample/
    ├─ errors.py                    # ApiError + JSON 오류 핸들러
    ├─ parsing.py                   # clamp / parse_int
    ├─ jobs/
+   │  ├─ krx_universe.py           # KOSPI·KOSDAQ 주식 목록 (KIS 종목 마스터, ETF·ETN·리츠·펀드 제외)
+   │  ├─ ohlcv_backfill.py         # 10년치 누락 진단·재수집 CLI
    │  ├─ ohlcv_crawler.py          # 네이버·야후 일봉 다운로드, upsert, 주요 24종목 CLI
    │  ├─ ohlcv_sync.py             # 연도 단위 증분 수집(멱등), ohlcv_sync_status 기록
    │  ├─ ohlcv_aggregate.py        # 집계 스냅샷 갱신, 일일 배치 원장
@@ -62,6 +64,38 @@ uvicorn main:app --reload --port 8010
 ```
 
 pg-stock 을 Docker 로 띄우려면 저장소 루트의 `docker-compose.pg-stock.yml` 을 그대로 쓰면 됩니다.
+
+## 수집 대상 (OHLCV_SYNC_TICKERS=listed, 기본값)
+
+한국투자증권 공개 종목 마스터(`kospi_code.mst`, `kosdaq_code.mst`)의 증권그룹구분코드로 **주식만** 고릅니다.
+마스터는 매 영업일 갱신되므로 신규 상장·상장폐지가 다음 수집부터 반영됩니다.
+
+| 포함 | 제외 |
+|---|---|
+| ST 주권(보통주·우선주·스팩), FS 외국주권, DR 주식예탁증서 | EF ETF, EN ETN, RT 리츠, IF 인프라투융자, MF·PF·BC 펀드·수익증권, SW·SR 신주인수권 |
+
+2026-10 기준 약 2,740종목(KOSPI 915, KOSDAQ 1,824)이며 `OHLCV_SYNC_START_YEAR=2016` 부터(약 10년치) 받습니다.
+상장일 이전 연도와 공급자에 데이터가 없던 과거 연도(`ohlcv_sync_status.status = 'empty'`)는 정기 수집에서 다시 요청하지 않습니다.
+
+### 10년치 누락 진단·재수집
+
+```bash
+python -m pgstock.jobs.ohlcv_backfill --dry-run      # 진단만 (종목별 기대 거래일 대비 누락 일수)
+python -m pgstock.jobs.ohlcv_backfill                # 누락 종목만 네이버에서 시작일~오늘 다시 받아 upsert
+```
+
+시장 거래일 달력은 대형주 5종목 일봉의 합집합으로 만들고, 종목별로 max(시작일, 상장일) 이후 달력 거래일 중
+DB에 없는 날을 셉니다. 재수집 후에도 남는 누락은 대부분 거래정지 등으로 공급자에도 없는 날입니다.
+
+### 서버 컨테이너 교체
+
+서버에서 새 이미지를 빌드한 뒤(`docker build -t pg-stock-api-sample:latest .`) 로컬 PC에서 실행하면
+기존 컨테이너의 환경변수·네트워크·포트·재시작 정책을 유지한 채 `OHLCV_SYNC_TICKERS=listed`, `OHLCV_SYNC_START_YEAR=2016` 으로
+다시 만듭니다. 새 컨테이너가 `/health` 에 응답하지 않으면 원래 컨테이너로 되돌립니다.
+
+```bash
+ssh -i /home/l/stock-coin-trade/test-0922.pem ubuntu@13.209.87.155 'bash -s' < scripts/redeploy_container.sh
+```
 
 ## 수집 흐름
 

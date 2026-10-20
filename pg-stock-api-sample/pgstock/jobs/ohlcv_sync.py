@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import threading
+import time
 from datetime import UTC, date, datetime, timedelta
 
 from sqlalchemy import create_engine, text
@@ -15,6 +16,7 @@ from pgstock.jobs.ohlcv_aggregate import (
     finish_daily_batch,
     refresh_ohlcv_aggregates,
 )
+from pgstock.jobs.krx_universe import fetch_listed_stocks
 from pgstock.jobs.ohlcv_crawler import MAJOR_TICKERS, fetch_naver, fetch_yahoo, upsert_ticker
 
 log = logging.getLogger(__name__)
@@ -72,25 +74,65 @@ def _save_status(engine, *, code, year, provider, status, start, end, fetched, u
 
 
 def _ticker_universe(engine):
-    """설정값에 따라 major/all/명시적 코드 목록으로 수집 대상을 결정한다."""
+    """설정값에 따라 수집 대상을 정한다.
+
+    Returns:
+        ({종목코드: (종목명, 시장)}, {종목코드: 상장일})  — 상장일은 listed 모드에서만 채운다.
+
+    - listed: KOSPI·KOSDAQ 상장 주식 전체 (ETF·ETN·리츠·펀드 제외, KIS 종목 마스터 기준)
+    - major : 내장 대표 24종목
+    - all   : tickers 테이블의 모든 종목
+    - 005930,000660 : 명시한 종목
+    """
     settings = get_settings()
     selection = settings.ohlcv_sync_tickers.strip()
+    limit = max(0, settings.ohlcv_sync_max_tickers)
+    if selection.lower() == "listed":
+        listed = fetch_listed_stocks()
+        items = sorted(listed.items())
+        if limit:
+            items = items[:limit]
+        return ({code: (stock.name, stock.market) for code, stock in items},
+                {code: stock.listed_on for code, stock in items if stock.listed_on})
     if not selection or selection.lower() == "major":
-        return dict(MAJOR_TICKERS)
+        return dict(MAJOR_TICKERS), {}
 
     with engine.connect() as conn:
         rows = conn.execute(text("SELECT ticker_code,name,market FROM tickers ORDER BY ticker_code")).mappings()
         available = {row["ticker_code"]: (row["name"] or row["ticker_code"], row["market"] or "KOSPI") for row in rows}
     if selection.lower() == "all":
-        limit = max(0, settings.ohlcv_sync_max_tickers)
         items = list(available.items())
-        return dict(items[:limit] if limit else items)
+        return dict(items[:limit] if limit else items), {}
 
     requested = [value.strip().upper() for value in selection.split(",") if value.strip()]
     unknown = [code for code in requested if code not in available and code not in MAJOR_TICKERS]
     if unknown:
         raise ValueError(f"OHLCV_SYNC_TICKERS에 등록되지 않은 종목이 있습니다: {', '.join(unknown)}")
-    return {code: available[code] if code in available else MAJOR_TICKERS[code] for code in requested}
+    return {code: available[code] if code in available else MAJOR_TICKERS[code] for code in requested}, {}
+
+
+def _empty_years(engine):
+    """이전 수집에서 공급자에 데이터가 없었던(status=empty) 종목·연도 집합."""
+    with engine.connect() as conn:
+        rows = conn.execute(text("SELECT ticker_code, data_year FROM ohlcv_sync_status WHERE status = 'empty'"))
+        return {(row[0], int(row[1])) for row in rows}
+
+
+def skip_known_empty_years(ranges, code, as_of, empty_years, listed_on=None):
+    """상장 전 연도처럼 받아도 비어 있는 과거 연도를 계획에서 뺀다.
+
+    전 종목을 START_YEAR부터 수집하면 그 뒤에 상장한 종목은 상장 전 연도가 매번 '누락'으로
+    잡혀 하루 세 번 빈 요청을 보낸다. 상장일 이전 연도와 이미 empty로 확인된 과거 연도는 건너뛴다.
+    올해는 항상 남긴다.
+    """
+    kept = []
+    for year, start, end in ranges:
+        if year < as_of.year and (
+            (code, year) in empty_years or (listed_on is not None and year < listed_on.year)
+        ):
+            continue
+        kept.append((year, start, end))
+    return kept
 
 
 def _existing_years(engine, code):
@@ -152,17 +194,23 @@ def collect_ohlcv(*, reconcile=False, as_of=None, engine=None, downloader=None):
         correction_days = settings.ohlcv_sync_correction_days
         engine = engine or create_engine(settings.ohlcv_database_url, pool_pre_ping=True, pool_size=2, max_overflow=1)
         _ensure_status_table(engine)
-        universe = _ticker_universe(engine)
+        universe, listed_on = _ticker_universe(engine)
+        empty_years = set() if reconcile else _empty_years(engine)
+        delay = max(0.0, settings.ohlcv_sync_request_delay)
         fetch = downloader or _download
         summary = {"status": "completed", "tickers": len(universe), "ranges": 0,
                    "fetchedRows": 0, "upsertedRows": 0, "failed": []}
         for code, (name, market) in universe.items():
             existing = _existing_years(engine, code)
             ranges = plan_year_ranges(existing, start_year, as_of, reconcile, correction_days)
+            if not reconcile:
+                ranges = skip_known_empty_years(ranges, code, as_of, empty_years, listed_on.get(code))
             for year, start, end in ranges:
                 summary["ranges"] += 1
                 started = datetime.now(UTC)
                 try:
+                    if delay:
+                        time.sleep(delay)  # 공급자 부하·차단 방지
                     rows = fetch(provider, code, market, start, end)
                     upserted = upsert_ticker(engine, code, name, market, rows)
                     status = "success" if rows else "empty"
